@@ -1,0 +1,53 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blue: #2463eb;
+  --green: #3cbf6c;
+  --teal: #4ac9dc;
+  --navy: #1c2431;
+  --base: #f8f6f1;
+  --base-2: #f0ede6;
+  --border: #e6e2d9;
+  --gray-warm: #706c63;
+  --gray-cool: #aeb4bc;
+  --stone: #dddad0;
+  --grad: linear-gradient(135deg, #4ac9dc 0%, #2463eb 70%, #3cbf6c 130%);
+}
+
+html,
+body {
+  background: var(--base);
+  color: var(--navy);
+}
+
+body {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 300;
+}
+
+.font-serif {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+.font-mono {
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.eyebrow {
+  font-family: "DM Mono", ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  color: var(--gray-warm);
+}
+
+.wordmark {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
