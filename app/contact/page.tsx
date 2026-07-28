@@ -9,6 +9,9 @@ const interestLabels: Record<string, string> = {
   general: "General inquiry",
   "founding-member": "Founding membership",
   "on-prem": "On-prem HR AI agents",
+  "research-agent": "Research Agent",
+  "scenario-modeling": "Scenario Modeling",
+  "workforce-strategy": "Workforce-Aligned Strategy",
 };
 
 function ContactForm() {

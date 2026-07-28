@@ -4,3 +4,19 @@ node_modules
 .env*.local
 .DS_Store
 next-env.d.ts
+.vercel
+.env*
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# FUSE leftovers from mounted-filesystem writes
+.fuse_hidden*
+
+# Never commit keys or credentials
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+ssh-agent*
+eval*

@@ -30,10 +30,18 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  const path = request.nextUrl.pathname;
+  const isProtected =
+    path.startsWith("/dashboard") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/request-report");
+
+  // Anonymous users are bounced here. Role is NOT checked in middleware —
+  // that requires a DB read and is enforced server-side in requireAdmin().
+  if (!user && isProtected && !path.startsWith("/request-report")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirectTo", request.nextUrl.pathname);
+    url.searchParams.set("redirectTo", path);
     return NextResponse.redirect(url);
   }
 
