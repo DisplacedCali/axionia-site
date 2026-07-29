@@ -23,18 +23,26 @@ export default function CountUp({
   decimals?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const inView = useInView(ref, { once: true, amount: 0.2 });
   const [value, setValue] = useState(from);
 
+  // Safety net: if the observer never fires, snap to the real figure rather
+  // than leaving a misleading 0 on screen.
+  const [fallback, setFallback] = useState(false);
   useEffect(() => {
-    if (!inView) return;
+    const t = setTimeout(() => setFallback(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!inView && !fallback) return;
     const controls = animate(from, to, {
       duration,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (v) => setValue(v),
     });
     return () => controls.stop();
-  }, [inView, from, to, duration]);
+  }, [inView, fallback, from, to, duration]);
 
   return (
     <span ref={ref} className="tabular-nums">

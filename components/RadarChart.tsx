@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 
 export type RadarAxis = {
   label: string;
@@ -11,22 +12,28 @@ export type RadarAxis = {
 
 const RINGS = [0.25, 0.5, 0.75, 1];
 
-// The viewBox is deliberately wider than the plot area: axis labels are
-// anchored outward from the outer ring, and a tight box clips them.
+// Wider than the plot area on purpose: axis labels anchor outward from the
+// outer ring, and a tight viewBox clips them.
 const VB_W = 400;
 const VB_H = 320;
 const CX = 200;
 const CY = 150;
 
 /**
- * Signature 8-axis radar, built to the brand dataviz spec:
- * hairline stone rings, blue/teal gradient fill at low opacity, 2px blue
- * stroke with vertex dots, DM Mono axis labels, dashed slate peer overlay
- * sitting behind the company shape.
+ * Signature 8-axis radar, per the brand dataviz spec.
  *
- * On phones the in-chart labels are suppressed — at that scale they render
- * around 6px and are unreadable — and replaced by a legend carrying the
- * actual values, which is more useful than the labels were.
+ * Two correctness notes, both learned the hard way:
+ *
+ * 1. Shapes are <path>, not <polygon>. Framer Motion animates `pathLength`
+ *    via getTotalLength(), which Safari implements only on SVGPathElement —
+ *    on <polygon> the stroke silently never draws, so the chart was blank on
+ *    iOS while fine in Chrome.
+ *
+ * 2. Animation is ADDITIVE. The chart renders fully visible by default and
+ *    animation is an enhancement layered on top. Previously every element
+ *    started at opacity 0 and depended on whileInView firing, which meant any
+ *    failure in the animation layer produced an invisible chart rather than a
+ *    static one. Also respects prefers-reduced-motion.
  */
 export default function RadarChart({
   axes,
@@ -39,6 +46,20 @@ export default function RadarChart({
   showPeer?: boolean;
   compact?: boolean;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(containerRef, { once: true, amount: 0.15 });
+  const reduceMotion = useReducedMotion();
+
+  // Safety net: if the observer never fires for any reason, reveal anyway.
+  const [fallback, setFallback] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setFallback(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const animate = !reduceMotion;
+  const show = inView || fallback || !animate;
+
   const MAX_R = compact ? 88 : 96;
   const LABEL_R = compact ? 104 : 112;
 
@@ -48,16 +69,25 @@ export default function RadarChart({
     return { x: CX + r * Math.cos(angle), y: CY + r * Math.sin(angle) };
   };
 
-  const polygonFor = (key: "value" | "peer") =>
+  /** Closed <path> data — universally supported by getTotalLength(). */
+  const pathFor = (key: "value" | "peer") =>
     axes
       .map((a, i) => {
         const p = pointAt(i, a[key]);
-        return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+        return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
       })
-      .join(" ");
+      .join(" ") + " Z";
+
+  const ringPath = (ring: number) =>
+    axes
+      .map((_, i) => {
+        const p = pointAt(i, ring * 100);
+        return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+      })
+      .join(" ") + " Z";
 
   return (
-    <div>
+    <div ref={containerRef}>
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         className="w-full h-auto overflow-visible"
@@ -71,31 +101,22 @@ export default function RadarChart({
           </radialGradient>
         </defs>
 
-        {/* concentric hairline rings */}
-        {RINGS.map((ring, i) => (
-          <motion.polygon
+        {/* rings — static, always visible */}
+        {RINGS.map((ring) => (
+          <path
             key={`ring-${ring}`}
-            points={axes
-              .map((_, idx) => {
-                const p = pointAt(idx, ring * 100);
-                return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-              })
-              .join(" ")}
+            d={ringPath(ring)}
             fill="none"
             stroke="#DDD9D0"
             strokeWidth="1"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 0.05 * i }}
           />
         ))}
 
-        {/* spokes */}
+        {/* spokes — static */}
         {axes.map((a, i) => {
           const p = pointAt(i, 100);
           return (
-            <motion.line
+            <line
               key={`spoke-${a.label}`}
               x1={CX}
               y1={CY}
@@ -103,53 +124,41 @@ export default function RadarChart({
               y2={p.y}
               stroke="#DDD9D0"
               strokeWidth="1"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.4, delay: 0.2 + i * 0.03 }}
             />
           );
         })}
 
-        {/* peer benchmark overlay — dashed, behind company shape */}
+        {/* peer benchmark — dashed, behind the company shape */}
         {showPeer && (
-          <motion.polygon
-            points={polygonFor("peer")}
+          <path
+            d={pathFor("peer")}
             fill="none"
             stroke="#5B7095"
             strokeWidth="1.5"
             strokeDasharray="4 4"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 0.75 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.7, delay: 0.5 }}
+            opacity="0.75"
           />
         )}
 
         {/* company shape — fill */}
-        <motion.polygon
-          points={polygonFor("value")}
+        <motion.path
+          d={pathFor("value")}
           fill={`url(#${gradientId})`}
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.9, delay: 0.85 }}
+          initial={animate ? { opacity: 0 } : false}
+          animate={{ opacity: show ? 1 : 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
         />
 
-        {/* company shape — stroke draws in */}
-        <motion.polygon
-          points={polygonFor("value")}
+        {/* company shape — stroke. Drawn as a path so Safari can measure it. */}
+        <motion.path
+          d={pathFor("value")}
           fill="none"
           stroke="#2463EB"
           strokeWidth="2"
           strokeLinejoin="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          whileInView={{ pathLength: 1, opacity: 1 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{
-            pathLength: { duration: 1.3, ease: [0.22, 1, 0.36, 1], delay: 0.55 },
-            opacity: { duration: 0.2, delay: 0.55 },
-          }}
+          initial={animate ? { pathLength: 0 } : false}
+          animate={{ pathLength: show ? 1 : 0 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         />
 
         {/* vertex dots */}
@@ -162,10 +171,9 @@ export default function RadarChart({
               cy={p.y}
               r="3.5"
               fill="#2463EB"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.3, delay: 1.0 + i * 0.05 }}
+              initial={animate ? { opacity: 0 } : false}
+              animate={{ opacity: show ? 1 : 0 }}
+              transition={{ duration: 0.3, delay: 0.7 + i * 0.05 }}
             />
           );
         })}
@@ -186,13 +194,7 @@ export default function RadarChart({
             const dotY = y + dy - 3;
 
             return (
-              <motion.g
-                key={`label-${a.label}`}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.5, delay: 1.1 + i * 0.05 }}
-              >
+              <g key={`label-${a.label}`}>
                 <circle cx={dotX} cy={dotY} r="2" fill={a.hue} />
                 <text
                   x={x}
@@ -205,13 +207,13 @@ export default function RadarChart({
                 >
                   {a.label}
                 </text>
-              </motion.g>
+              </g>
             );
           })}
         </g>
       </svg>
 
-      {/* mobile legend — carries the numbers the labels never could */}
+      {/* mobile legend — carries the numbers the labels can't at this scale */}
       <div className="sm:hidden mt-5 grid grid-cols-2 gap-x-4 gap-y-2.5">
         {axes.map((a) => (
           <div key={`legend-${a.label}`} className="flex items-baseline gap-2">
