@@ -43,13 +43,15 @@ export async function saveAdminNotes(
 /* ─────────────── alignment validation ─────────────── */
 
 /**
- * Resolve a flagged request. 'cleared' means the affiliation was confirmed;
- * 'restricted' means we declined it on alignment grounds. The note is
- * internal — it's the audit trail for why a request was or wasn't run.
+ * Classify a flagged request.
+ *   cleared      it is their own employer after all — proceed as normal
+ *   third_party  a paid research engagement on another organisation
+ *   restricted   declined
+ * The note is internal — the audit trail for how a request was routed.
  */
 export async function setAlignment(
   requestId: string,
-  alignment: "cleared" | "restricted" | "review",
+  alignment: "cleared" | "third_party" | "restricted" | "review",
   note?: string
 ): Promise<Result> {
   await requireAdmin();

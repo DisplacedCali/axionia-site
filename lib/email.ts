@@ -160,19 +160,36 @@ export function adminNewRequest(args: {
   contactEmail: string;
   companyName?: string | null;
   kind: "new" | "refresh";
+  thirdParty?: boolean;
   url: string;
 }) {
+  const tag = args.thirdParty
+    ? "Third-party?"
+    : args.kind === "refresh"
+    ? "Refresh"
+    : "New";
   return {
-    subject: `[Axionia] ${args.kind === "refresh" ? "Refresh" : "New"} report request — ${
+    subject: `[Axionia] ${tag} report request — ${
       args.companyName || args.contactEmail
     }`,
     html: shell(
-      h(args.kind === "refresh" ? "Refresh request" : "New report request") +
+      h(
+        args.thirdParty
+          ? "Possible third-party research"
+          : args.kind === "refresh"
+          ? "Refresh request"
+          : "New report request"
+      ) +
         p(
           `<strong>${args.contactName || "—"}</strong><br/>${args.contactEmail}<br/>${
             args.companyName || "—"
           }`
         ) +
+        (args.thirdParty
+          ? p(
+              "The company named doesn't match the requester's email domain. Classify it as their own employer or route it as a paid research engagement."
+            )
+          : "") +
         (args.kind === "refresh"
           ? p("This company already has a released report. The prior version is loaded for comparison.")
           : "") +

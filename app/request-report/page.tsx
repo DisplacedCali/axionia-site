@@ -3,7 +3,7 @@
 import { useState, useRef, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { readableAuthError } from "@/lib/authError";
-import { Eyebrow, Section, GradientRule } from "@/components/ui";
+import { Eyebrow, Section, GradientRule, GhostButton } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 import { submitReportRequest } from "./actions";
 
@@ -172,23 +172,40 @@ export default function RequestReportPage() {
           </div>
 
           {result.needsValidation && (
-            <div className="mt-8 bg-amber-light border-l-2 border-caution p-5 sm:p-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-caution mb-2">
-                One verification step
+            <div className="mt-8 border border-navy p-6 sm:p-7 relative overflow-hidden">
+              <div className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-navy mb-2">
+                Looks like third-party research
               </p>
-              <p className="text-[15px] leading-[1.7] text-navy">
-                The company you asked us to look at doesn&rsquo;t appear to match your
-                email domain. That&rsquo;s often perfectly legitimate — a holding
-                company, a recent rebrand, a shared services address — so we simply
-                confirm the relationship before starting work.
+              <h2 className="font-serif text-2xl leading-snug mb-3">
+                Happy to do this — it&rsquo;s just a different engagement.
+              </h2>
+              <p className="text-[15px] leading-[1.7] text-gray-warm">
+                <strong className="text-navy">
+                  {result.companyName || "The company you named"}
+                </strong>{" "}
+                doesn&rsquo;t appear to be your own employer. The free report covers
+                the programs you actually run — that&rsquo;s who it&rsquo;s built for
+                and how we keep it free.
               </p>
-              <p className="mt-3 text-[14px] leading-[1.7] text-gray-warm">
-                We&rsquo;ll reply to <strong className="text-navy">{email}</strong> to
-                confirm your affiliation. Axionia reserves the right to restrict
-                research where a requester&rsquo;s alignment with the subject
-                organization can&rsquo;t be established — we don&rsquo;t run
-                competitive intelligence on employers for third parties.
+              <p className="mt-3 text-[15px] leading-[1.7] text-gray-warm">
+                Research on another organisation is something we do well and are glad
+                to take on — competitive benchmarking, diligence ahead of an
+                acquisition, or a broker or consultant preparing for a client
+                conversation. It&rsquo;s a paid engagement, scoped to what you&rsquo;re
+                trying to learn.
               </p>
+              <p className="mt-3 text-[15px] leading-[1.7] text-gray-warm">
+                We&rsquo;ll reply to <strong className="text-navy">{email}</strong>{" "}
+                either way. If we&rsquo;ve read this wrong and it is your own
+                organisation — a holding company, a recent rebrand, a shared services
+                address — just say so and we&rsquo;ll run it as normal.
+              </p>
+              <div className="mt-6">
+                <GhostButton href="/contact?interest=third-party-research">
+                  Tell us what you&rsquo;re trying to learn
+                </GhostButton>
+              </div>
             </div>
           )}
 
@@ -392,10 +409,11 @@ export default function RequestReportPage() {
               We never collect member-level health information. Intake is aggregate only.
             </p>
             <p className="text-[12px] leading-[1.6] text-gray-cool max-w-measure">
-              We analyse benefit programs for the employers who run them. Where a
-              requester&rsquo;s alignment with the company named above can&rsquo;t be
-              established, we&rsquo;ll confirm the relationship first — and Axionia
-              reserves the right to restrict research on that basis.
+              The free report covers your own organisation&rsquo;s benefit programs.
+              Researching a company you don&rsquo;t work for — benchmarking a
+              competitor, diligence on an acquisition, client work — is something we
+              also do, as a paid engagement. Submit either way and we&rsquo;ll come
+              back with scope.
             </p>
           </form>
         </>

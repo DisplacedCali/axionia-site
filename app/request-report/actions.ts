@@ -157,6 +157,7 @@ export async function submitReportRequest(formData: {
       contactEmail: email,
       companyName,
       kind,
+      thirdParty: alignment.status === "review",
       url: `${site}/admin/requests/${request.id}`,
     });
     await sendEmail({

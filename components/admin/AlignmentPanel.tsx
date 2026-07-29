@@ -4,45 +4,62 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setAlignment } from "@/app/admin/actions";
 
+type AlignmentValue =
+  | "matched"
+  | "review"
+  | "cleared"
+  | "third_party"
+  | "restricted";
+
 type Props = {
   requestId: string;
-  alignment: "matched" | "review" | "cleared" | "restricted";
+  alignment: AlignmentValue;
   reason: string | null;
   note: string | null;
   companyName: string | null;
   contactEmail: string;
 };
 
-const STATE = {
+const STATE: Record<
+  AlignmentValue,
+  { label: string; dot: string; text: string; border: string; bg: string }
+> = {
   matched: {
-    label: "Aligned",
+    label: "Own employer",
     dot: "bg-pos",
     text: "text-pos",
     border: "border-border",
     bg: "",
   },
   review: {
-    label: "Needs validation",
+    label: "Unclassified — likely third-party",
     dot: "bg-caution",
     text: "text-caution",
     border: "border-caution",
     bg: "bg-amber-light",
   },
   cleared: {
-    label: "Cleared by you",
+    label: "Own employer — confirmed by you",
     dot: "bg-pos",
     text: "text-pos",
     border: "border-pos",
     bg: "bg-green-light",
   },
+  third_party: {
+    label: "Third-party research — billable",
+    dot: "bg-blue",
+    text: "text-blue",
+    border: "border-blue",
+    bg: "bg-blue-light",
+  },
   restricted: {
-    label: "Restricted",
+    label: "Declined",
     dot: "bg-risk",
     text: "text-risk",
     border: "border-risk",
     bg: "bg-red-light",
   },
-} as const;
+};
 
 export default function AlignmentPanel({
   requestId,
@@ -58,9 +75,9 @@ export default function AlignmentPanel({
   const [err, setErr] = useState<string | null>(null);
 
   const s = STATE[alignment];
-  const needsAction = alignment === "review";
+  const unclassified = alignment === "review";
 
-  function apply(next: "cleared" | "restricted" | "review") {
+  function apply(next: "cleared" | "third_party" | "restricted" | "review") {
     startTransition(async () => {
       const res = await setAlignment(requestId, next, draftNote);
       if (!res.ok) setErr(res.error);
@@ -72,10 +89,8 @@ export default function AlignmentPanel({
     <div className={`border p-6 ${s.border} ${s.bg}`}>
       <div className="flex items-center gap-2 mb-3">
         <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-        <span
-          className={`font-mono text-[10px] uppercase tracking-[0.14em] ${s.text}`}
-        >
-          Requester alignment — {s.label}
+        <span className={`font-mono text-[10px] uppercase tracking-[0.14em] ${s.text}`}>
+          {s.label}
         </span>
       </div>
 
@@ -83,31 +98,27 @@ export default function AlignmentPanel({
         <p className="text-[14px] leading-[1.65] text-navy mb-3">{reason}</p>
       )}
 
-      {needsAction && (
+      {unclassified && (
         <p className="text-[13px] leading-[1.65] text-gray-warm mb-4">
-          Confirm that <strong className="text-navy">{contactEmail}</strong> is
-          genuinely affiliated with{" "}
-          <strong className="text-navy">{companyName || "this company"}</strong>{" "}
-          before running the analysis. Holding companies, rebrands and shared
-          services addresses are common and legitimate — brokers and competitors
-          are not.
+          <strong className="text-navy">{contactEmail}</strong> asked about{" "}
+          <strong className="text-navy">{companyName || "another company"}</strong>.
+          If that&rsquo;s genuinely their employer — holding company, rebrand, shared
+          services address — mark it as such and it runs as a normal free report.
+          Otherwise it&rsquo;s a paid research engagement: benchmarking, diligence, or
+          client work. Route it and follow up with scope.
         </p>
       )}
 
-      {alignment !== "matched" && (
-        <>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm mb-2">
-            Validation note — internal
-          </label>
-          <textarea
-            rows={2}
-            value={draftNote}
-            onChange={(e) => setDraftNote(e.target.value)}
-            placeholder="e.g. confirmed by phone — parent company of the named entity"
-            className="w-full border border-border bg-white/60 px-3 py-2 text-[14px] focus:outline-none focus:border-navy transition-colors mb-3"
-          />
-        </>
-      )}
+      <label className="block font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm mb-2">
+        Routing note — internal
+      </label>
+      <textarea
+        rows={2}
+        value={draftNote}
+        onChange={(e) => setDraftNote(e.target.value)}
+        placeholder="e.g. broker at Willis prepping a renewal conversation — quoted as one-off diligence"
+        className="w-full border border-border bg-white/60 px-3 py-2 text-[14px] focus:outline-none focus:border-navy transition-colors mb-3"
+      />
 
       <div className="flex flex-wrap gap-2">
         {alignment !== "cleared" && (
@@ -116,33 +127,47 @@ export default function AlignmentPanel({
             disabled={pending}
             className="px-4 py-2 border border-pos text-pos font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-pos hover:text-base transition-colors disabled:opacity-50"
           >
-            Confirm affiliation
+            It&rsquo;s their own employer
+          </button>
+        )}
+        {alignment !== "third_party" && (
+          <button
+            onClick={() => apply("third_party")}
+            disabled={pending}
+            className="px-4 py-2 border border-blue text-blue font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-blue hover:text-base transition-colors disabled:opacity-50"
+          >
+            Route as paid research
           </button>
         )}
         {alignment !== "restricted" && (
           <button
             onClick={() => apply("restricted")}
             disabled={pending}
-            className="px-4 py-2 border border-risk text-risk font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-risk hover:text-base transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-border text-gray-warm font-mono text-[10px] uppercase tracking-[0.12em] hover:border-risk hover:text-risk transition-colors disabled:opacity-50"
           >
-            Restrict research
+            Decline
           </button>
         )}
-        {alignment !== "review" && alignment !== "matched" && (
+        {alignment !== "review" && (
           <button
             onClick={() => apply("review")}
             disabled={pending}
-            className="px-4 py-2 border border-border text-gray-warm font-mono text-[10px] uppercase tracking-[0.12em] hover:border-navy hover:text-navy transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-border text-gray-cool font-mono text-[10px] uppercase tracking-[0.12em] hover:border-navy hover:text-navy transition-colors disabled:opacity-50"
           >
             Reopen
           </button>
         )}
       </div>
 
+      {alignment === "third_party" && (
+        <p className="mt-3 text-[12px] leading-[1.6] text-gray-warm">
+          Stays in the queue — it&rsquo;s work, just billable. Scope and price it
+          before running the analysis.
+        </p>
+      )}
       {alignment === "restricted" && (
         <p className="mt-3 text-[12px] leading-[1.6] text-gray-warm">
-          Restricting archives the request. Nothing is sent to the requester
-          automatically — reply to them directly.
+          Archived. Nothing is sent automatically — reply to them directly.
         </p>
       )}
 

@@ -1,0 +1,21 @@
+-- ============================================================
+-- Axionia — migration 005: third-party research as a routing
+-- outcome rather than a restriction.
+--
+-- A request where the subject company doesn't match the
+-- requester's email domain is not a problem to block — it's a
+-- different, billable engagement: competitive benchmarking,
+-- acquisition diligence, or a broker/consultant preparing for a
+-- client conversation.
+--
+-- Semantics of report_requests.alignment after this migration:
+--   matched      requester's own employer (auto-detected)
+--   review       mismatch, not yet classified by an admin
+--   cleared      admin confirmed it IS their own employer
+--   third_party  admin routed it as a paid third-party engagement
+--   restricted   admin declined (kept, but no longer the default frame)
+--
+-- Run AFTER 004. Safe to re-run.
+-- ============================================================
+
+alter type public.alignment_status add value if not exists 'third_party';

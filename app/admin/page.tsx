@@ -144,12 +144,17 @@ export default async function AdminQueue({
                   {r.company_name || "—"}
                   {r.alignment === "review" && (
                     <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-caution">
-                      ⚑ Verify affiliation
+                      ⚑ Classify — likely third-party
+                    </span>
+                  )}
+                  {r.alignment === "third_party" && (
+                    <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-blue">
+                      Paid research
                     </span>
                   )}
                   {r.alignment === "restricted" && (
                     <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-risk">
-                      Restricted
+                      Declined
                     </span>
                   )}
                 </span>
