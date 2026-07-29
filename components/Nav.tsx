@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Logo from "./Logo";
@@ -16,12 +16,21 @@ const links = [
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const [headerH, setHeaderH] = useState(73);
+  const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
-  // Close on navigation.
+  // Measure the header rather than hardcoding — its height changes with
+  // font loading and viewport width.
+  useEffect(() => {
+    const measure = () => setHeaderH(headerRef.current?.offsetHeight ?? 73);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
   useEffect(() => setOpen(false), [pathname]);
 
-  // Lock body scroll while the panel is open.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -29,87 +38,104 @@ export default function Nav() {
     };
   }, [open]);
 
+  // Close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-base/85 backdrop-blur-md supports-[backdrop-filter]:bg-base/70">
-      <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-        <Link href="/" className="flex items-center shrink-0">
-          <Logo size={30} withWordmark />
-        </Link>
+    <>
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-50 border-b border-border bg-base/85 backdrop-blur-md supports-[backdrop-filter]:bg-base/70"
+      >
+        <div className="max-w-6xl mx-auto px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+          <Link href="/" className="flex items-center shrink-0">
+            <Logo size={28} withWordmark />
+          </Link>
 
-        {/* desktop links */}
-        <nav className="hidden md:flex items-center gap-8 font-mono text-[11px] uppercase tracking-[0.14em] text-gray-warm">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="relative group py-1 hover:text-navy transition-colors"
-            >
-              {l.label}
-              <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-axionia-gradient transition-transform duration-300 ease-out group-hover:scale-x-100" />
+          <nav className="hidden md:flex items-center gap-8 font-mono text-[11px] uppercase tracking-[0.14em] text-gray-warm">
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="relative group py-1 hover:text-navy transition-colors"
+              >
+                {l.label}
+                <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-axionia-gradient transition-transform duration-300 ease-out group-hover:scale-x-100" />
+              </Link>
+            ))}
+          </nav>
+
+          <div className="hidden md:flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
+            <Link href="/login" className="text-gray-warm hover:text-navy transition-colors">
+              Log in
             </Link>
-          ))}
-        </nav>
+            <Link
+              href="/request-report"
+              className="px-4 py-2 border border-navy text-navy hover:bg-navy hover:text-base transition-colors"
+            >
+              Free report
+            </Link>
+          </div>
 
-        {/* desktop actions */}
-        <div className="hidden md:flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <Link href="/login" className="text-gray-warm hover:text-navy transition-colors">
-            Log in
-          </Link>
-          <Link
-            href="/request-report"
-            className="px-4 py-2 border border-navy text-navy hover:bg-navy hover:text-base transition-colors"
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            className="md:hidden relative w-11 h-11 -mr-2 flex flex-col items-center justify-center gap-[5px]"
           >
-            Free report
-          </Link>
+            <motion.span
+              className="block w-6 h-px bg-navy"
+              animate={open ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+              transition={{ duration: 0.25 }}
+            />
+            <motion.span
+              className="block w-6 h-px bg-navy"
+              animate={open ? { opacity: 0 } : { opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            />
+            <motion.span
+              className="block w-6 h-px bg-navy"
+              animate={open ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
+              transition={{ duration: 0.25 }}
+            />
+          </button>
         </div>
+      </header>
 
-        {/* mobile toggle */}
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          className="md:hidden relative w-10 h-10 -mr-2 flex flex-col items-center justify-center gap-[5px]"
-        >
-          <motion.span
-            className="block w-6 h-px bg-navy"
-            animate={open ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-            transition={{ duration: 0.25 }}
-          />
-          <motion.span
-            className="block w-6 h-px bg-navy"
-            animate={open ? { opacity: 0 } : { opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          />
-          <motion.span
-            className="block w-6 h-px bg-navy"
-            animate={open ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-            transition={{ duration: 0.25 }}
-          />
-        </button>
-      </div>
-
-      {/* mobile panel */}
+      {/*
+        Rendered as a SIBLING of <header>, not a child. The header uses
+        backdrop-blur, and backdrop-filter makes an element the containing
+        block for position:fixed descendants — nesting the panel inside it
+        sizes it against the 73px header instead of the viewport, collapsing
+        it to nothing.
+      */}
       <AnimatePresence>
         {open && (
           <motion.div
             key="mobile-menu"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="md:hidden fixed inset-x-0 top-[73px] bottom-0 bg-base border-t border-border overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ top: headerH }}
+            className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-base overflow-y-auto overscroll-contain"
           >
-            <nav className="px-6 py-6 flex flex-col">
+            <nav className="px-5 py-6 flex flex-col min-h-full">
               {links.map((l, i) => (
                 <motion.div
                   key={l.href}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 + i * 0.05, duration: 0.35 }}
+                  transition={{ delay: 0.04 + i * 0.045, duration: 0.3 }}
                 >
                   <Link
                     href={l.href}
-                    className={`flex items-center justify-between py-5 border-b border-border font-serif text-3xl ${
+                    className={`flex items-center justify-between py-4 border-b border-border font-serif text-[28px] leading-tight ${
                       pathname === l.href ? "text-blue" : "text-navy"
                     }`}
                   >
@@ -124,8 +150,8 @@ export default function Nav() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.32, duration: 0.35 }}
-                className="mt-8 flex flex-col gap-3"
+                transition={{ delay: 0.28, duration: 0.3 }}
+                className="mt-7 flex flex-col gap-3"
               >
                 <Link
                   href="/request-report"
@@ -145,8 +171,8 @@ export default function Nav() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.42 }}
-                className="mt-10 font-serif italic text-lg text-gray-warm"
+                transition={{ delay: 0.38 }}
+                className="mt-auto pt-10 font-serif italic text-[17px] leading-snug text-gray-warm"
               >
                 &ldquo;We tell you what we think — but we expose the entire model.&rdquo;
               </motion.p>
@@ -154,6 +180,6 @@ export default function Nav() {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

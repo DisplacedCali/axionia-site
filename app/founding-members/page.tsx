@@ -44,7 +44,7 @@ export default function FoundingMembers() {
         <Section className="relative pt-24 pb-16">
           <Reveal>
             <Eyebrow>Founding Member Program</Eyebrow>
-            <h1 className="font-serif font-light text-5xl md:text-7xl leading-[1.08] tracking-tight max-w-3xl">
+            <h1 className="font-serif font-light text-[40px] sm:text-5xl md:text-7xl leading-[1.06] sm:leading-[1.08] tracking-tight max-w-3xl">
               10 seats. <em className="italic">Ten years of influence.</em>
             </h1>
           </Reveal>
@@ -126,7 +126,7 @@ export default function FoundingMembers() {
       </DarkSection>
 
       {/* ─────────────── INCLUSIONS ─────────────── */}
-      <Section className="py-24">
+      <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-2xl mb-14">
             <Eyebrow>What&rsquo;s included</Eyebrow>
@@ -156,7 +156,7 @@ export default function FoundingMembers() {
 
       {/* ─────────────── WHY ONLY 10 ─────────────── */}
       <div className="bg-base-2">
-        <Section className="py-24">
+        <Section className="py-16 sm:py-24">
           <Reveal>
             <div className="max-w-3xl">
               <Eyebrow>Why only 10</Eyebrow>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import MobileNotice from "@/components/MobileNotice";
 
 export const metadata: Metadata = {
   title: "Axionia — Healthcare Decision Intelligence",
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Nav />
         <main className="flex-1">{children}</main>
         <Footer />
+        <MobileNotice />
       </body>
     </html>
   );

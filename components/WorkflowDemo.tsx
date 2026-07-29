@@ -106,18 +106,22 @@ export default function WorkflowDemo() {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-8">
         {steps.map((s, i) => (
           <button
             key={s.num}
             onClick={() => setActive(i)}
-            className={`px-4 py-2 font-mono text-[11px] uppercase tracking-[0.12em] border transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 sm:py-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.12em] border text-left sm:text-center transition-colors ${
               i === active
                 ? "border-navy bg-navy text-base"
                 : "border-border text-gray-warm hover:border-navy"
             }`}
           >
-            {s.num} {s.title}
+            <span className="opacity-60 sm:opacity-100">{s.num}</span>{" "}
+            <span className="hidden sm:inline">{s.title}</span>
+            <span className="sm:hidden block mt-0.5 normal-case tracking-normal text-[11px]">
+              {s.title}
+            </span>
           </button>
         ))}
       </div>

@@ -52,7 +52,7 @@ export default function Pricing() {
         <Section className="relative pt-24 pb-16">
           <Reveal>
             <Eyebrow>Pricing</Eyebrow>
-            <h1 className="font-serif font-light text-5xl md:text-7xl leading-[1.08] tracking-tight max-w-3xl">
+            <h1 className="font-serif font-light text-[40px] sm:text-5xl md:text-7xl leading-[1.06] sm:leading-[1.08] tracking-tight max-w-3xl">
               Start free. <em className="italic">Scale to what you need.</em>
             </h1>
           </Reveal>
@@ -73,7 +73,7 @@ export default function Pricing() {
 
       {/* ─────────────── TIERS ─────────────── */}
       <div className="bg-base-2">
-        <Section className="py-24">
+        <Section className="py-16 sm:py-24">
           <Stagger className="grid md:grid-cols-3 gap-8">
             {tiers.map((t) => (
               <StaggerItem
@@ -160,7 +160,7 @@ export default function Pricing() {
       </DarkSection>
 
       {/* ─────────────── ON-PREM ─────────────── */}
-      <Section className="py-24">
+      <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="grid md:grid-cols-[1fr_1.2fr] gap-12 items-start">
             <div>

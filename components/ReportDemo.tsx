@@ -263,7 +263,7 @@ export default function ReportDemo() {
       </div>
 
       {/* ── configure your own ── */}
-      <div className="px-6 md:px-8 py-6 border-b border-border">
+      <div className="px-4 sm:px-6 md:px-8 py-6 border-b border-border">
         <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-5">
           Set it to your organization
         </div>
@@ -318,13 +318,17 @@ export default function ReportDemo() {
       </div>
 
       {/* ── tabs ── */}
-      <div className="flex overflow-x-auto border-b border-border">
+      {/* 2x2 on phones — a horizontal scroller hides the last two tabs
+          with no affordance that they exist. */}
+      <div className="grid grid-cols-2 sm:flex border-b border-border">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`relative px-5 py-4 font-mono text-[10px] uppercase tracking-[0.12em] whitespace-nowrap transition-colors ${
-              tab === t ? "text-navy" : "text-gray-cool hover:text-gray-warm"
+            className={`relative px-4 sm:px-5 py-3.5 sm:py-4 font-mono text-[10px] uppercase tracking-[0.12em] whitespace-nowrap transition-colors border-b border-r border-border sm:border-0 last:border-r-0 sm:last:border-r-0 [&:nth-child(2)]:border-r-0 sm:[&:nth-child(2)]:border-r-0 [&:nth-child(n+3)]:border-b-0 ${
+              tab === t
+                ? "text-navy bg-base-2 sm:bg-transparent"
+                : "text-gray-cool hover:text-gray-warm"
             }`}
           >
             {t}
@@ -339,7 +343,7 @@ export default function ReportDemo() {
       </div>
 
       {/* ── panels ── */}
-      <div className="px-6 md:px-8 py-8 min-h-[440px]">
+      <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 min-h-[420px]">
         {tab === "Benchmark" && (
           <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
             <RadarChart
@@ -646,7 +650,7 @@ export default function ReportDemo() {
       </div>
 
       {/* ── conversion ── */}
-      <div className="border-t border-border bg-base-2 px-6 md:px-8 py-8">
+      <div className="border-t border-border bg-base-2 px-4 sm:px-6 md:px-8 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h3 className="font-serif text-2xl leading-snug">

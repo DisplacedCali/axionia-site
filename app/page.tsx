@@ -126,7 +126,7 @@ export default function Home() {
 
       {/* ─────────────── LIVE PRODUCT: RADAR ─────────────── */}
       <div className="bg-base-2">
-        <Section className="py-24">
+        <Section className="py-16 sm:py-24">
           <Reveal>
             <div className="max-w-2xl mb-12">
               <Eyebrow>What you actually get</Eyebrow>
@@ -138,7 +138,7 @@ export default function Home() {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div className="bg-base border border-border p-8 md:p-12">
+            <div className="bg-base border border-border p-5 sm:p-8 md:p-12">
               <RadarPreview />
             </div>
           </Reveal>
@@ -156,7 +156,7 @@ export default function Home() {
       </div>
 
       {/* ─────────────── PRINCIPLES ─────────────── */}
-      <Section className="py-24">
+      <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-2xl mb-14">
             <Eyebrow>What we believe</Eyebrow>
@@ -186,7 +186,7 @@ export default function Home() {
       </Section>
 
       {/* ─────────────── TWO-UP: ENTERPRISE / FOUNDING ─────────────── */}
-      <Section className="border-t border-border py-24">
+      <Section className="border-t border-border py-16 sm:py-24">
         <Stagger className="grid md:grid-cols-2 gap-10">
           <StaggerItem className="group border border-border bg-base p-9 transition-colors duration-300 hover:border-navy">
             <Eyebrow>Enterprise &amp; On-Prem</Eyebrow>

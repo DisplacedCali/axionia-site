@@ -31,7 +31,7 @@ export default function About() {
         <Section className="relative pt-24 pb-16">
           <Reveal>
             <Eyebrow>About</Eyebrow>
-            <h1 className="font-serif font-light text-5xl md:text-7xl leading-[1.08] tracking-tight max-w-4xl">
+            <h1 className="font-serif font-light text-[40px] sm:text-5xl md:text-7xl leading-[1.06] sm:leading-[1.08] tracking-tight max-w-4xl">
               Built by someone who watched this problem{" "}
               <em className="italic">from the inside.</em>
             </h1>
@@ -45,7 +45,7 @@ export default function About() {
       </div>
 
       {/* ─────────────── BIO ─────────────── */}
-      <Section className="py-24">
+      <Section className="py-16 sm:py-24">
         <div className="grid md:grid-cols-[1fr_1.5fr] gap-14">
           <Reveal>
             <div className="md:sticky md:top-10">
@@ -158,7 +158,7 @@ export default function About() {
       </DarkSection>
 
       {/* ─────────────── CONVERSION ─────────────── */}
-      <Section className="py-24">
+      <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-3xl">
             <Eyebrow>Start here</Eyebrow>

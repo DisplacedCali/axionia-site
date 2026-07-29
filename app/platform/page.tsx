@@ -83,7 +83,7 @@ export default function Platform() {
         <Section className="relative pt-24 pb-16">
           <Reveal>
             <Eyebrow>The Platform</Eyebrow>
-            <h1 className="font-serif font-light text-5xl md:text-7xl leading-[1.08] tracking-tight max-w-4xl">
+            <h1 className="font-serif font-light text-[40px] sm:text-5xl md:text-7xl leading-[1.06] sm:leading-[1.08] tracking-tight max-w-4xl">
               Decision intelligence,{" "}
               <em className="italic">not another dashboard.</em>
             </h1>
@@ -109,7 +109,7 @@ export default function Platform() {
 
       {/* ─────────────── INTERACTIVE REPORT ─────────────── */}
       <div id="report" className="bg-base-2 scroll-mt-4">
-        <Section className="py-24">
+        <Section className="py-16 sm:py-24">
           <Reveal>
             <div className="max-w-2xl mb-10">
               <Eyebrow>The deliverable</Eyebrow>
@@ -161,7 +161,7 @@ export default function Platform() {
       </DarkSection>
 
       {/* ─────────────── MODULES ─────────────── */}
-      <Section className="py-24">
+      <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-2xl mb-14">
             <Eyebrow>What&rsquo;s included</Eyebrow>
@@ -198,7 +198,7 @@ export default function Platform() {
 
       {/* ─────────────── WORKFLOW WALKTHROUGH ─────────────── */}
       <div className="bg-base-2">
-        <Section className="py-24">
+        <Section className="py-16 sm:py-24">
           <Reveal>
             <div className="max-w-2xl mb-10">
               <Eyebrow>Live example</Eyebrow>

@@ -12,7 +12,11 @@ export function Section({
   children: ReactNode;
   className?: string;
 }) {
-  return <section className={`max-w-6xl mx-auto px-6 py-20 ${className}`}>{children}</section>;
+  return (
+    <section className={`max-w-6xl mx-auto px-5 sm:px-6 py-14 sm:py-20 ${className}`}>
+      {children}
+    </section>
+  );
 }
 
 /**
@@ -31,7 +35,9 @@ export function DarkSection({
     <section className={`relative bg-navy text-base overflow-hidden ${className}`}>
       {/* signature gradient hairline along the top edge */}
       <div className="absolute top-0 inset-x-0 h-px bg-axionia-gradient opacity-70" />
-      <div className="relative max-w-6xl mx-auto px-6 py-24 md:py-28">{children}</div>
+      <div className="relative max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-24 md:py-28">
+        {children}
+      </div>
     </section>
   );
 }
