@@ -12,6 +12,7 @@ import HeroIntro from "@/components/HeroIntro";
 import HeroViz from "@/components/HeroViz";
 import RadarPreview from "@/components/RadarPreview";
 import CountUp from "@/components/CountUp";
+import WhoItsFor from "@/components/WhoItsFor";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -101,6 +102,13 @@ export default function Home() {
               </div>
             </div>
           </Reveal>
+        </Section>
+      </div>
+
+      {/* ─────────────── WHO IT'S FOR ─────────────── */}
+      <div className="bg-base-2">
+        <Section className="py-16 sm:py-24">
+          <WhoItsFor />
         </Section>
       </div>
 

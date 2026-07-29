@@ -11,7 +11,7 @@ import {
 import WorkflowDemo from "@/components/WorkflowDemo";
 import ReportDemo from "@/components/ReportDemo";
 import ResearchPipeline from "@/components/ResearchPipeline";
-import CategoryMatrix from "@/components/CategoryMatrix";
+import IncentiveMap from "@/components/IncentiveMap";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -140,36 +140,29 @@ export default function Platform() {
         </Section>
       </div>
 
-      {/* ─────────────── CATEGORY ─────────────── */}
+      {/* ─────────────── INCENTIVES ─────────────── */}
       <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-2xl mb-10">
-            <Eyebrow>Why this doesn&rsquo;t exist already</Eyebrow>
+            <Eyebrow>Follow the money</Eyebrow>
             <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-              Four things you need.{" "}
-              <em className="italic">Nobody does all four.</em>
+              Everyone advising you gets paid.{" "}
+              <em className="italic">Almost none of them get paid less if you overspend.</em>
             </h2>
             <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
-              Analytics platforms consolidate your data and hand you a dashboard —
-              then leave the decision to you. Brokers and consultants will tell you
-              what to do, but their compensation rises as your spend does. And the
-              vendor&rsquo;s study was written by the vendor. Each piece exists. The
-              combination doesn&rsquo;t.
+              You have no shortage of people telling you things about your benefit
+              programs. It&rsquo;s worth knowing what happens to each of their revenue
+              when your spend goes up.
             </p>
           </div>
         </Reveal>
 
         <Reveal delay={0.1}>
-          <CategoryMatrix />
+          <IncentiveMap />
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="mt-6 text-[13px] leading-[1.65] text-gray-cool max-w-measure">
-            Assessed as fairly as we can make it — analytics platforms genuinely are
-            independent and genuinely do consolidate well. Their gap is that
-            interpreting the dashboard is still your job.
-          </p>
-          <div className="mt-8">
+          <div className="mt-10">
             <GhostButton href="/methodology">Read the methodology</GhostButton>
           </div>
         </Reveal>
