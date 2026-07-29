@@ -11,7 +11,7 @@ import {
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
-  title: "Research Engagements — Axionia",
+  title: "Research Engagements",
   description:
     "Independent analysis of employer benefit programs and of the vendors selling them. For private equity, investors, consultants and competitive research.",
 };

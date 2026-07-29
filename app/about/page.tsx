@@ -10,6 +10,13 @@ import {
 import CountUp from "@/components/CountUp";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
+export const metadata = {
+  title: "About",
+  description:
+    "Built by a healthcare analytics executive with twenty years across payer, provider, pharma and consulting.",
+};
+
+
 const credentials = [
   { k: "Yale", v: "Executive MBA, healthcare focus" },
   { k: "UCLA", v: "M.S. Biostatistics" },

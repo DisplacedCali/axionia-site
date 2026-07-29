@@ -14,6 +14,13 @@ import RadarPreview from "@/components/RadarPreview";
 import CountUp from "@/components/CountUp";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
+export const metadata = {
+  title: { absolute: "Axionia — Independent analysis of employee benefit programs" },
+  description:
+    "A vendor says their program saves you money. Axionia checks whether that's true — independently, with every assumption on the table.",
+};
+
+
 const principles = [
   {
     title: "Independent Value Assessment",

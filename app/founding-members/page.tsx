@@ -11,6 +11,13 @@ import {
 import CountUp from "@/components/CountUp";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
+export const metadata = {
+  title: "Founding Members",
+  description:
+    "Ten employers, five years, a seat on the council shaping what gets built. Maximum two per industry.",
+};
+
+
 /**
  * Cohort state — edit these as seats fill.
  *

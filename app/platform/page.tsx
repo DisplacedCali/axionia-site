@@ -14,6 +14,13 @@ import ResearchPipeline from "@/components/ResearchPipeline";
 import CategoryMatrix from "@/components/CategoryMatrix";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
+export const metadata = {
+  title: "The Platform",
+  description:
+    "Independent benchmarking, transparent scenario modeling and AI-native research in one methodology. Turn the dials on a live report before you talk to anyone.",
+};
+
+
 const modules = [
   {
     name: "Portfolio Scorer",
@@ -162,6 +169,9 @@ export default function Platform() {
             independent and genuinely do consolidate well. Their gap is that
             interpreting the dashboard is still your job.
           </p>
+          <div className="mt-8">
+            <GhostButton href="/methodology">Read the methodology</GhostButton>
+          </div>
         </Reveal>
       </Section>
 

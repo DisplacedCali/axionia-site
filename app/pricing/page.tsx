@@ -10,6 +10,13 @@ import {
 } from "@/components/ui";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
+export const metadata = {
+  title: "Pricing",
+  description:
+    "Priced against value protected, not spend generated. No per-report fees, no vendor commissions, and fees at risk only against savings you can verify on an invoice.",
+};
+
+
 const tiers = [
   {
     label: "Portfolio Scorer",
