@@ -41,6 +41,34 @@ Login and signup both use this same code flow (`supabase.auth.signInWithOtp` +
 `verifyOtp`) — signup additionally passes `full_name` and `company_name` as user
 metadata, which a database trigger copies into `profiles` automatically.
 
+## 2b. Configure custom SMTP — required, not optional
+
+Supabase's built-in mailer **does not work** on this project. It returns a
+generic `unexpected_failure` / "Error sending magic link email", which the
+browser surfaces as an empty `{}` — so a broken mail path looks like a broken
+app. Confirmed not to be a template or config problem.
+
+Auth email currently runs through **Google Workspace SMTP**. Full config,
+the planned Resend migration, and the Cloudflare SPF/proxy traps are in
+[`docs/EMAIL-SETUP.md`](docs/EMAIL-SETUP.md).
+
+**Templates:** both **Confirm signup** (new users) and **Magic Link** (returning
+users) must emit `{{ .Token }}`. Editing only Magic Link is a common mistake —
+new signups use Confirm signup. This app uses typed codes and has no
+`/auth/callback` handler, so link-based templates cannot work.
+
+## Diagnosing auth problems
+
+```
+node scripts/check-supabase.mjs                              # read-only checks
+node scripts/check-supabase.mjs --send-test you@company.com  # real send, full error
+```
+
+Verifies env vars, reads the project's live auth configuration, confirms the
+migration ran, checks the storage bucket, and reports whether an admin exists.
+The `--send-test` flag prints Supabase's full response body — the error the
+browser hides.
+
 ## 3. Set environment variables
 
 Copy `.env.local.example` to `.env.local` and fill in the two values from step 1:
