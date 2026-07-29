@@ -8,6 +8,7 @@ import Logo from "./Logo";
 
 const links = [
   { href: "/platform", label: "Platform" },
+  { href: "/research", label: "Research" },
   { href: "/founding-members", label: "Founding Members" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
@@ -57,7 +58,7 @@ export default function Nav() {
             <Logo size={28} withWordmark />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 font-mono text-[11px] uppercase tracking-[0.14em] text-gray-warm">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-7 font-mono text-[11px] uppercase tracking-[0.12em] text-gray-warm">
             {links.map((l) => (
               <Link
                 key={l.href}

@@ -201,10 +201,16 @@ export default function RequestReportPage() {
                 organisation — a holding company, a recent rebrand, a shared services
                 address — just say so and we&rsquo;ll run it as normal.
               </p>
-              <div className="mt-6">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <GhostButton href="/contact?interest=third-party-research">
                   Tell us what you&rsquo;re trying to learn
                 </GhostButton>
+                <a
+                  href="/research"
+                  className="inline-flex items-center px-6 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-blue hover:underline"
+                >
+                  How research engagements work →
+                </a>
               </div>
             </div>
           )}
