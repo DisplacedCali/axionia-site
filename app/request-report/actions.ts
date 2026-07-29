@@ -7,6 +7,7 @@ import {
   isCorporateDomain,
   companyNameFromDomain,
 } from "@/lib/company";
+import { checkAlignment } from "@/lib/alignment";
 import {
   sendEmail,
   requestReceivedNew,
@@ -20,6 +21,7 @@ export type SubmitResult =
       kind: "new" | "refresh";
       companyName: string | null;
       requestId: string;
+      needsValidation: boolean;
     }
   | { ok: false; error: string };
 
@@ -102,6 +104,11 @@ export async function submitReportRequest(formData: {
     if ((count ?? 0) > 0) kind = "refresh";
   }
 
+  // ── does the subject company match the requester's domain? ──
+  // A mismatch is the shape of a broker researching a prospect or someone
+  // pulling intelligence on a competitor. Flag for review; never auto-block.
+  const alignment = checkAlignment(companyName, domain);
+
   // ── record the request ──
   const { data: request, error: reqErr } = await admin
     .from("report_requests")
@@ -113,6 +120,8 @@ export async function submitReportRequest(formData: {
       company_name: companyName,
       kind,
       status: "new",
+      alignment: alignment.status,
+      alignment_reason: alignment.reason,
       payload: {
         employees: formData.employees ?? null,
         industry: formData.industry ?? null,
@@ -159,5 +168,11 @@ export async function submitReportRequest(formData: {
     });
   }
 
-  return { ok: true, kind, companyName, requestId: request.id };
+  return {
+    ok: true,
+    kind,
+    companyName,
+    requestId: request.id,
+    needsValidation: alignment.status === "review",
+  };
 }

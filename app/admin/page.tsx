@@ -41,7 +41,9 @@ export default async function AdminQueue({
 
   let query = admin
     .from("report_requests")
-    .select("id, contact_name, contact_email, company_name, kind, status, created_at, company_id")
+    .select(
+      "id, contact_name, contact_email, company_name, kind, status, created_at, company_id, alignment"
+    )
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -140,6 +142,16 @@ export default async function AdminQueue({
                 </span>
                 <span className="text-[14px] text-gray-warm self-center">
                   {r.company_name || "—"}
+                  {r.alignment === "review" && (
+                    <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-caution">
+                      ⚑ Verify affiliation
+                    </span>
+                  )}
+                  {r.alignment === "restricted" && (
+                    <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-risk">
+                      Restricted
+                    </span>
+                  )}
                 </span>
                 <span className="self-center">
                   <span

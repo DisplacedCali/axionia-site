@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 import { Section } from "@/components/ui";
 import ReviewPanel from "@/components/admin/ReviewPanel";
+import AlignmentPanel from "@/components/admin/AlignmentPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,20 @@ export default async function RequestDetail({
           </span>
         )}
       </div>
+
+      {/* alignment sits above everything — it gates whether work should start */}
+      {request.alignment !== "matched" && (
+        <div className="mt-8">
+          <AlignmentPanel
+            requestId={request.id}
+            alignment={request.alignment}
+            reason={request.alignment_reason}
+            note={request.alignment_note}
+            companyName={request.company_name}
+            contactEmail={request.contact_email}
+          />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-10 mt-10">
         {/* ── review + release ── */}

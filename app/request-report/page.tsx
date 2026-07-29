@@ -40,6 +40,7 @@ export default function RequestReportPage() {
     kind: "new" | "refresh";
     companyName: string | null;
     requestId: string;
+    needsValidation: boolean;
   } | null>(null);
 
   const [uploaded, setUploaded] = useState<string[]>([]);
@@ -114,6 +115,7 @@ export default function RequestReportPage() {
       kind: res.kind,
       companyName: res.companyName,
       requestId: res.requestId,
+      needsValidation: res.needsValidation,
     });
     setStage("done");
   }
@@ -168,6 +170,27 @@ export default function RequestReportPage() {
               <strong className="text-navy">{email}</strong>.
             </p>
           </div>
+
+          {result.needsValidation && (
+            <div className="mt-8 bg-amber-light border-l-2 border-caution p-5 sm:p-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-caution mb-2">
+                One verification step
+              </p>
+              <p className="text-[15px] leading-[1.7] text-navy">
+                The company you asked us to look at doesn&rsquo;t appear to match your
+                email domain. That&rsquo;s often perfectly legitimate — a holding
+                company, a recent rebrand, a shared services address — so we simply
+                confirm the relationship before starting work.
+              </p>
+              <p className="mt-3 text-[14px] leading-[1.7] text-gray-warm">
+                We&rsquo;ll reply to <strong className="text-navy">{email}</strong> to
+                confirm your affiliation. Axionia reserves the right to restrict
+                research where a requester&rsquo;s alignment with the subject
+                organization can&rsquo;t be established — we don&rsquo;t run
+                competitive intelligence on employers for third parties.
+              </p>
+            </div>
+          )}
 
           {/* ── document intake ── */}
           <div className="mt-10 border border-navy p-6 sm:p-7 relative overflow-hidden">
@@ -367,6 +390,12 @@ export default function RequestReportPage() {
 
             <p className="text-[12px] leading-[1.6] text-gray-cool max-w-measure">
               We never collect member-level health information. Intake is aggregate only.
+            </p>
+            <p className="text-[12px] leading-[1.6] text-gray-cool max-w-measure">
+              We analyse benefit programs for the employers who run them. Where a
+              requester&rsquo;s alignment with the company named above can&rsquo;t be
+              established, we&rsquo;ll confirm the relationship first — and Axionia
+              reserves the right to restrict research on that basis.
             </p>
           </form>
         </>

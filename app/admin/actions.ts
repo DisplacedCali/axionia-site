@@ -40,6 +40,37 @@ export async function saveAdminNotes(
   return { ok: true };
 }
 
+/* ─────────────── alignment validation ─────────────── */
+
+/**
+ * Resolve a flagged request. 'cleared' means the affiliation was confirmed;
+ * 'restricted' means we declined it on alignment grounds. The note is
+ * internal — it's the audit trail for why a request was or wasn't run.
+ */
+export async function setAlignment(
+  requestId: string,
+  alignment: "cleared" | "restricted" | "review",
+  note?: string
+): Promise<Result> {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const patch: Record<string, unknown> = { alignment };
+  if (note !== undefined) patch.alignment_note = note;
+  // Restricting a request also closes it out of the working queue.
+  if (alignment === "restricted") patch.status = "archived";
+
+  const { error } = await admin
+    .from("report_requests")
+    .update(patch)
+    .eq("id", requestId);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin");
+  revalidatePath(`/admin/requests/${requestId}`);
+  return { ok: true };
+}
+
 /* ─────────────── draft report ─────────────── */
 
 /**
