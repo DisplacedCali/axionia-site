@@ -51,3 +51,44 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.2em;
 }
+
+/* ── Research pipeline ──────────────────────────────────────
+   Deliberately pure CSS. The radar chart broke on Safari because
+   Framer Motion's pathLength depends on getTotalLength(), which
+   Safari only implements on <path>. Dash-offset animation has no
+   such dependency and degrades to a static diagram if animation
+   is unavailable. */
+
+@keyframes ax-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes ax-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    r: 10;
+  }
+  50% {
+    opacity: 0.75;
+    r: 13;
+  }
+}
+
+.ax-edge {
+  stroke-dasharray: 3 9;
+  animation: ax-flow 1.4s linear infinite;
+}
+
+.ax-node-halo {
+  animation: ax-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-edge,
+  .ax-node-halo {
+    animation: none;
+  }
+}

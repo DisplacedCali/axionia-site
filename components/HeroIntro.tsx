@@ -37,9 +37,10 @@ export default function HeroIntro() {
         variants={item}
         className="mt-8 max-w-measure text-[17px] leading-[1.7] text-gray-warm"
       >
-        Axionia is an independent decision-intelligence platform for employer benefit
-        strategy — built for the HR leaders and CFOs who want defensible numbers, not
-        another vendor pitch deck.
+        When a benefits vendor tells you their program will save you money, Axionia
+        checks whether that&rsquo;s true — independently, with every assumption on the
+        table. Built for the HR leaders and CFOs who want defensible numbers, not
+        another pitch deck.
       </motion.p>
 
       <motion.div variants={item} className="mt-10 flex flex-wrap gap-4">

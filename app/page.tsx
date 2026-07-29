@@ -64,6 +64,39 @@ export default function Home() {
         </Section>
       </div>
 
+      {/* ─────────────── IN PLAIN TERMS ───────────────
+          Deliberately jargon-free and placed second. Real feedback: a smart
+          non-specialist read the whole site and couldn't tell what it was.
+          Nothing above this point names a concrete thing that happens. */}
+      <div className="border-t border-border">
+        <Section className="py-16 sm:py-20">
+          <Reveal>
+            <div className="grid md:grid-cols-[auto_1fr] gap-6 md:gap-14 items-start">
+              <Eyebrow>In plain terms</Eyebrow>
+              <div className="max-w-2xl">
+                <p className="font-serif font-light text-2xl md:text-[34px] leading-[1.35] text-navy">
+                  Companies buy health programs for their employees — diabetes
+                  management, mental health support, physical therapy. The company
+                  selling the program also supplies the study proving it works.
+                  Almost nobody checks that study.
+                </p>
+                <p className="mt-6 text-[16px] leading-[1.75] text-gray-warm max-w-measure">
+                  We check it. We take the vendor&rsquo;s claim apart, adjust it for
+                  your actual workforce, and tell you what the program is realistically
+                  worth — showing every assumption we used, so you can argue with any
+                  of them.
+                </p>
+                <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
+                  That&rsquo;s it. No software to roll out, no data feed to build. You
+                  tell us what you&rsquo;re being sold; we tell you what it&rsquo;s
+                  actually worth.
+                </p>
+              </div>
+            </div>
+          </Reveal>
+        </Section>
+      </div>
+
       {/* ─────────────── THE PROBLEM (dark) ─────────────── */}
       <DarkSection>
         <div className="grid lg:grid-cols-[1fr_1fr] gap-14 items-start">

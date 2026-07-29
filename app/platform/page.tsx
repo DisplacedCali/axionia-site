@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import WorkflowDemo from "@/components/WorkflowDemo";
 import ReportDemo from "@/components/ReportDemo";
+import ResearchPipeline from "@/components/ResearchPipeline";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 const modules = [
@@ -151,6 +152,21 @@ export default function Platform() {
             </StaggerItem>
           ))}
         </Stagger>
+
+        <Reveal delay={0.15}>
+          <div className="mt-20 pt-12 border-t border-white/15">
+            <EyebrowLight>Inside the analysis</EyebrowLight>
+            <h3 className="font-serif font-light text-2xl md:text-3xl max-w-xl leading-snug mb-3">
+              What actually runs when we look at a vendor&rsquo;s claim.
+            </h3>
+            <p className="text-[15px] leading-[1.7] text-gray-cool max-w-measure mb-10">
+              Six research passes run against your intake — four at once, then two
+              more — before anything reaches the attribution model. Nothing is
+              published automatically.
+            </p>
+            <ResearchPipeline />
+          </div>
+        </Reveal>
 
         <Reveal delay={0.15}>
           <div className="mt-14 flex flex-wrap gap-4">
