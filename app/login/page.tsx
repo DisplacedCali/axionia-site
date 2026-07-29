@@ -3,6 +3,7 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { readableAuthError } from "@/lib/authError";
 import { Eyebrow, Section } from "@/components/ui";
 
 function LoginForm() {
@@ -14,6 +15,7 @@ function LoginForm() {
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
   const [error, setError] = useState<string | null>(null);
+  const [needsSignup, setNeedsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function requestCode(e: FormEvent) {
@@ -28,7 +30,11 @@ function LoginForm() {
     });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      const { message, noAccount } = readableAuthError(error);
+      // Full object to the console — the UI copy stays human.
+      console.error("[auth] signInWithOtp failed:", error);
+      setError(message);
+      setNeedsSignup(noAccount);
       return;
     }
     setStage("code");
@@ -46,7 +52,8 @@ function LoginForm() {
     });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      console.error("[auth] verifyOtp failed:", error);
+      setError(readableAuthError(error).message);
       return;
     }
     router.push(redirectTo);
@@ -71,7 +78,19 @@ function LoginForm() {
             className="border border-border bg-white/40 px-4 py-3 font-sans"
             placeholder="you@company.com"
           />
-          {error && <p className="text-risk text-sm">{error}</p>}
+          {error && (
+            <div className="text-sm">
+              <p className="text-risk">{error}</p>
+              {needsSignup && (
+                <a
+                  href="/request-report"
+                  className="inline-block mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-blue underline"
+                >
+                  Create an account →
+                </a>
+              )}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}

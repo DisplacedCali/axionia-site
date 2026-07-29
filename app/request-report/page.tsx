@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { readableAuthError } from "@/lib/authError";
 import { Eyebrow, Section, GradientRule } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
 import { submitReportRequest } from "./actions";
@@ -53,7 +54,10 @@ export default function RequestReportPage() {
       },
     });
     setLoading(false);
-    if (error) return setError(error.message);
+    if (error) {
+      console.error("[auth] signInWithOtp failed:", error);
+      return setError(readableAuthError(error).message);
+    }
     setStage("code");
   }
 
@@ -71,7 +75,8 @@ export default function RequestReportPage() {
 
     if (otpErr) {
       setLoading(false);
-      return setError(otpErr.message);
+      console.error("[auth] verifyOtp failed:", otpErr);
+      return setError(readableAuthError(otpErr).message);
     }
 
     const res = await submitReportRequest({ employees, industry, programs, context });

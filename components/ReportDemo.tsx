@@ -479,7 +479,9 @@ export default function ReportDemo() {
                   />
                 </div>
 
-                <div className="relative h-12 mt-3">
+                {/* Positioned labels only where there's room — below sm they
+                    collide, so fall back to a plain four-up row. */}
+                <div className="hidden sm:block relative h-12 mt-3">
                   <motion.div
                     className="absolute font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool"
                     animate={{ left: pos(model.low) }}
@@ -514,6 +516,24 @@ export default function ReportDemo() {
                     ${VENDOR_CLAIM}
                     <div>claim</div>
                   </div>
+                </div>
+
+                <div className="sm:hidden grid grid-cols-4 gap-2 mt-5">
+                  {[
+                    { v: `$${model.low.toFixed(0)}`, l: "low", c: "text-gray-warm" },
+                    { v: `$${model.expected.toFixed(0)}`, l: "expected", c: "text-blue" },
+                    { v: `$${model.high.toFixed(0)}`, l: "high", c: "text-gray-warm" },
+                    { v: `$${VENDOR_CLAIM}`, l: "claim", c: "text-caution" },
+                  ].map((m) => (
+                    <div key={m.l} className="border-t border-border pt-2">
+                      <div className={`font-mono text-[14px] tabular-nums ${m.c}`}>
+                        {m.v}
+                      </div>
+                      <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-gray-cool">
+                        {m.l}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mt-6 p-5 bg-amber-light border-l-2 border-caution">
@@ -569,6 +589,9 @@ export default function ReportDemo() {
                     {a.note}
                   </span>
                   <span className="font-mono text-[12px] text-navy md:text-right tabular-nums">
+                    <span className="md:hidden text-gray-cool text-[9px] uppercase tracking-[0.1em] mr-2">
+                      Annual
+                    </span>
                     {a.hi > 0 ? `${money(a.lo)} – ${money(a.hi)}` : "—"}
                   </span>
                 </div>

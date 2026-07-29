@@ -11,14 +11,22 @@ export type RadarAxis = {
 
 const RINGS = [0.25, 0.5, 0.75, 1];
 
+// The viewBox is deliberately wider than the plot area: axis labels are
+// anchored outward from the outer ring, and a tight box clips them.
+const VB_W = 400;
+const VB_H = 320;
+const CX = 200;
+const CY = 150;
+
 /**
  * Signature 8-axis radar, built to the brand dataviz spec:
  * hairline stone rings, blue/teal gradient fill at low opacity, 2px blue
  * stroke with vertex dots, DM Mono axis labels, dashed slate peer overlay
  * sitting behind the company shape.
  *
- * Presentational only — pass `axes`. Change the React `key` to replay the
- * entrance animation (used when the report config changes).
+ * On phones the in-chart labels are suppressed — at that scale they render
+ * around 6px and are unreadable — and replaced by a legend carrying the
+ * actual values, which is more useful than the labels were.
  */
 export default function RadarChart({
   axes,
@@ -31,10 +39,8 @@ export default function RadarChart({
   showPeer?: boolean;
   compact?: boolean;
 }) {
-  const CX = 170;
-  const CY = 140;
-  const MAX_R = compact ? 84 : 92;
-  const LABEL_R = compact ? 102 : 110;
+  const MAX_R = compact ? 88 : 96;
+  const LABEL_R = compact ? 104 : 112;
 
   const pointAt = (index: number, value: number) => {
     const angle = (-90 + index * (360 / axes.length)) * (Math.PI / 180);
@@ -51,150 +57,177 @@ export default function RadarChart({
       .join(" ");
 
   return (
-    <svg viewBox="0 0 340 300" className="w-full h-auto">
-      <defs>
-        <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#4AC9DC" stopOpacity="0.30" />
-          <stop offset="100%" stopColor="#2463EB" stopOpacity="0.12" />
-        </radialGradient>
-      </defs>
+    <div>
+      <svg
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        className="w-full h-auto overflow-visible"
+        role="img"
+        aria-label="Portfolio score across eight dimensions, plotted against the peer median"
+      >
+        <defs>
+          <radialGradient id={gradientId} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#4AC9DC" stopOpacity="0.30" />
+            <stop offset="100%" stopColor="#2463EB" stopOpacity="0.12" />
+          </radialGradient>
+        </defs>
 
-      {/* concentric hairline rings */}
-      {RINGS.map((ring, i) => (
-        <motion.polygon
-          key={`ring-${ring}`}
-          points={axes
-            .map((_, idx) => {
-              const p = pointAt(idx, ring * 100);
-              return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-            })
-            .join(" ")}
-          fill="none"
-          stroke="#DDD9D0"
-          strokeWidth="1"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5, delay: 0.05 * i }}
-        />
-      ))}
-
-      {/* spokes */}
-      {axes.map((a, i) => {
-        const p = pointAt(i, 100);
-        return (
-          <motion.line
-            key={`spoke-${a.label}`}
-            x1={CX}
-            y1={CY}
-            x2={p.x}
-            y2={p.y}
+        {/* concentric hairline rings */}
+        {RINGS.map((ring, i) => (
+          <motion.polygon
+            key={`ring-${ring}`}
+            points={axes
+              .map((_, idx) => {
+                const p = pointAt(idx, ring * 100);
+                return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+              })
+              .join(" ")}
+            fill="none"
             stroke="#DDD9D0"
             strokeWidth="1"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.4, delay: 0.2 + i * 0.03 }}
+            transition={{ duration: 0.5, delay: 0.05 * i }}
           />
-        );
-      })}
+        ))}
 
-      {/* peer benchmark overlay — dashed, behind company shape */}
-      {showPeer && (
+        {/* spokes */}
+        {axes.map((a, i) => {
+          const p = pointAt(i, 100);
+          return (
+            <motion.line
+              key={`spoke-${a.label}`}
+              x1={CX}
+              y1={CY}
+              x2={p.x}
+              y2={p.y}
+              stroke="#DDD9D0"
+              strokeWidth="1"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.4, delay: 0.2 + i * 0.03 }}
+            />
+          );
+        })}
+
+        {/* peer benchmark overlay — dashed, behind company shape */}
+        {showPeer && (
+          <motion.polygon
+            points={polygonFor("peer")}
+            fill="none"
+            stroke="#5B7095"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 0.75 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          />
+        )}
+
+        {/* company shape — fill */}
         <motion.polygon
-          points={polygonFor("peer")}
-          fill="none"
-          stroke="#5B7095"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
+          points={polygonFor("value")}
+          fill={`url(#${gradientId})`}
           initial={{ opacity: 0 }}
-          whileInView={{ opacity: 0.75 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.7, delay: 0.5 }}
+          transition={{ duration: 0.9, delay: 0.85 }}
         />
-      )}
 
-      {/* company shape — fill */}
-      <motion.polygon
-        points={polygonFor("value")}
-        fill={`url(#${gradientId})`}
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.9, delay: 0.85 }}
-      />
+        {/* company shape — stroke draws in */}
+        <motion.polygon
+          points={polygonFor("value")}
+          fill="none"
+          stroke="#2463EB"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          whileInView={{ pathLength: 1, opacity: 1 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{
+            pathLength: { duration: 1.3, ease: [0.22, 1, 0.36, 1], delay: 0.55 },
+            opacity: { duration: 0.2, delay: 0.55 },
+          }}
+        />
 
-      {/* company shape — stroke draws in */}
-      <motion.polygon
-        points={polygonFor("value")}
-        fill="none"
-        stroke="#2463EB"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        whileInView={{ pathLength: 1, opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{
-          pathLength: { duration: 1.3, ease: [0.22, 1, 0.36, 1], delay: 0.55 },
-          opacity: { duration: 0.2, delay: 0.55 },
-        }}
-      />
+        {/* vertex dots */}
+        {axes.map((a, i) => {
+          const p = pointAt(i, a.value);
+          return (
+            <motion.circle
+              key={`dot-${a.label}`}
+              cx={p.x}
+              cy={p.y}
+              r="3.5"
+              fill="#2463EB"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.3, delay: 1.0 + i * 0.05 }}
+            />
+          );
+        })}
 
-      {/* vertex dots */}
-      {axes.map((a, i) => {
-        const p = pointAt(i, a.value);
-        return (
-          <motion.circle
-            key={`dot-${a.label}`}
-            cx={p.x}
-            cy={p.y}
-            r="3"
-            fill="#2463EB"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.3, delay: 1.0 + i * 0.05 }}
-          />
-        );
-      })}
+        <circle cx={CX} cy={CY} r="2" fill="#1C2431" />
 
-      <circle cx={CX} cy={CY} r="2" fill="#1C2431" />
+        {/* axis labels — suppressed on phones, where they'd render ~6px */}
+        <g className="hidden sm:block">
+          {axes.map((a, i) => {
+            const angle = (-90 + i * (360 / axes.length)) * (Math.PI / 180);
+            const x = CX + LABEL_R * Math.cos(angle);
+            const y = CY + LABEL_R * Math.sin(angle);
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            const anchor = cos > 0.2 ? "start" : cos < -0.2 ? "end" : "middle";
+            const dy = sin > 0.3 ? 11 : sin < -0.3 ? -5 : 3;
+            const dotX = anchor === "start" ? x - 7 : anchor === "end" ? x + 7 : x;
+            const dotY = y + dy - 3;
 
-      {/* axis labels with categorical hue dot */}
-      {axes.map((a, i) => {
-        const angle = (-90 + i * (360 / axes.length)) * (Math.PI / 180);
-        const x = CX + LABEL_R * Math.cos(angle);
-        const y = CY + LABEL_R * Math.sin(angle);
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const anchor = cos > 0.2 ? "start" : cos < -0.2 ? "end" : "middle";
-        const dy = sin > 0.3 ? 10 : sin < -0.3 ? -4 : 3;
-        const dotX = anchor === "start" ? x - 7 : anchor === "end" ? x + 7 : x;
-        const dotY = y + dy - 3;
+            return (
+              <motion.g
+                key={`label-${a.label}`}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.5, delay: 1.1 + i * 0.05 }}
+              >
+                <circle cx={dotX} cy={dotY} r="2" fill={a.hue} />
+                <text
+                  x={x}
+                  y={y + dy}
+                  textAnchor={anchor}
+                  fontFamily="'DM Mono', ui-monospace, monospace"
+                  fontSize="9"
+                  letterSpacing="0.06em"
+                  fill="#706C63"
+                >
+                  {a.label}
+                </text>
+              </motion.g>
+            );
+          })}
+        </g>
+      </svg>
 
-        return (
-          <motion.g
-            key={`label-${a.label}`}
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: 1.1 + i * 0.05 }}
-          >
-            <circle cx={dotX} cy={dotY} r="2" fill={a.hue} />
-            <text
-              x={x}
-              y={y + dy}
-              textAnchor={anchor}
-              fontFamily="'DM Mono', ui-monospace, monospace"
-              fontSize="8"
-              letterSpacing="0.08em"
-              fill="#706C63"
-            >
+      {/* mobile legend — carries the numbers the labels never could */}
+      <div className="sm:hidden mt-5 grid grid-cols-2 gap-x-4 gap-y-2.5">
+        {axes.map((a) => (
+          <div key={`legend-${a.label}`} className="flex items-baseline gap-2">
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px]"
+              style={{ backgroundColor: a.hue }}
+            />
+            <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-gray-warm leading-tight flex-1 min-w-0">
               {a.label}
-            </text>
-          </motion.g>
-        );
-      })}
-    </svg>
+            </span>
+            <span className="font-mono text-[11px] text-navy tabular-nums shrink-0">
+              {a.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
