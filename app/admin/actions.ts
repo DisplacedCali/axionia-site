@@ -267,7 +267,7 @@ export async function releaseReport(args: {
 
   if (request?.contact_email) {
     const site = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
-    const mail = reportReleased(request.contact_name, `${site}/dashboard`);
+    const mail = reportReleased(request.contact_name, `${site}/dashboard`, site);
     await sendEmail({
       to: request.contact_email,
       subject: mail.subject,

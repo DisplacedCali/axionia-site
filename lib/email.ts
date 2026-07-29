@@ -140,7 +140,11 @@ export function requestReceivedRefresh(companyName?: string | null) {
 }
 
 /** Sent to the client when the admin releases the report. */
-export function reportReleased(name: string | null | undefined, url: string) {
+export function reportReleased(
+  name: string | null | undefined,
+  url: string,
+  siteUrl = "https://axionia.com"
+) {
   return {
     subject: "Your Axionia report is ready",
     html: shell(
@@ -149,7 +153,18 @@ export function reportReleased(name: string | null | undefined, url: string) {
         `<a href="${url}" style="display:inline-block;padding:14px 26px;background:#1C2431;color:#F8F6F1;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;margin:8px 0 20px;">View your report</a>` +
         p(
           "Every figure in it traces back to an assumption you can see and question. If anything looks wrong, reply to this email — that feedback makes the next version better."
-        )
+        ) +
+        // The bridge: this reader has just seen the work. It's the single best
+        // moment to raise the founding cohort, and it costs one short paragraph.
+        `<div style="margin-top:28px;padding-top:20px;border-top:1px solid #E6E2D9;">
+           <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#706C63;margin-bottom:8px;">If this was useful</div>
+           <p style="font-size:14px;line-height:1.7;color:#706C63;margin:0 0 10px;">
+             Ten employers are shaping what we build next. Founding members get this
+             analysis on every renewal and every vendor pitch for five years, at a rate
+             locked at enrollment.
+           </p>
+           <a href="${siteUrl}/founding-members" style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#2463EB;">See founding membership →</a>
+         </div>`
     ),
   };
 }

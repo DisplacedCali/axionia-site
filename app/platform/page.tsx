@@ -19,8 +19,8 @@ const modules = [
     name: "Portfolio Scorer",
     tag: "Free",
     body: "A benchmark of your current benefit portfolio against comparable employers — score bands from Foundation to Strong, framed as opportunity, never failure. The front door to everything else.",
-    ctaLabel: "Create a free account",
-    ctaHref: "/signup",
+    ctaLabel: "Get your free report",
+    ctaHref: "/request-report",
   },
   {
     name: "Research Agent",
@@ -99,7 +99,7 @@ export default function Platform() {
           </Reveal>
           <Reveal delay={0.2}>
             <div className="mt-10 flex flex-wrap gap-4">
-              <GradientButton href="/request-report">Score your portfolio free</GradientButton>
+              <GradientButton href="/request-report">Get your free report</GradientButton>
               <GhostButton href="#report">See a live report</GhostButton>
             </div>
             <div className="mt-14">
@@ -203,7 +203,7 @@ export default function Platform() {
 
         <Reveal delay={0.15}>
           <div className="mt-14 flex flex-wrap gap-4">
-            <GradientButton href="/signup">Create an account</GradientButton>
+            <GradientButton href="/request-report">Get your free report</GradientButton>
             <GhostButtonLight href="/contact">Talk to us</GhostButtonLight>
           </div>
         </Reveal>

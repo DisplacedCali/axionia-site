@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { PrimaryButton, GhostButton } from "@/components/ui";
+import { GradientButton, GhostButton } from "@/components/ui";
 
 const container: Variants = {
   hidden: {},
@@ -44,9 +44,16 @@ export default function HeroIntro() {
       </motion.p>
 
       <motion.div variants={item} className="mt-10 flex flex-wrap gap-4">
-        <PrimaryButton href="/platform">See the platform</PrimaryButton>
-        <GhostButton href="/founding-members">Explore founding membership</GhostButton>
+        <GradientButton href="/request-report">Get your free report</GradientButton>
+        <GhostButton href="/platform">See the platform</GhostButton>
       </motion.div>
+
+      <motion.p
+        variants={item}
+        className="mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool"
+      >
+        Free · reviewed by a person · in your inbox within 24 hours
+      </motion.p>
     </motion.div>
   );
 }

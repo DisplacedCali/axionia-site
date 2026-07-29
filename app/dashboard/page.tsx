@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Eyebrow, Section, GradientButton } from "@/components/ui";
+import { Eyebrow, Section, GradientButton, GhostButton } from "@/components/ui";
 import LogoutButton from "@/components/LogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -162,6 +162,28 @@ export default async function Dashboard() {
               )}
             </div>
           ))}
+
+          {/* The bridge: the best founding-member prospect is someone who has
+              already received a report and found it useful. */}
+          <div className="relative border border-navy p-7 overflow-hidden">
+            <div className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-navy mb-2">
+              If this was useful
+            </p>
+            <h3 className="font-serif text-2xl leading-snug mb-3">
+              Ten employers are shaping what gets built next.
+            </h3>
+            <p className="text-[15px] leading-[1.7] text-gray-warm max-w-measure mb-6">
+              What you just read is one report. Founding members get this on every
+              renewal and every vendor pitch for five years, at a rate locked at
+              enrollment — and a seat on the council deciding what we build.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <GhostButton href="/founding-members">
+                See founding membership
+              </GhostButton>
+            </div>
+          </div>
         </div>
       )}
     </Section>

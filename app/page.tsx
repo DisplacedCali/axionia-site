@@ -178,7 +178,7 @@ export default function Home() {
 
           <Reveal delay={0.15}>
             <div className="mt-10 flex flex-wrap items-center gap-4">
-              <GradientButton href="/request-report">Score your portfolio free</GradientButton>
+              <GradientButton href="/request-report">Get your free report</GradientButton>
               <GhostButton href="/platform">See the full platform</GhostButton>
             </div>
             <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
@@ -268,14 +268,14 @@ export default function Home() {
           </Reveal>
           <Reveal delay={0.12}>
             <p className="mt-7 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
-              The Portfolio Scorer is free, takes a few minutes, and benchmarks you
-              against comparable employers. It&rsquo;s the front door to everything else
-              we do — and there&rsquo;s no sales call attached to it.
+              A few minutes to request, reviewed by a person, and in your inbox within
+              24 hours. It benchmarks your portfolio against comparable employers,
+              costs nothing, and has no sales call attached to it.
             </p>
           </Reveal>
           <Reveal delay={0.2}>
             <div className="mt-10 flex flex-wrap gap-4">
-              <GradientButton href="/request-report">Score your portfolio free</GradientButton>
+              <GradientButton href="/request-report">Get your free report</GradientButton>
               <GhostButtonLight href="/contact">Talk to us first</GhostButtonLight>
             </div>
           </Reveal>
