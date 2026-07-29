@@ -148,6 +148,16 @@ export default function Pricing() {
             </StaggerItem>
             <StaggerItem className="border-t border-white/15 pt-5">
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-teal mb-2">
+                Fees at risk — but only against savings we can both verify
+              </div>
+              <p className="text-[15px] leading-[1.7] text-gray-cool">
+                We&rsquo;ll put a portion of our fee at risk against savings you can see
+                on an invoice. Never against savings we modeled — pricing on our own
+                estimates would corrupt them.
+              </p>
+            </StaggerItem>
+            <StaggerItem className="border-t border-white/15 pt-5">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-teal mb-2">
                 Quoted, not published
               </div>
               <p className="text-[15px] leading-[1.7] text-gray-cool">
@@ -158,6 +168,108 @@ export default function Pricing() {
           </Stagger>
         </div>
       </DarkSection>
+
+      {/* ─────────────── VERIFIABLE SAVINGS ─────────────── */}
+      <div className="bg-base-2">
+        <Section className="py-16 sm:py-24">
+          <Reveal>
+            <div className="max-w-2xl mb-12">
+              <Eyebrow>Performance pricing</Eyebrow>
+              <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+                We&rsquo;ll put fees at risk.{" "}
+                <em className="italic">Against the right number.</em>
+              </h2>
+              <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+                Plenty of advisors will promise to be paid out of your savings. Almost
+                none of them will tell you which savings — and that distinction is the
+                whole game.
+              </p>
+            </div>
+          </Reveal>
+
+          <Stagger className="grid md:grid-cols-2 gap-px bg-border border border-border">
+            <StaggerItem className="bg-base p-8 md:p-10">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-pos" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-pos">
+                  Verifiable — we&rsquo;ll take risk here
+                </span>
+              </div>
+              <h3 className="font-serif text-2xl mb-4">
+                Savings you can point at on an invoice.
+              </h3>
+              <ul className="space-y-2.5 mb-5">
+                {[
+                  "A contracted rate that actually came down",
+                  "An administration fee eliminated",
+                  "A duplicate program cancelled",
+                  "Rebate pass-through recovered in renegotiation",
+                  "Ineligible dependents removed from the plan",
+                ].map((x) => (
+                  <li
+                    key={x}
+                    className="text-[14px] leading-[1.6] text-gray-warm pl-4 border-l-2 border-pos/30"
+                  >
+                    {x}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[13px] leading-[1.65] text-gray-warm">
+                These are facts, not estimates. Either the number on the contract
+                changed or it didn&rsquo;t — there&rsquo;s nothing to argue about and
+                no attribution model standing between you and the result.
+              </p>
+            </StaggerItem>
+
+            <StaggerItem className="bg-base p-8 md:p-10">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-caution" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-caution">
+                  Modeled — we will never price on this
+                </span>
+              </div>
+              <h3 className="font-serif text-2xl mb-4">
+                Savings that depend on someone&rsquo;s estimate.
+              </h3>
+              <ul className="space-y-2.5 mb-5">
+                {[
+                  "A clinical program's projected reduction in spend",
+                  "Avoided surgeries or avoided admissions",
+                  "Productivity or absenteeism improvements",
+                  "Retention and satisfaction gains",
+                ].map((x) => (
+                  <li
+                    key={x}
+                    className="text-[14px] leading-[1.6] text-gray-warm pl-4 border-l-2 border-caution/30"
+                  >
+                    {x}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[13px] leading-[1.65] text-gray-warm">
+                Every one of these requires an attribution judgment. If our fee moved
+                with those judgments, we&rsquo;d have exactly the conflict we exist to
+                expose — and you could no longer trust the haircuts we apply to a
+                vendor&rsquo;s claim.
+              </p>
+            </StaggerItem>
+          </Stagger>
+
+          <Reveal delay={0.15}>
+            <div className="mt-8 border-l-2 border-blue pl-6 py-1 max-w-2xl">
+              <p className="font-serif italic text-xl md:text-2xl leading-snug text-navy">
+                An independent check that gets paid more when the number is bigger
+                isn&rsquo;t independent.
+              </p>
+            </div>
+            <div className="mt-8">
+              <GhostButton href="/contact?interest=performance-pricing">
+                Discuss an at-risk arrangement
+              </GhostButton>
+            </div>
+          </Reveal>
+        </Section>
+      </div>
 
       {/* ─────────────── ON-PREM ─────────────── */}
       <Section className="py-16 sm:py-24">

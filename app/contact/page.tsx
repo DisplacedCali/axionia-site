@@ -9,6 +9,7 @@ const interestLabels: Record<string, string> = {
   general: "General inquiry",
   "founding-member": "Founding membership",
   "on-prem": "On-prem HR AI agents",
+  "performance-pricing": "At-risk / performance pricing",
   "research-agent": "Research Agent",
   "scenario-modeling": "Scenario Modeling",
   "workforce-strategy": "Workforce-Aligned Strategy",

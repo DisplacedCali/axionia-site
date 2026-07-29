@@ -11,6 +11,7 @@ import {
 import WorkflowDemo from "@/components/WorkflowDemo";
 import ReportDemo from "@/components/ReportDemo";
 import ResearchPipeline from "@/components/ResearchPipeline";
+import CategoryMatrix from "@/components/CategoryMatrix";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 const modules = [
@@ -131,6 +132,38 @@ export default function Platform() {
           </Reveal>
         </Section>
       </div>
+
+      {/* ─────────────── CATEGORY ─────────────── */}
+      <Section className="py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mb-10">
+            <Eyebrow>Why this doesn&rsquo;t exist already</Eyebrow>
+            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+              Four things you need.{" "}
+              <em className="italic">Nobody does all four.</em>
+            </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              Analytics platforms consolidate your data and hand you a dashboard —
+              then leave the decision to you. Brokers and consultants will tell you
+              what to do, but their compensation rises as your spend does. And the
+              vendor&rsquo;s study was written by the vendor. Each piece exists. The
+              combination doesn&rsquo;t.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <CategoryMatrix />
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <p className="mt-6 text-[13px] leading-[1.65] text-gray-cool max-w-measure">
+            Assessed as fairly as we can make it — analytics platforms genuinely are
+            independent and genuinely do consolidate well. Their gap is that
+            interpreting the dashboard is still your job.
+          </p>
+        </Reveal>
+      </Section>
 
       {/* ─────────────── HOW IT WORKS (dark) ─────────────── */}
       <DarkSection>

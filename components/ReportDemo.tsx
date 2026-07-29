@@ -66,6 +66,32 @@ function money(n: number) {
 const TABS = ["Benchmark", "Scenario model", "Optimization", "Assumptions"] as const;
 type Tab = (typeof TABS)[number];
 
+/**
+ * Categories examined that produced no recommended action. Shown deliberately:
+ * the scope of what was checked is a large part of what's being bought, and a
+ * findings-only view makes a thorough review look thin.
+ */
+const ALSO_REVIEWED = [
+  "Medical plan design",
+  "Network adequacy",
+  "Stop-loss terms",
+  "Telehealth utilization",
+  "Dental & vision",
+  "Wellness incentives",
+  "Disease management",
+  "Maternity & family",
+  "Disability & leave",
+  "COBRA administration",
+  "HSA / FSA design",
+  "Voluntary benefits",
+  "Eligibility audit",
+  "Dependent verification",
+  "Claims administration fees",
+  "Care navigation",
+  "Second opinion services",
+  "Employee cost-share",
+];
+
 export default function ReportDemo() {
   const [employees, setEmployees] = useState(820);
   const [industry, setIndustry] = useState<IndustryId>("manufacturing");
@@ -201,6 +227,11 @@ export default function ReportDemo() {
       hi: 0,
     },
   ];
+
+  const totalOpportunity = actions.reduce(
+    (acc, a) => ({ lo: acc.lo + a.lo, hi: acc.hi + a.hi }),
+    { lo: 0, hi: 0 }
+  );
 
   const assumptions = [
     {
@@ -564,9 +595,59 @@ export default function ReportDemo() {
 
         {tab === "Optimization" && (
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-6">
-              Prioritized actions — {employees.toLocaleString("en-US")} subscribers,{" "}
-              {industryDef.label}
+            {/* ── headline value: what this is worth ── */}
+            <div className="border border-border bg-base-2 p-5 sm:p-6 mb-8">
+              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-2">
+                Identified opportunity — annual
+              </div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="font-serif font-light text-4xl sm:text-5xl leading-none tabular-nums">
+                  {money(totalOpportunity.lo)}
+                </span>
+                <span className="font-serif font-light text-2xl text-gray-cool">to</span>
+                <span className="font-serif font-light text-4xl sm:text-5xl leading-none tabular-nums">
+                  {money(totalOpportunity.hi)}
+                </span>
+              </div>
+              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+                across {actions.filter((a) => a.hi > 0).length} of{" "}
+                {actions.length} programs · {employees.toLocaleString("en-US")}{" "}
+                subscribers · {industryDef.label}
+              </div>
+
+              {/* contribution bar */}
+              <div className="mt-5 flex h-2.5 w-full overflow-hidden rounded-full bg-base">
+                {actions
+                  .filter((a) => a.hi > 0)
+                  .map((a) => (
+                    <motion.div
+                      key={`bar-${a.program}`}
+                      className={a.dot}
+                      animate={{
+                        width: `${((a.hi - a.lo) === 0 ? 0 : (a.lo + a.hi) / 2 / ((totalOpportunity.lo + totalOpportunity.hi) / 2)) * 100}%`,
+                      }}
+                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                      title={a.program}
+                    />
+                  ))}
+              </div>
+              <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
+                {actions
+                  .filter((a) => a.hi > 0)
+                  .map((a) => (
+                    <span
+                      key={`key-${a.program}`}
+                      className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.1em] text-gray-warm"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${a.dot}`} />
+                      {a.program}
+                    </span>
+                  ))}
+              </div>
+            </div>
+
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+              Prioritized actions
             </div>
             <div className="space-y-px bg-border">
               <div className="hidden md:grid grid-cols-[1.3fr_1fr_2.4fr_1fr] gap-4 bg-base-2 px-4 py-3 font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
@@ -606,6 +687,33 @@ export default function ReportDemo() {
               expressed as ranges — a single figure would imply a precision the
               underlying data doesn&rsquo;t support.
             </p>
+
+            {/* ── breadth: everything else that was examined ── */}
+            <div className="mt-10 pt-8 border-t border-border">
+              <div className="flex items-baseline justify-between gap-4 flex-wrap mb-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm">
+                  Also reviewed — no action indicated
+                </div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+                  {ALSO_REVIEWED.length + actions.length} areas examined in total
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ALSO_REVIEWED.map((item) => (
+                  <span
+                    key={item}
+                    className="px-2.5 py-1.5 border border-border font-mono text-[10px] uppercase tracking-[0.08em] text-gray-warm"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-4 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
+                A finding of &ldquo;nothing to change here&rdquo; is worth as much as a
+                finding of savings — it&rsquo;s the part that stops you renegotiating
+                something that&rsquo;s already working.
+              </p>
+            </div>
           </div>
         )}
 

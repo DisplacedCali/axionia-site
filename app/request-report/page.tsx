@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useRef, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { readableAuthError } from "@/lib/authError";
 import { Eyebrow, Section, GradientRule } from "@/components/ui";
@@ -39,7 +39,34 @@ export default function RequestReportPage() {
   const [result, setResult] = useState<{
     kind: "new" | "refresh";
     companyName: string | null;
+    requestId: string;
   } | null>(null);
+
+  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function uploadDocs(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length || !result) return;
+
+    setUploading(true);
+    setUploadErr(null);
+
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("requestId", result.requestId);
+      const res = await fetch("/api/intake/upload", { method: "POST", body: fd });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) setUploaded((u) => [...u, file.name]);
+      else setUploadErr(body?.error ?? "That upload failed.");
+    }
+
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
   async function requestCode(e: FormEvent) {
     e.preventDefault();
@@ -83,7 +110,11 @@ export default function RequestReportPage() {
     setLoading(false);
 
     if (!res.ok) return setError(res.error);
-    setResult({ kind: res.kind, companyName: res.companyName });
+    setResult({
+      kind: res.kind,
+      companyName: res.companyName,
+      requestId: res.requestId,
+    });
     setStage("done");
   }
 
@@ -138,7 +169,67 @@ export default function RequestReportPage() {
             </p>
           </div>
 
-          <div className="mt-10 border border-border p-6 bg-base-2">
+          {/* ── document intake ── */}
+          <div className="mt-10 border border-navy p-6 sm:p-7 relative overflow-hidden">
+            <div className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-navy mb-2">
+              Optional — makes your report considerably better
+            </p>
+            <h2 className="font-serif text-2xl leading-snug mb-3">
+              Send us what you already have.
+            </h2>
+            <p className="text-[15px] leading-[1.7] text-gray-warm mb-5">
+              Vendor decks, renewal packets, benefit summaries, the ROI study a vendor
+              handed you. Most of what we need is already sitting in your inbox — you
+              don&rsquo;t need to assemble anything. The more we start from, the less
+              we have to assume.
+            </p>
+
+            {uploaded.length > 0 && (
+              <ul className="mb-4 space-y-1.5">
+                {uploaded.map((f) => (
+                  <li
+                    key={f}
+                    className="flex items-center gap-2 text-[13px] text-gray-warm"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-pos shrink-0" />
+                    <span className="truncate">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              onChange={uploadDocs}
+              disabled={uploading}
+              accept=".pdf,.ppt,.pptx,.doc,.docx,.png,.jpg,.jpeg"
+              className="block w-full text-[13px] text-gray-warm file:mr-4 file:px-4 file:py-2.5 file:border file:border-navy file:bg-base file:font-mono file:text-[10px] file:uppercase file:tracking-[0.12em] file:text-navy hover:file:bg-navy hover:file:text-base file:transition-colors"
+            />
+
+            {uploading && (
+              <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-blue">
+                Uploading…
+              </p>
+            )}
+            {uploadErr && <p className="mt-3 text-risk text-[13px]">{uploadErr}</p>}
+
+            <p className="mt-4 text-[12px] leading-[1.6] text-gray-cool">
+              PDF, PowerPoint, Word or images, up to 25 MB each. Stored privately and
+              visible only to us and your colleagues.{" "}
+              <strong className="text-gray-warm">
+                Please don&rsquo;t send member-level claims data or anything containing
+                personal health information
+              </strong>{" "}
+              — we don&rsquo;t accept it through this channel by design. If you want a
+              claims-level analysis, say so and we&rsquo;ll set up a secure path
+              separately.
+            </p>
+          </div>
+
+          <div className="mt-6 border border-border p-6 bg-base-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm mb-2">
               While you wait
             </p>

@@ -15,7 +15,12 @@ import {
 } from "@/lib/email";
 
 export type SubmitResult =
-  | { ok: true; kind: "new" | "refresh"; companyName: string | null }
+  | {
+      ok: true;
+      kind: "new" | "refresh";
+      companyName: string | null;
+      requestId: string;
+    }
   | { ok: false; error: string };
 
 /**
@@ -154,5 +159,5 @@ export async function submitReportRequest(formData: {
     });
   }
 
-  return { ok: true, kind, companyName };
+  return { ok: true, kind, companyName, requestId: request.id };
 }

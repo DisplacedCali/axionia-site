@@ -64,6 +64,14 @@ export default async function RequestDetail({
         .eq("company_id", request.company_id)
     : { data: [] };
 
+  // documents the requester attached at intake
+  const { data: intakeFiles } = await admin
+    .from("report_files")
+    .select("id, filename, storage_path, size_bytes, created_at")
+    .eq("request_id", request.id)
+    .eq("kind", "intake")
+    .order("created_at", { ascending: false });
+
   const payload = (request.payload ?? {}) as Record<string, unknown>;
 
   return (
@@ -149,6 +157,28 @@ export default async function RequestDetail({
                 Personal email domain — not grouped into a company. Assign one manually
                 if this is a real employer.
               </p>
+            )}
+          </div>
+
+          <div className="border border-border p-6">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm mb-4">
+              Documents they sent
+            </h2>
+            {(intakeFiles ?? []).length === 0 ? (
+              <p className="text-[13px] text-gray-cool">
+                Nothing attached — the analysis starts from the form only.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {(intakeFiles ?? []).map((f) => (
+                  <li key={f.id} className="flex items-baseline gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pos shrink-0 translate-y-[-2px]" />
+                    <span className="text-[13px] text-navy truncate">
+                      {f.filename}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
