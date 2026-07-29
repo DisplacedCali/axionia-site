@@ -13,6 +13,7 @@ import HeroViz from "@/components/HeroViz";
 import RadarPreview from "@/components/RadarPreview";
 import CountUp from "@/components/CountUp";
 import WhoItsFor from "@/components/WhoItsFor";
+import PmpmStack from "@/components/PmpmStack";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -171,6 +172,32 @@ export default function Home() {
           </Stagger>
         </div>
       </DarkSection>
+
+      {/* ─────────────── THE STACK ───────────────
+          The abstract market number above, made personal. Every one of these
+          was cheap on the day it was approved, which is exactly why nobody
+          has ever summed them. */}
+      <Section className="py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mb-12">
+            <Eyebrow>The stack nobody adds up</Eyebrow>
+            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+              A dollar here. Six dollars there.{" "}
+              <em className="italic">Then it&rsquo;s seven figures.</em>
+            </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              Point solutions arrive one at a time — telehealth, then MSK, then
+              behavioral health, then weight management. Each is priced per member per
+              month, each looks trivial in isolation, and each came with a study
+              showing it pays for itself.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <PmpmStack />
+        </Reveal>
+      </Section>
 
       {/* ─────────────── LIVE PRODUCT: RADAR ─────────────── */}
       <div className="bg-base-2">

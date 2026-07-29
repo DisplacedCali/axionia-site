@@ -21,7 +21,7 @@ export default function HeroIntro() {
   return (
     <motion.div variants={container} initial="hidden" animate="show">
       <motion.div variants={item} className="eyebrow mb-4">
-        Healthcare Decision Intelligence
+        Benefit Decision Intelligence
       </motion.div>
 
       <h1 className="font-serif font-light text-5xl md:text-7xl leading-[1.08] tracking-tight max-w-4xl overflow-hidden">
