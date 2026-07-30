@@ -1,0 +1,165 @@
+import Link from "next/link";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/auth";
+import { linksEnabled } from "@/lib/deckLinks";
+import { Section } from "@/components/ui";
+import ShareLinkForm from "@/components/admin/ShareLinkForm";
+
+export const dynamic = "force-dynamic";
+
+function when(ts: string) {
+  const h = (Date.now() - new Date(ts).getTime()) / 36e5;
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))}m ago`;
+  if (h < 24) return `${Math.round(h)}h ago`;
+  if (h < 24 * 14) return `${Math.round(h / 24)}d ago`;
+  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/**
+ * Decks: present them, share the gated one, and see who has opened either.
+ *
+ * The log is the reason this page exists rather than two bookmarks. /deck is a
+ * public URL, so the only thing that ever tells you a deck travelled is what
+ * we record when it's opened.
+ */
+export default async function AdminDecks() {
+  await requireStaff();
+  const admin = createAdminClient();
+
+  const { data: events } = await admin
+    .from("deck_events")
+    .select(
+      "id, deck, event, created_at, contact_name, contact_email, contact_org, link_label, user_id"
+    )
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  const rows = events ?? [];
+  const prints = rows.filter((r) => r.event === "print").length;
+
+  return (
+    <Section className="pt-12 pb-24">
+      <div className="mb-10">
+        <h1 className="font-serif font-light text-4xl">Decks</h1>
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm">
+          {rows.length} recent events · {prints} downloads
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 mb-14">
+        <div className="border border-border p-7">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-3">
+            Buyer deck
+          </div>
+          <h2 className="font-serif text-2xl leading-snug mb-2">
+            Ten slides, public link
+          </h2>
+          <p className="text-[14px] leading-[1.7] text-gray-warm mb-5">
+            Open to anyone with the URL, but noindex and absent from nav, footer
+            and sitemap. Anonymous visitors give a name and email before the PDF.
+          </p>
+          <Link
+            href="/deck"
+            className="inline-block px-5 py-2.5 border border-navy text-navy font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-navy hover:text-base transition-colors"
+          >
+            Present →
+          </Link>
+        </div>
+
+        <div className="border border-navy p-7">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-3">
+            Founders deck · $250K
+          </div>
+          <h2 className="font-serif text-2xl leading-snug mb-2">
+            Seven slides, gated
+          </h2>
+          <p className="text-[14px] leading-[1.7] text-gray-warm mb-5">
+            Reachable only from a staff session or a signed per-recipient link.
+            Anything else 404s rather than redirecting to a login, so the URL
+            never confirms it exists.
+          </p>
+          <Link
+            href="/deck/founders"
+            className="inline-block px-5 py-2.5 border border-navy text-navy font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-navy hover:text-base transition-colors"
+          >
+            Present →
+          </Link>
+        </div>
+      </div>
+
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+        Share a founders link
+      </h2>
+      <div className="border border-border p-7 mb-14">
+        <ShareLinkForm enabled={linksEnabled()} />
+      </div>
+
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+        Recent activity
+      </h2>
+      <div className="border border-border">
+        <div className="hidden md:grid grid-cols-[0.7fr_0.6fr_1.6fr_0.7fr] gap-4 px-5 py-3 bg-base-2 border-b border-border font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
+          <span>Deck</span>
+          <span>Event</span>
+          <span>Who</span>
+          <span className="text-right">When</span>
+        </div>
+
+        {rows.length === 0 ? (
+          <p className="px-5 py-8 text-[13px] text-gray-cool">
+            Nothing logged yet. Views and downloads appear here as soon as
+            migration 012 and 013 are applied.
+          </p>
+        ) : (
+          rows.map((r) => {
+            const who = r.user_id
+              ? "Staff"
+              : r.link_label
+              ? r.link_label
+              : r.contact_name
+              ? `${r.contact_name}${r.contact_org ? ` · ${r.contact_org}` : ""}`
+              : "Anonymous";
+            return (
+              <div
+                key={r.id}
+                className="grid md:grid-cols-[0.7fr_0.6fr_1.6fr_0.7fr] gap-2 md:gap-4 px-5 py-3.5 border-b border-border last:border-b-0"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gray-warm self-center">
+                  {r.deck}
+                </span>
+                <span className="self-center">
+                  <span
+                    className={`font-mono text-[9px] uppercase tracking-[0.1em] px-2 py-1 border ${
+                      r.event === "print"
+                        ? "border-navy bg-navy text-base"
+                        : "border-border text-gray-warm"
+                    }`}
+                  >
+                    {r.event}
+                  </span>
+                </span>
+                <span className="self-center text-[14px] text-navy truncate">
+                  {who}
+                  {r.contact_email && (
+                    <span className="block text-[12px] text-gray-cool truncate">
+                      {r.contact_email}
+                    </span>
+                  )}
+                </span>
+                <span className="self-center md:text-right font-mono text-[11px] text-gray-cool">
+                  {when(r.created_at)}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <p className="mt-5 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
+        No IP addresses are recorded. That&rsquo;s a privacy-policy decision
+        rather than a technical one, and it hasn&rsquo;t been made yet — see
+        migration 012.
+      </p>
+    </Section>
+  );
+}

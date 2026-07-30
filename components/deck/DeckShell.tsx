@@ -21,9 +21,21 @@ type Props = {
   slides: ReactNode[];
   /** Resolved from the session server-side. Never trusted from the client. */
   signedIn: boolean;
+  deck?: "buyer" | "founders";
+  /**
+   * Set only after a share-link signature has verified on the server. A
+   * recipient who arrived by signed link is already identified, so the print
+   * gate doesn't ask them to type a name we'd trust less than the one we have.
+   */
+  linkLabel?: string | null;
 };
 
-export default function DeckShell({ slides, signedIn }: Props) {
+export default function DeckShell({
+  slides,
+  signedIn,
+  deck = "buyer",
+  linkLabel = null,
+}: Props) {
   const [i, setI] = useState(0);
   const [gate, setGate] = useState(false);
   const total = slides.length;
@@ -34,8 +46,8 @@ export default function DeckShell({ slides, signedIn }: Props) {
   useEffect(() => {
     if (logged.current) return;
     logged.current = true;
-    logDeckView();
-  }, []);
+    logDeckView(deck, linkLabel);
+  }, [deck, linkLabel]);
 
   const go = useCallback(
     (n: number) => setI((c) => Math.max(0, Math.min(total - 1, n))),
@@ -48,13 +60,13 @@ export default function DeckShell({ slides, signedIn }: Props) {
   }, []);
 
   const onPrintClick = useCallback(() => {
-    if (signedIn) {
-      logDeckPrint();
+    if (signedIn || linkLabel) {
+      logDeckPrint(undefined, deck, linkLabel);
       print();
       return;
     }
     setGate(true);
-  }, [signedIn, print]);
+  }, [signedIn, linkLabel, deck, print]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -168,6 +180,7 @@ export default function DeckShell({ slides, signedIn }: Props) {
 
       {gate && (
         <PrintGate
+          deck={deck}
           onClose={() => setGate(false)}
           onDone={() => {
             setGate(false);
@@ -180,9 +193,11 @@ export default function DeckShell({ slides, signedIn }: Props) {
 }
 
 function PrintGate({
+  deck,
   onClose,
   onDone,
 }: {
+  deck: "buyer" | "founders";
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -196,7 +211,7 @@ function PrintGate({
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const res = await logDeckPrint({ name, email, org });
+    const res = await logDeckPrint({ name, email, org }, deck);
     setBusy(false);
     if (!res.ok) return setErr(res.error);
     onDone();

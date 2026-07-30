@@ -65,8 +65,14 @@ costs one wave and the job survives a closed tab.
   advance; every slide stays mounted so `@media print` can reveal all of them
   and page-break between — unmounting inactive slides prints a one-page PDF.
   Slides live in `components/deck/slides.tsx`, chrome in `DeckShell.tsx`.
+- **Founders deck** — `/deck/founders`, ten seats at $250K. Gated: a staff
+  session, or a signed per-recipient link (`?k=…`). Anything else `notFound()`,
+  never a redirect to login — a redirect confirms the URL exists. Links are
+  HMAC-signed, expiring, stateless; rotating `DECK_LINK_SECRET` revokes all of
+  them at once, and there is no per-link revoke. Mint from `/admin/decks`.
+  Without the env var set, the deck still works from a staff session.
 - **Deck logging** — every view and print writes to `deck_events` (migration
-  012). Signed-in viewers print directly; anonymous ones give name, email and
+  012, plus `link_label` in 013). Signed-in viewers print directly; anonymous ones give name, email and
   organisation first, unverified, and are also written to `leads` with
   `interest = 'buyer-deck'`. **No IP is recorded** — that's a privacy-policy
   decision, and the site has no policy yet.
@@ -158,6 +164,7 @@ Server-side only, set in Vercel (Production) and `.env.local`:
 | `DATABASE_URL` | Supabase **transaction pooler**, port 6543. URL-encode `@` as `%40`. |
 | `ANTHROPIC_API_KEY` | |
 | `SUPABASE_SERVICE_ROLE_KEY` | Must be `service_role` or `sb_secret_…`, never `sb_publishable_…` |
+| `DECK_LINK_SECRET` | Signs founders-deck share links. 24+ chars or it's treated as unset. Rotating it revokes every outstanding link. |
 | `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | |
 
 Supabase project ref: `vzybdifqwvrlheuyzcui`
@@ -167,7 +174,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`011`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`013`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.

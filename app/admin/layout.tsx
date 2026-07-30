@@ -5,7 +5,7 @@ const tabs = [
   { href: "/admin", label: "Queue" },
   { href: "/admin/companies", label: "Companies" },
   { href: "/admin/users", label: "Users" },
-  { href: "/deck", label: "Deck" },
+  { href: "/admin/decks", label: "Decks" },
 ];
 
 export default async function AdminLayout({

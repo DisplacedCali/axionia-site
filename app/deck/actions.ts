@@ -19,6 +19,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 
 type Contact = { name?: string; email?: string; org?: string };
+export type DeckSlug = "buyer" | "founders";
 
 const clean = (s: string | undefined, max: number) => {
   const v = (s ?? "").trim();
@@ -26,7 +27,12 @@ const clean = (s: string | undefined, max: number) => {
   return v.slice(0, max);
 };
 
-async function log(event: "view" | "print", contact?: Contact) {
+async function log(
+  event: "view" | "print",
+  deck: DeckSlug,
+  contact?: Contact,
+  linkLabel?: string | null
+) {
   const supabase = createClient();
   const {
     data: { user },
@@ -39,9 +45,10 @@ async function log(event: "view" | "print", contact?: Contact) {
     await createAdminClient()
       .from("deck_events")
       .insert({
-        deck: "buyer",
+        deck,
         event,
         user_id: user?.id ?? null,
+        link_label: clean(linkLabel ?? undefined, 60),
         contact_name: clean(contact?.name, 120),
         contact_email: clean(contact?.email, 200)?.toLowerCase() ?? null,
         contact_org: clean(contact?.org, 160),
@@ -53,8 +60,11 @@ async function log(event: "view" | "print", contact?: Contact) {
   }
 }
 
-export async function logDeckView() {
-  await log("view");
+export async function logDeckView(
+  deck: DeckSlug = "buyer",
+  linkLabel?: string | null
+) {
+  await log("view", deck, undefined, linkLabel);
 }
 
 /**
@@ -66,14 +76,18 @@ export async function logDeckView() {
  * confirmation step.
  */
 export async function logDeckPrint(
-  contact?: Contact
+  contact?: Contact,
+  deck: DeckSlug = "buyer",
+  linkLabel?: string | null
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  // A signed link already names its recipient, so don't make them type it
+  // again — we know more about them than a self-reported form would tell us.
+  if (!user && !linkLabel) {
     const email = clean(contact?.email, 200);
     // Not validation so much as a typo check — anything past this is accepted.
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
@@ -84,7 +98,7 @@ export async function logDeckPrint(
     }
   }
 
-  await log("print", contact);
+  await log("print", deck, contact, linkLabel);
 
   // Anonymous printers are also a lead. Kept separate from the event log:
   // deck_events is an append-only audit trail; leads is a list you work.
@@ -99,7 +113,7 @@ export async function logDeckPrint(
           email: clean(contact.email, 200)!.toLowerCase(),
           full_name: clean(contact.name, 120) ?? "Unknown",
           company_name: clean(contact.org, 160),
-          interest: "buyer-deck",
+          interest: `${deck}-deck`,
         });
     } catch {
       /* a lead we failed to record must not block the download */

@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
  * make a routing decision about it.
  */
 
+/** Route prefixes that render without nav or footer. */
 const BARE = ["/deck"];
 
 export default function SiteChrome({
