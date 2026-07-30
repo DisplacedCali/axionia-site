@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff, RELEASE_ROLES } from "@/lib/auth";
 import { Section } from "@/components/ui";
 import ReviewPanel from "@/components/admin/ReviewPanel";
 import ResearchPanel from "@/components/admin/ResearchPanel";
@@ -17,7 +17,8 @@ export default async function RequestDetail({
 }: {
   params: { id: string };
 }) {
-  await requireAdmin();
+  const { profile } = await requireStaff();
+  const canRelease = RELEASE_ROLES.includes(profile.role);
   const admin = createAdminClient();
 
   const { data: request } = await admin
@@ -211,6 +212,7 @@ export default async function RequestDetail({
           />
 
         <ReviewPanel
+          canRelease={canRelease}
           request={{
             id: request.id,
             status: request.status,

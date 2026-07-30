@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/auth";
+import {
+  requireAdmin,
+  requireStaff,
+  requireRelease,
+  requireOwner,
+  type Role,
+} from "@/lib/auth";
 import { sendEmail, reportReleased } from "@/lib/email";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -341,7 +347,8 @@ export async function releaseReport(args: {
   reportId: string;
   requestId: string;
 }): Promise<Result> {
-  await requireAdmin();
+  // The one action in this file that reaches the client. Gated above staff.
+  await requireRelease();
   const admin = createAdminClient();
 
   const { data: report, error: repErr } = await admin
@@ -397,19 +404,63 @@ export async function releaseReport(args: {
 
 export async function setUserRole(
   userId: string,
-  role: "client" | "admin"
+  role: Role
 ): Promise<Result> {
-  const { user } = await requireAdmin();
+  // Owner-only. If admins could grant admin, the role system would be
+  // decorative — any admin could hand themselves release.
+  const { user } = await requireOwner();
 
-  // Guard: don't let an admin strip their own access and lock everyone out.
-  if (userId === user.id && role !== "admin") {
-    return { ok: false, error: "You can't remove your own admin access." };
+  if (userId === user.id && role !== "owner") {
+    return { ok: false, error: "You can't demote yourself." };
   }
 
   const admin = createAdminClient();
+
+  // Never leave the system without someone who can assign roles.
+  if (role !== "owner") {
+    const { count } = await admin
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "owner");
+    const { data: target } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    if (target?.role === "owner" && (count ?? 0) <= 1) {
+      return { ok: false, error: "This is the only owner. Promote someone else first." };
+    }
+  }
+
   const { error } = await admin.from("profiles").update({ role }).eq("id", userId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/* ─────────────── queue assignment ─────────────── */
+
+/**
+ * Claim or release a request. Null returns it to the open queue, which is the
+ * default state rather than an error condition — unassigned is what "nobody
+ * has picked this up yet" looks like.
+ */
+export async function assignRequest(
+  requestId: string,
+  assigneeId: string | null
+): Promise<Result> {
+  await requireStaff();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("report_requests")
+    .update({
+      assigned_to: assigneeId,
+      assigned_at: assigneeId ? new Date().toISOString() : null,
+    })
+    .eq("id", requestId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin");
+  revalidatePath(`/admin/requests/${requestId}`);
   return { ok: true };
 }
 
@@ -417,7 +468,7 @@ export async function assignUserCompany(
   userId: string,
   companyId: string | null
 ): Promise<Result> {
-  await requireAdmin();
+  await requireStaff();
   const admin = createAdminClient();
   const { error } = await admin
     .from("profiles")

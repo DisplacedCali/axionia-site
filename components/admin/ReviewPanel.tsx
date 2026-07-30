@@ -32,6 +32,12 @@ type Props = {
     storagePath: string;
     sizeBytes: number | null;
   }[];
+  /**
+   * Whether the viewer holds admin or owner. The server action enforces this
+   * independently — this only decides whether to render a control that would
+   * bounce them, which is worse than not offering it.
+   */
+  canRelease: boolean;
 };
 
 const labelCls = "font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm";
@@ -43,7 +49,12 @@ function kb(n: number | null) {
   return n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.round(n / 1000)} KB`;
 }
 
-export default function ReviewPanel({ request, draft, files }: Props) {
+export default function ReviewPanel({
+  request,
+  draft,
+  files,
+  canRelease,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -288,7 +299,7 @@ export default function ReviewPanel({ request, draft, files }: Props) {
             {request.companyName || "this company"} can see it, and the client has been
             emailed.
           </p>
-        ) : (
+        ) : canRelease ? (
           <>
             <p className="text-[14px] leading-[1.7] text-gray-warm mb-5">
               Releasing makes the report visible to every contact at this company and
@@ -305,6 +316,13 @@ export default function ReviewPanel({ request, draft, files }: Props) {
               </span>
             </button>
           </>
+        ) : (
+          <p className="text-[14px] leading-[1.7] text-gray-warm">
+            This draft is ready for someone with the admin or owner role to
+            release. Everything up to that point — research, edits, files — is
+            yours to finish, and the draft stays invisible to the client until
+            it goes out.
+          </p>
         )}
       </div>
 

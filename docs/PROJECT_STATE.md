@@ -50,6 +50,15 @@ costs one wave and the job survives a closed tab.
   at" feeds the benefits, scoring and brief prompts.
 - **Health endpoint** — `GET /api/modules/research/health` (admin, in browser).
   Reports env, schema version, migrations, grants. `POST` adds a write probe.
+- **Staff roles** — `client` / `analyst` / `admin` / `owner` (migration 011).
+  The privilege boundary is **release**, not "admin": everything upstream is
+  recoverable, release leaves the building. `analyst` works the queue and edits;
+  `admin` adds release; `owner` adds role assignment. Gates live in
+  `lib/auth.ts` (`requireStaff` / `requireRelease` / `requireOwner`).
+- **Company hub** — `/admin/companies/[id]`. Contacts, requests, reports and
+  files for one account in one place. Read-only; actions stay where they work.
+- **Open queue** — `/admin` now has view (open / unassigned / mine / all) as a
+  separate axis from status, with inline claim-and-release on each row.
 
 ### Not built
 
@@ -143,9 +152,14 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`010`, plus `supabase/research_schema.sql` for the
-research schema. `010` added the report body, edit overlay and `client_view`.
-The health endpoint reports which are missing.
+`schema.sql`, then `002`–`011`, plus `supabase/research_schema.sql` for the
+research schema. `010` added the report body, edit overlay and `client_view`;
+`011` added staff roles and queue assignment. The health endpoint reports which
+are missing.
+
+**`011` promotes every existing `admin` to `owner`.** Correct only because there
+was exactly one admin row when it was written. Check the table before applying
+it anywhere else.
 
 ---
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 
 const tabs = [
   { href: "/admin", label: "Queue" },
@@ -12,7 +12,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { profile } = await requireAdmin();
+  const { profile } = await requireStaff();
 
   return (
     <div className="min-h-screen">

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminCompanies() {
-  await requireAdmin();
+  await requireStaff();
   const admin = createAdminClient();
 
   const { data: companies } = await admin
@@ -81,7 +81,7 @@ export default async function AdminCompanies() {
             return (
               <Link
                 key={c.id}
-                href={`/admin?status=all`}
+                href={`/admin/companies/${c.id}`}
                 className="grid md:grid-cols-[1.6fr_1fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-base-2 transition-colors"
               >
                 <span className="text-[15px] text-navy">{c.name || "—"}</span>
