@@ -3,6 +3,7 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { noteContactSubmitted } from "./actions";
 import { Eyebrow, Section } from "@/components/ui";
 
 const interestLabels: Record<string, string> = {
@@ -39,6 +40,10 @@ function ContactForm() {
       message: message || null,
     });
     setStatus(error ? "error" : "sent");
+
+    // Fire-and-forget: the lead is already saved, so a failure here must not
+    // change what the visitor sees.
+    if (!error) void noteContactSubmitted(email);
   }
 
   if (status === "sent") {

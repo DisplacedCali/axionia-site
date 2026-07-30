@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/auth";
 const tabs = [
   { href: "/admin", label: "Queue" },
   { href: "/admin/companies", label: "Companies" },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/decks", label: "Decks" },
 ];

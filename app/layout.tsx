@@ -4,6 +4,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import MobileNotice from "@/components/MobileNotice";
 import SiteChrome from "@/components/SiteChrome";
+import Track from "@/components/Track";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
 
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteChrome nav={<Nav />} footer={<Footer />} notice={<MobileNotice />}>
           {children}
         </SiteChrome>
+        <Track />
       </body>
     </html>
   );

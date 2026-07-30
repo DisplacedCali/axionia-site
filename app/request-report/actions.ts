@@ -8,6 +8,7 @@ import {
   companyNameFromDomain,
 } from "@/lib/company";
 import { checkAlignment } from "@/lib/alignment";
+import { identifySession, track } from "@/lib/analytics";
 import {
   sendEmail,
   requestReceivedNew,
@@ -135,6 +136,21 @@ export async function submitReportRequest(formData: {
     .single();
 
   if (reqErr) return { ok: false, error: reqErr.message };
+
+  /*
+    The stitch. Everything this visitor read before this moment was anonymous;
+    now we know the person and the company, so their whole session gets stamped
+    retroactively. This is the point of the analytics table — "what did they
+    read on the way to converting" is unanswerable if identity only applies
+    from here forward.
+  */
+  await identifySession({ userId: profile?.id ?? null, companyId });
+  await track({
+    event: "scorer_request",
+    path: "/request-report",
+    userId: profile?.id ?? null,
+    companyId,
+  });
 
   // ── email: confirmation to requester, notification to admin ──
   const site = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";

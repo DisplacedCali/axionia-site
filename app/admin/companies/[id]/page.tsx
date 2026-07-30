@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
+import CrmPanel from "@/components/admin/CrmPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,9 @@ export default async function CompanyHub({
 
   const { data: company } = await admin
     .from("companies")
-    .select("id, domain, name, notes, created_at")
+    .select(
+      "id, domain, name, notes, created_at, stage, owner_id, next_action, next_action_at"
+    )
     .eq("id", params.id)
     .single();
 
@@ -118,6 +121,16 @@ export default async function CompanyHub({
     (assignees ?? []).map((a) => [a.id, a.full_name || a.email])
   );
 
+  const { data: staff } = await admin
+    .from("profiles")
+    .select("id, email, full_name")
+    .in("role", ["analyst", "admin", "owner"])
+    .order("email");
+  const staffOptions = (staff ?? []).map((s) => ({
+    id: s.id,
+    label: s.full_name || s.email,
+  }));
+
   return (
     <Section className="pt-12 pb-24">
       <Link
@@ -154,6 +167,17 @@ export default async function CompanyHub({
         <Stat n={open.length} label="Open requests" />
         <Stat n={released.length} label="Released reports" />
         <Stat n={fileRows.length} label="Files" />
+      </div>
+
+      <div className="mt-10">
+        <CrmPanel
+          companyId={company.id}
+          stage={company.stage ?? "lead"}
+          ownerId={company.owner_id ?? null}
+          nextAction={company.next_action ?? null}
+          nextActionAt={company.next_action_at ?? null}
+          staff={staffOptions}
+        />
       </div>
 
       {/* ── requests ── */}

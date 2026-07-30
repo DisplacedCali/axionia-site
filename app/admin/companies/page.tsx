@@ -2,8 +2,12 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
+import { STAGE_TONE } from "@/components/admin/CrmPanel";
 
 export const dynamic = "force-dynamic";
+
+/** A follow-up dated today is due, not late. */
+const isOverdue = (d: string) => new Date(d) < new Date(new Date().toDateString());
 
 export default async function AdminCompanies() {
   await requireStaff();
@@ -11,7 +15,7 @@ export default async function AdminCompanies() {
 
   const { data: companies } = await admin
     .from("companies")
-    .select("id, domain, name, created_at")
+    .select("id, domain, name, created_at, stage, next_action, next_action_at")
     .order("created_at", { ascending: false });
 
   const list = companies ?? [];
@@ -67,12 +71,12 @@ export default async function AdminCompanies() {
         </div>
       ) : (
         <div className="border border-border">
-          <div className="hidden md:grid grid-cols-[1.6fr_1fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-4 px-5 py-3 bg-base-2 border-b border-border font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
+          <div className="hidden md:grid grid-cols-[1.5fr_0.9fr_0.8fr_1.1fr_0.6fr_0.6fr] gap-4 px-5 py-3 bg-base-2 border-b border-border font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
             <span>Company</span>
             <span>Domain</span>
-            <span className="text-right">Contacts</span>
+            <span>Stage</span>
+            <span>Next action</span>
             <span className="text-right">Released</span>
-            <span className="text-right">Files</span>
             <span className="text-right">Open</span>
           </div>
 
@@ -82,20 +86,45 @@ export default async function AdminCompanies() {
               <Link
                 key={c.id}
                 href={`/admin/companies/${c.id}`}
-                className="grid md:grid-cols-[1.6fr_1fr_0.7fr_0.7fr_0.7fr_0.7fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-base-2 transition-colors"
+                className="grid md:grid-cols-[1.5fr_0.9fr_0.8fr_1.1fr_0.6fr_0.6fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-base-2 transition-colors"
               >
-                <span className="text-[15px] text-navy">{c.name || "—"}</span>
-                <span className="font-mono text-[12px] text-gray-warm self-center">
+                <span className="text-[15px] text-navy self-center">
+                  {c.name || "—"}
+                  <span className="block font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool mt-0.5">
+                    {peopleByCompany[c.id] ?? 0} contacts ·{" "}
+                    {filesByCompany[c.id] ?? 0} files
+                  </span>
+                </span>
+                <span className="font-mono text-[12px] text-gray-warm self-center truncate">
                   {c.domain}
                 </span>
-                <span className="font-mono text-[13px] text-navy md:text-right self-center tabular-nums">
-                  {peopleByCompany[c.id] ?? 0}
+                <span className="self-center">
+                  <span
+                    className={`font-mono text-[9px] uppercase tracking-[0.1em] px-2 py-1 border ${
+                      STAGE_TONE[c.stage ?? "lead"] ?? STAGE_TONE.lead
+                    }`}
+                  >
+                    {c.stage ?? "lead"}
+                  </span>
+                </span>
+                <span className="self-center text-[13px] text-gray-warm truncate">
+                  {c.next_action || <span className="text-gray-cool">—</span>}
+                  {c.next_action_at && (
+                    <span
+                      className={`block font-mono text-[9px] uppercase tracking-[0.1em] mt-0.5 ${
+                        isOverdue(c.next_action_at) ? "text-risk" : "text-gray-cool"
+                      }`}
+                    >
+                      {isOverdue(c.next_action_at) ? "Overdue · " : "Due "}
+                      {new Date(c.next_action_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  )}
                 </span>
                 <span className="font-mono text-[13px] text-navy md:text-right self-center tabular-nums">
                   {releasedByCompany[c.id] ?? 0}
-                </span>
-                <span className="font-mono text-[13px] text-navy md:text-right self-center tabular-nums">
-                  {filesByCompany[c.id] ?? 0}
                 </span>
                 <span className="md:text-right self-center">
                   {open > 0 ? (

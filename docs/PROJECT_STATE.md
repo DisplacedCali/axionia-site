@@ -76,6 +76,22 @@ costs one wave and the job survives a closed tab.
   organisation first, unverified, and are also written to `leads` with
   `interest = 'buyer-deck'`. **No IP is recorded** — that's a privacy-policy
   decision, and the site has no policy yet.
+- **Site analytics** — `/admin/analytics`, first-party (migration 014).
+  Pageviews land in `site_events` via `/api/track`. **No IP is stored anywhere.**
+  Location comes from Vercel's edge headers already resolved to country/city, so
+  the address is never written down; geography is blank in local dev. Identity
+  is a first-party session cookie *stitched* on form submit —
+  `identifySession()` backfills the whole session, so what someone read before
+  converting is attributable retroactively. Clearing cookies resets it.
+- **CRM** — `companies.stage / owner_id / next_action / next_action_at`
+  (migration 014). Editable on the company hub, summarised on the list with
+  overdue follow-ups in red. `stage_changed_at` is stamped by a trigger, not by
+  the app.
+- **Vendor disclosures** — `Vendor.disclosure`. A vendor carrying an extended
+  profile MUST have one; `validate.ts` raises an **error**, not a warning, if it
+  doesn't. `VEN_WIN` (WIN) is kept in the library with a disclosure rather than
+  removed — knowing a vendor well is why the profile is richer, and the honest
+  answer is to say so. It must render wherever the vendor is named.
 - **Objective weighting** — `lib/objectives.ts`, rendered on `/platform` and in
   the deck. Axionia scores the evidence, never the objective; weights reorder
   recommendations and must never be allowed to put a dollar figure on a soft
@@ -102,9 +118,10 @@ costs one wave and the job survives a closed tab.
   outside the library are labelled model-generated and unverified in the report.
 - **`BEN029` doesn't exist.** `BENEFIT_VENDORS` maps a BetterUp offering to it.
   Either add the benefit (leadership/executive coaching) or drop the mapping.
-- **`VEN_WIN` is the only vendor with an enriched profile** and is `featured` in
-  the fertility set. It's also your employer. Defensible, but a sceptical buyer
-  would notice — worth an explicit disclosure rather than leaving it implicit.
+- **Privacy policy.** There isn't one, and two tables now depend on that gap
+  staying acknowledged: `deck_events` and `site_events` both deliberately omit
+  an IP column for this reason. Get a policy up before anyone adds one, and
+  before wiring reverse-IP company lookup (Clearbit Reveal, RB2B and similar).
 
 ---
 
@@ -174,7 +191,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`013`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`014`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.
