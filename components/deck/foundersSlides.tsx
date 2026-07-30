@@ -85,46 +85,42 @@ export const FOUNDERS_SLIDES = [
     </h2>
     <p className="dk-sub">
       So we won&rsquo;t re-argue selection bias or walk the Meridian numbers
-      again. Three things carry over, and everything after this slide assumes
-      them.
+      again. What&rsquo;s worth establishing first is what already exists,
+      because it changes what the number on the next slide is buying.
     </p>
-    <div className="dk-grid-3 dk-tight">
-      <div className="dk-obj-fam">
-        <div className="dk-obj-h">Carried over</div>
-        <div className="dk-obj-i">
-          <span className="dk-obj-n">The review isn&rsquo;t a check</span>
-          <span className="dk-obj-m">
-            Many hands, none of them positioned to test the claim.
-          </span>
+    <div className="dk-mer">
+      <div className="dk-mer-c">
+        <div className="dk-mer-k dk-blue">Running today</div>
+        <div className="dk-mer-n dk-blue">5 / 9</div>
+        <div className="dk-mer-d">
+          Deliverables live, including the full analysis: portfolio score, vendor
+          teardown, scenario and optimisation.
         </div>
       </div>
-      <div className="dk-obj-fam">
-        <div className="dk-obj-h">Carried over</div>
-        <div className="dk-obj-i">
-          <span className="dk-obj-n">We score evidence, you set weights</span>
-          <span className="dk-obj-m">
-            Same analysis, different objectives, different answer.
-          </span>
+      <div className="dk-mer-c">
+        <div className="dk-mer-k">Curated library</div>
+        <div className="dk-mer-n">30</div>
+        <div className="dk-mer-d">
+          Benefits, mapped across 9 workforce segments and 17 vendors, with 13
+          mandates across five states.
         </div>
       </div>
-      <div className="dk-obj-fam">
-        <div className="dk-obj-h">Carried over</div>
-        <div className="dk-obj-i">
-          <span className="dk-obj-n">Five of nine ship today</span>
-          <span className="dk-obj-m">
-            The stewardship cadence lands across the engagement.
-          </span>
+      <div className="dk-mer-c">
+        <div className="dk-mer-k dk-green-d">Per engagement</div>
+        <div className="dk-mer-n dk-green">10</div>
+        <div className="dk-mer-d">
+          Model passes across seven waves, resumable, ending on human review
+          before anything reaches you.
         </div>
       </div>
     </div>
+
     <div className="dk-callout">
-      That last one is not a caveat here. It is the offer.{" "}
-      <strong>
-        A founding seat is a vote on what gets built next, and you can only sell
-        that once.
-      </strong>{" "}
-      In eighteen months the roadmap will be somebody&rsquo;s finished product and
-      this conversation won&rsquo;t exist.
+      <strong>The method isn&rsquo;t a prototype.</strong> The scoring, the
+      attribution framework, the benefit library and the report layer are built
+      and in use — the Meridian analysis you just saw came out of them, not out
+      of a slide. What the roadmap adds is cadence and reach: the monthly signal,
+      the annual strategy review, self-serve document intake.
     </div>
   </div>,
 
@@ -187,16 +183,22 @@ export const FOUNDERS_SLIDES = [
     </div>
 
     <div className="dk-callout">
-      <strong>What it funds, said plainly.</strong> Paid in full at the start,
-      because this capital is what builds the four deliverables you&rsquo;d be
-      voting on. You should price that in rather than discover it later: ten
-      seats at this number is the funding mechanism for the next phase of the
-      company, and that is precisely why the vote is worth something.
-      It isn&rsquo;t equity and it isn&rsquo;t a donation — you receive the full
-      engagement for five years, and the analysis stands on its own whether or
-      not the wider program succeeds. It also isn&rsquo;t a discount available
-      later by asking. The rate lock and the vote are the entire consideration
-      for going first.
+      <strong>What you&rsquo;re buying.</strong> Five years of the engagement,
+      prepaid at a locked rate, and a seat on the council. That is the whole
+      transaction. The analysis runs today and would run whether or not anyone
+      took a seat.
+      <br />
+      <br />
+      Paying it in full at the start is the part that does the work on our side:
+      it converts a designed roadmap into a build schedule. Nothing on it needs
+      inventing — it needs time and people. Ten seats is what buys those, which
+      is exactly why a vote on the order is worth having.
+      <br />
+      <br />
+      It isn&rsquo;t equity and it isn&rsquo;t a donation. You receive the full
+      engagement for five years regardless, and it isn&rsquo;t a discount
+      available later by waiting — the rate lock and the vote are the entire
+      consideration for going first.
     </div>
   </div>,
 
@@ -259,10 +261,11 @@ export const FOUNDERS_SLIDES = [
           webinar is not what you&rsquo;d be buying.
         </p>
         <div className="dk-callout" style={{ marginTop: 16 }}>
-          <strong>What we get.</strong> Real decisions with real deadlines, told
-          honestly when we&rsquo;re wrong, and the benchmark those decisions
-          build. That&rsquo;s the trade, stated plainly — you are underwriting
-          the compounding asset, and the rate lock is your share of it.
+          <strong>What we get.</strong> Real decisions with real deadlines, and
+          being told honestly when we&rsquo;re wrong. Every engagement also
+          sharpens the benchmark the next one is scored against — including
+          yours, a year from now. The rate lock is your share of what that
+          becomes.
         </div>
       </div>
     </div>
