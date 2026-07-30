@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import RadarChart, { type RadarAxis } from "./RadarChart";
 import { GradientButton, GhostButton } from "./ui";
@@ -43,6 +43,43 @@ const INDUSTRY_DELTAS: Record<IndustryId, number[]> = {
   healthcare: [2, 6, -4, -3, 2, -1, 3, -2],
   retail: [-3, -4, -6, 2, -2, -5, -4, -1],
 };
+
+/* ───────────────────── the stewardship year ─────────────────────
+   A portfolio is scored on a benchmark that moves, so a quarter in
+   which you do nothing is not a quarter in which nothing happens.
+   Both series drift below, and they drift differently.
+
+   Company movement concentrates in the axes a stewardship cycle can
+   actually act on — contract terms, transparency, engagement,
+   utilization. Evidence and population fit barely move: they're
+   properties of the vendor's study population, not of anything you
+   did this quarter. Vendor stability goes DOWN, because it does
+   sometimes — a vendor gets acquired and nobody tells you.
+   ──────────────────────────────────────────────────────────────── */
+const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
+
+// order matches BASE_AXES
+const QUARTER_DELTAS: number[][] = [
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 2, 3, 0, 4, 6, 5],
+  [1, 0, 4, 6, -1, 7, 11, 9],
+  [1, 1, 6, 9, -2, 9, 15, 12],
+];
+
+// Peers improve too — fastest on transparency, as disclosure norms tighten.
+const PEER_DELTAS: number[][] = [
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 1, 0, 1, 2],
+  [1, 0, 1, 1, 1, 1, 2, 3],
+  [1, 1, 2, 1, 2, 1, 3, 5],
+];
+
+const QUARTER_NOTES = [
+  "Baseline. The portfolio as we first scored it.",
+  "Contract terms renegotiated at renewal; vendor reporting cadence tightened.",
+  "Engagement campaign lands. Utilization follows it, roughly a quarter behind.",
+  "Vendor stability slips — an acquisition your account team didn't flag. Everything else holds.",
+];
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, n));
 
@@ -97,6 +134,9 @@ export default function ReportDemo() {
   const [industry, setIndustry] = useState<IndustryId>("manufacturing");
   const [engagement, setEngagement] = useState(15);
   const [tab, setTab] = useState<Tab>("Benchmark");
+  // Index into QUARTERS. Defaults to the baseline so the first render is the
+  // portfolio as first scored — the movement is something you go and find.
+  const [quarter, setQuarter] = useState(0);
 
   const industryDef =
     INDUSTRIES.find((i) => i.id === industry) ?? INDUSTRIES[0];
@@ -128,22 +168,41 @@ export default function ReportDemo() {
     };
   }, [industryDef, engagement, employees]);
 
-  const axes: RadarAxis[] = useMemo(() => {
-    const deltas = INDUSTRY_DELTAS[industry];
-    // larger employers carry more contracting leverage and attract stabler vendors
-    const sizeBonus = clamp(Math.round((employees - 800) / 300), -6, 10);
-    return BASE_AXES.map((a, i) => {
-      let v = a.base + deltas[i];
-      if (a.label === "CONTRACT TERMS" || a.label === "VENDOR STABILITY") {
-        v += sizeBonus;
-      }
-      return { label: a.label, value: clamp(v), peer: a.peer, hue: a.hue };
-    });
-  }, [industry, employees]);
-
-  const composite = Math.round(
-    axes.reduce((s, a) => s + a.value, 0) / axes.length
+  const buildAxes = useCallback(
+    (q: number): RadarAxis[] => {
+      const deltas = INDUSTRY_DELTAS[industry];
+      // larger employers carry more contracting leverage and attract stabler vendors
+      const sizeBonus = clamp(Math.round((employees - 800) / 300), -6, 10);
+      return BASE_AXES.map((a, i) => {
+        let v = a.base + deltas[i] + QUARTER_DELTAS[q][i];
+        if (a.label === "CONTRACT TERMS" || a.label === "VENDOR STABILITY") {
+          v += sizeBonus;
+        }
+        return {
+          label: a.label,
+          value: clamp(v),
+          peer: clamp(a.peer + PEER_DELTAS[q][i]),
+          hue: a.hue,
+        };
+      });
+    },
+    [industry, employees]
   );
+
+  const axes = useMemo(() => buildAxes(quarter), [buildAxes, quarter]);
+
+  const mean = (xs: number[]) =>
+    Math.round(xs.reduce((s, x) => s + x, 0) / xs.length);
+
+  const composite = mean(axes.map((a) => a.value));
+  const peerComposite = mean(axes.map((a) => a.peer));
+
+  // Movement is only meaningful against where this portfolio started.
+  const baseline = useMemo(() => buildAxes(0), [buildAxes]);
+  const baselineComposite = mean(baseline.map((a) => a.value));
+  const baselinePeer = mean(baseline.map((a) => a.peer));
+  const move = composite - baselineComposite;
+  const peerMove = peerComposite - baselinePeer;
 
   const band =
     composite >= 75
@@ -276,6 +335,15 @@ export default function ReportDemo() {
       src: "Your input",
       you: true,
     },
+    // The quarter control moves the benchmark radar and nothing else. Listing
+    // it here rather than letting a visitor notice the score changed and
+    // wonder what else did.
+    {
+      k: "Benchmark quarter",
+      v: `${QUARTERS[quarter]} — benchmark tab only`,
+      src: "Your input",
+      you: true,
+    },
   ];
 
   return (
@@ -376,57 +444,108 @@ export default function ReportDemo() {
       {/* ── panels ── */}
       <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 min-h-[420px]">
         {tab === "Benchmark" && (
-          <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
-            <RadarChart
-              key={`${industry}-${employees}`}
-              axes={axes}
-              gradientId="reportRadarFill"
-              compact
-            />
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-3">
-                Composite portfolio score
-              </div>
-              <div className="flex items-baseline gap-3">
-                <span className="font-serif font-light text-6xl leading-none tabular-nums">
-                  {composite}
-                </span>
-                <span
-                  className={`font-mono text-[11px] uppercase tracking-[0.14em] ${band.color}`}
-                >
-                  {band.name}
-                </span>
-              </div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
-                {band.note}
-              </div>
-
-              <div className="mt-6">
-                <div className="relative h-1.5 bg-base-2 rounded-full overflow-hidden">
-                  <motion.div
-                    className="absolute inset-y-0 left-0 bg-axionia-gradient"
-                    animate={{ width: `${composite}%` }}
-                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                  />
+          <div>
+            {/* ── the stewardship year ── */}
+            <div className="mb-7 pb-6 border-b border-border">
+              <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm">
+                  Re-scored each quarter
                 </div>
-                <div className="flex justify-between mt-2 font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool">
-                  <span>Foundation</span>
-                  <span>Emerging</span>
-                  <span>Solid</span>
-                  <span>Strong</span>
+                <div className="flex" role="group" aria-label="Engagement quarter">
+                  {QUARTERS.map((q, i) => (
+                    <button
+                      key={q}
+                      onClick={() => setQuarter(i)}
+                      aria-pressed={quarter === i}
+                      className={`px-4 py-2 font-mono text-[10px] uppercase tracking-[0.12em] border -ml-px first:ml-0 transition-colors ${
+                        quarter === i
+                          ? "border-navy bg-navy text-base relative z-10"
+                          : "border-border text-gray-warm hover:border-navy"
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
               </div>
-
-              <p className="mt-6 text-[14px] leading-[1.7] text-gray-warm">
-                Eight dimensions scored independently, plotted against the peer median
-                for {industryDef.label.toLowerCase()} employers of comparable size
-                (dashed outline). Your weakest axes are where recoverable dollars
-                usually sit.
+              <p className="mt-3 text-[13px] leading-[1.6] text-gray-warm max-w-measure">
+                {QUARTER_NOTES[quarter]}
               </p>
+            </div>
 
-              <div className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
-                <span className="inline-block w-5 border-t-[1.5px] border-dashed border-slate" />
-                Peer median overlay
+            <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
+              <RadarChart
+                key={`${industry}-${employees}-${quarter}`}
+                axes={axes}
+                gradientId="reportRadarFill"
+                compact
+              />
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-3">
+                  Composite portfolio score
+                </div>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="font-serif font-light text-6xl leading-none tabular-nums">
+                    {composite}
+                  </span>
+                  <span
+                    className={`font-mono text-[11px] uppercase tracking-[0.14em] ${band.color}`}
+                  >
+                    {band.name}
+                  </span>
+                  {quarter > 0 && (
+                    <span className="font-mono text-[11px] tracking-[0.1em] text-blue tabular-nums">
+                      {move >= 0 ? "+" : ""}
+                      {move} vs Q1
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+                  {band.note}
+                </div>
+
+                {/*
+                  The point of the whole quarter control: peers move too, so a
+                  gain against yourself is not automatically a gain in position.
+                */}
+                {quarter > 0 && (
+                  <div className="mt-4 pl-3 border-l-2 border-blue text-[13px] leading-[1.6] text-gray-warm max-w-measure">
+                    Peer median moved {peerMove >= 0 ? "+" : ""}
+                    {peerMove} over the same period. You gained{" "}
+                    {move - peerMove >= 0 ? "+" : ""}
+                    {move - peerMove} in{" "}
+                    <em className="italic">relative position</em> — which is the
+                    number that decides whether a renewal is defensible.
+                  </div>
+                )}
+
+                <div className="mt-6">
+                  <div className="relative h-1.5 bg-base-2 rounded-full overflow-hidden">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-axionia-gradient"
+                      animate={{ width: `${composite}%` }}
+                      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-2 font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool">
+                    <span>Foundation</span>
+                    <span>Emerging</span>
+                    <span>Solid</span>
+                    <span>Strong</span>
+                  </div>
+                </div>
+
+                <p className="mt-6 text-[14px] leading-[1.7] text-gray-warm">
+                  Eight dimensions scored independently, plotted against the peer
+                  median for {industryDef.label.toLowerCase()} employers of
+                  comparable size (dashed outline). Your weakest axes are where
+                  recoverable dollars usually sit.
+                </p>
+
+                <div className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+                  <span className="inline-block w-5 border-t-[1.5px] border-dashed border-slate" />
+                  Peer median overlay — moves with the market, not with you
+                </div>
               </div>
             </div>
           </div>
