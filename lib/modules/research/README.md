@@ -2,9 +2,17 @@
 
 The Axionia Research Agent, moving from `axionia-app` into the site as a module.
 
-**Status: steps 1–2 of 4 complete.** Data layer and pipeline are here and
-runnable via the API. Not yet wired into `/admin/new` (that's step 3, alongside
-the report UI), and the Express server in `~/Desktop/axionia-app` still works.
+**Status: steps 1–3 of 4 complete.** Data layer, pipeline and admin UI are here.
+The free-report workflow runs end to end: create a request at `/admin/new`, run
+the research from `/admin/requests/[id]`, then read, score, revise and export at
+`/admin/reports/[id]`.
+
+Remaining: step 4 (module registry + entitlement check), and the client-facing
+report route — `reports.content` is populated and `ReportRender` exists, but the
+client dashboard still only lists uploaded files, so a released free report has
+nothing for the client to open.
+
+`~/Desktop/axionia-app` is superseded and its write path is disabled.
 
 ## Layout
 
@@ -85,9 +93,8 @@ No database, no API key, no tokens.
 
 ## Planned remaining steps
 
-3. Port the six report tabs as React components; wire `/admin/new` to start a
-   job and show wave progress.
-4. Add the module registry and entitlement check.
+4. Add the module registry and entitlement check, so a paid module can be gated
+   the same way this one is gated to admins.
 
 ## Schema
 
