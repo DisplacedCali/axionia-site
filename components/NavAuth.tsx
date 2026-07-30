@@ -134,11 +134,17 @@ export default function NavAuth({ mobile = false }: { mobile?: boolean }) {
           <Link href="/login" className="text-gray-warm hover:text-navy transition-colors">
             Log in
           </Link>
+          {/*
+            Gradient, not the bordered treatment it used to have. This is the
+            site's primary conversion and it competes with three nav groups for
+            attention — a ghost button lost that fight.
+          */}
           <Link
             href="/request-report"
-            className="px-4 py-2 border border-navy text-navy hover:bg-navy hover:text-base transition-colors"
+            className="group relative overflow-hidden px-5 py-2.5 text-base whitespace-nowrap"
           >
-            Free report
+            <span className="absolute inset-0 bg-axionia-gradient transition-transform duration-500 ease-out group-hover:scale-110" />
+            <span className="relative z-10">Free report</span>
           </Link>
         </>
       )}
