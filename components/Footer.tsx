@@ -20,7 +20,7 @@ export default function Footer() {
           <div className="flex flex-col gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-gray-warm">
             <span className="text-gray-cool">Company</span>
             <Link href="/about" className="hover:text-navy">About</Link>
-            <Link href="/founding-members" className="hover:text-navy">Founding Members</Link>
+            <Link href="/research" className="hover:text-navy">Research</Link>
             <Link href="/contact" className="hover:text-navy">Contact</Link>
           </div>
 

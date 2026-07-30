@@ -182,9 +182,9 @@ export default function Outputs() {
           </Reveal>
           <Reveal delay={0.18}>
             <p className="mt-6 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
-              The order is not ours alone to set. Founding Members hold a council
-              seat and vote on what lands next, which is most of what the ten
-              seats are actually for.
+              The order isn&rsquo;t ours alone to set either. Clients on a
+              continuing engagement tell us which of these they need first, and
+              that&rsquo;s what moves it.
             </p>
           </Reveal>
           <Reveal delay={0.24}>
@@ -192,9 +192,7 @@ export default function Outputs() {
               <GradientButton href="/request-report">
                 Start with the free score
               </GradientButton>
-              <GhostButtonLight href="/founding-members">
-                Founding Members
-              </GhostButtonLight>
+              <GhostButtonLight href="/contact">Talk to us</GhostButtonLight>
             </div>
           </Reveal>
         </div>

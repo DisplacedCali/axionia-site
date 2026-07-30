@@ -180,9 +180,7 @@ export default async function Dashboard() {
               enrollment — and a seat on the council deciding what we build.
             </p>
             <div className="flex flex-wrap gap-3">
-              <GhostButton href="/founding-members">
-                See founding membership
-              </GhostButton>
+              <GhostButton href="/contact">Talk to us</GhostButton>
             </div>
           </div>
         </div>

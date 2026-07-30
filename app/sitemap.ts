@@ -10,7 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/platform/outputs", priority: 0.85 },
     { path: "/methodology", priority: 0.8 },
     { path: "/research", priority: 0.8 },
-    { path: "/founding-members", priority: 0.8 },
     { path: "/pricing", priority: 0.7 },
     { path: "/about", priority: 0.6 },
     { path: "/contact", priority: 0.6 },

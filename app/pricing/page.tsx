@@ -34,14 +34,13 @@ const tiers = [
     ctaHref: "/contact",
     featured: true,
   },
-  {
-    label: "Founding Membership",
-    price: "10 seats only",
-    body: "Prepay your full five-year engagement upfront for a rate locked for the term, a seat on the council shaping Axionia's roadmap, and an annual in-person summit.",
-    ctaLabel: "Learn more",
-    ctaHref: "/founding-members",
-    featured: false,
-  },
+  /*
+    The founding-membership tier lived here. Removed with the rest of the
+    founder content: a published prepay-and-council-seat tier reads as raising
+    capital, and a buyer evaluating a five-year vendor relationship reacts badly
+    to that. The offer still exists — it's discussed directly, and the deck is
+    at /deck/founders behind a signed link.
+  */
 ];
 
 export default function Pricing() {

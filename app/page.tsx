@@ -296,21 +296,27 @@ export default function Home() {
             </div>
           </StaggerItem>
 
+          {/*
+            Replaced the founding-member card. That offer is now discussed
+            directly rather than advertised — a public page for it made the
+            company read as raising rather than operating, which is the opposite
+            of what a buyer evaluating a five-year vendor wants to see.
+            Research engagements are real revenue and had no homepage presence.
+          */}
           <StaggerItem className="group relative border border-border bg-base p-9 transition-colors duration-300 hover:border-navy overflow-hidden">
             <div className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
-            <Eyebrow>Founding Members</Eyebrow>
+            <Eyebrow>Research Engagements</Eyebrow>
             <h2 className="font-serif font-light text-3xl md:text-4xl leading-tight">
-              10 seats. <em className="italic">Shaping where this goes.</em>
+              Not an employer? <em className="italic">We look from the outside.</em>
             </h2>
             <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm">
-              A founding cohort of 10 employers prepaying a five-year engagement in
-              exchange for a locked rate and a seat on the council shaping the future of
-              benefits management and HR analytics — including an annual in-person summit.
+              Commissioned analysis for private equity, investors in benefits
+              vendors, consultants and competitive research — the same attribution
+              framework, pointed at someone else&rsquo;s portfolio or claim, with a
+              hard wall between it and client work.
             </p>
             <div className="mt-7">
-              <GhostButton href="/founding-members">
-                Learn about founding membership
-              </GhostButton>
+              <GhostButton href="/research">See research engagements</GhostButton>
             </div>
           </StaggerItem>
         </Stagger>

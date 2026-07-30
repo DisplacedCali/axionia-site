@@ -62,11 +62,6 @@ const groups: NavGroup[] = [
         note: "What the engagement costs",
       },
       {
-        href: "/founding-members",
-        label: "Founding Members",
-        note: "Ten seats, priced once",
-      },
-      {
         href: "/contact?interest=on-prem",
         label: "Enterprise & on-prem",
         note: "Your infrastructure, your data",
