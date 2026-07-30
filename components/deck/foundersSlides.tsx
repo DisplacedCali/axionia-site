@@ -187,11 +187,16 @@ export const FOUNDERS_SLIDES = [
     </div>
 
     <div className="dk-callout">
-      <strong>What it isn&rsquo;t.</strong> It isn&rsquo;t equity, and it
-      isn&rsquo;t a donation — you receive the full engagement for five years and
-      the analysis stands on its own whether or not the program succeeds. It also
-      isn&rsquo;t a discount you could get by asking later. The rate lock and the
-      vote are the whole consideration for going first.
+      <strong>What it funds, said plainly.</strong> Paid in full at the start,
+      because this capital is what builds the four deliverables you&rsquo;d be
+      voting on. You should price that in rather than discover it later: ten
+      seats at this number is the funding mechanism for the next phase of the
+      company, and that is precisely why the vote is worth something.
+      It isn&rsquo;t equity and it isn&rsquo;t a donation — you receive the full
+      engagement for five years, and the analysis stands on its own whether or
+      not the wider program succeeds. It also isn&rsquo;t a discount available
+      later by asking. The rate lock and the vote are the entire consideration
+      for going first.
     </div>
   </div>,
 
