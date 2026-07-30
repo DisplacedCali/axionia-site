@@ -173,6 +173,21 @@ export function validateResearchData(): DataIssue[] {
       `${featured.length} fertility vendors flagged featured: ${featured.map((v) => v.name).join(", ")}`);
   }
 
+  /*
+    A vendor carrying an extended profile is one we know unusually well, and
+    "unusually well" is exactly the circumstance a reader is entitled to hear
+    about. This is an error rather than a warning: for a product whose entire
+    claim is independence, an undisclosed relationship is not a rough edge, it
+    is the thing that discredits everything else in the report.
+  */
+  for (const v of VENDORS) {
+    const enriched = Boolean(v.axioniaNotes || v.hardQuestions || v.fitByIndustry);
+    if (enriched && !v.disclosure?.trim()) {
+      add("error", "undisclosed-relationship",
+        `${v.name} (${v.id}) carries an extended profile but no disclosure. Either add one or drop the extended fields.`);
+    }
+  }
+
   return issues;
 }
 

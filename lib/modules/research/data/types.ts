@@ -112,6 +112,21 @@ export interface Vendor {
   /** Known caveats. Never omitted from client-facing output. */
   redFlags: string;
 
+  /**
+   * A relationship between Axionia and this vendor that a sceptical reader
+   * would want to know about before weighing anything else we say about it.
+   *
+   * Set this rather than removing a vendor. Knowing a vendor well is an asset —
+   * it's why the profile is richer — and the honest response to that is to say
+   * so, not to pretend to a distance we don't have. Undisclosed is the only
+   * version that's actually a problem.
+   *
+   * MUST be rendered anywhere the vendor is named in client-facing output.
+   * That is the whole point of the field and it is not optional at render time,
+   * whatever the type says.
+   */
+  disclosure?: string;
+
   // ── Extended profile (optional) ───────────────────────────────────────────
   // Present only where Axionia has done a deep dive. Currently VEN_WIN.
 

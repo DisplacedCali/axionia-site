@@ -216,6 +216,7 @@ export const VENDORS: readonly Vendor[] = [
     "evidenceQuality": 2,
     "url": "https://winhealth.com",
     "redFlags": "Outcomes data largely vendor-reported; menopause ROI harder to isolate than fertility",
+    "disclosure": "Axionia's analyst has a professional relationship with WIN, which is why this profile is more detailed than the others in this category. We've kept the vendor in the library rather than dropping it: the depth is useful to you, and the honest response to knowing a vendor well is to say so. Weigh our assessment of WIN accordingly — the red flags above are the same ones we'd raise about anyone, and the hard questions are the ones we'd want answered before signing.",
     "axioniaNotes": "Axionia has deep familiarity with WIN's model. Strongest differentiator is breadth — fertility through menopause — which most point solutions don't span. Clinical navigation is a genuine strength. Evidence quality is moderate.",
     "hardQuestions": [
       "How do you isolate menopause-related productivity gains from confounding variables?",
