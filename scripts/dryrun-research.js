@@ -254,11 +254,18 @@ async function runChecks(D, { createMockClient }, R) {
 
   // Uncovered role types must decline rather than guess.
   const M = require(path.join(OUT, "data", "index.js"));
+  // These two asserted the pre-dimension behaviour, where the library had no
+  // home for either role. Both are now covered — that was the point.
   const pm = M.matchSegmentToLibrary("Portfolio Managers & Investment Principals");
-  ok(pm.segmentId === null, "uncovered professional role returns no match");
-  ok(/non-clinical|not represented/i.test(pm.reason), "and says why", `"${pm.reason.slice(0,60)}…"`);
-  ok(M.matchSegmentToLibrary("Maintenance Technicians").segmentId === "SEG003",
-     "maintenance technician is industrial, not clinical");
+  ok(pm.segmentId === "SEG006", "senior non-clinical professionals now have a segment",
+     `(${pm.segmentId})`);
+  ok(/very high|non-clinical/i.test(pm.reason), "and the reason cites dimensions",
+     `"${pm.reason.slice(0, 64)}…"`);
+
+  const mt = M.matchSegmentToLibrary("Maintenance Technicians", "", { replacementComplexity: "high" });
+  ok(mt.segmentId === "SEG008", "maintenance technician maps to skilled trades", `(${mt.segmentId})`);
+  ok(M.SEGMENTS_BY_ID.get(mt.segmentId).dimensions.clinical === false,
+     "and that segment is not clinical");
 
   // Mandates now feed the report.
   ok(Array.isArray(summ.mandates.all), "curated mandates attached to the report");
@@ -268,6 +275,55 @@ async function runChecks(D, { createMockClient }, R) {
      "self-insured-full list is exactly the true ones");
   ok(summ.mandates.selfInsuredPartial.every(m => m.selfInsured === "partial"),
      "partial list is exactly the partial ones");
+
+  // ── Segment dimensions ───────────────────────────────────────────────────
+  console.log("\n── Segment dimensions ──");
+  const D2 = require(path.join(OUT, "data", "index.js"));
+
+  ok(D2.SEGMENTS.length >= 9, "library expanded beyond the original five",
+     `(${D2.SEGMENTS.length} segments)`);
+  ok(D2.SEGMENTS.every(s => s.dimensions), "every segment carries dimensions");
+
+  const expect = [
+    ["Portfolio Managers & Investment Principals", "high", "SEG006"],
+    ["Research Analysts & Associates", "high", "SEG007"],
+    ["Software Engineers", "high", "SEG007"],
+    ["Maintenance Technicians", "high", "SEG008"],
+    ["Machine Operators", "medium", "SEG003"],
+    ["Registered Nurses", "medium", "SEG002"],
+    ["Dentists", "high", "SEG001"],
+    ["Shift Supervisors", "medium", "SEG005"],
+    ["Customer Success Managers", "medium", "SEG009"],
+  ];
+  let mism = 0;
+  for (const [name, rc, want] of expect) {
+    const r = D2.matchSegmentToLibrary(name, "", { replacementComplexity: rc });
+    if (r.segmentId !== want) { mism++; console.log(`      ${name} -> ${r.segmentId} want ${want}`); }
+  }
+  ok(mism === 0, `${expect.length} role types map to the right segment`);
+
+  // The discriminators that took two attempts to get right.
+  ok(D2.matchSegmentToLibrary("Shift Supervisors","",{replacementComplexity:"medium"}).segmentId
+     !== D2.matchSegmentToLibrary("Maintenance Technicians","",{replacementComplexity:"high"}).segmentId,
+     "supervisory separates shift supervisor from maintenance technician");
+  ok(D2.matchSegmentToLibrary("Portfolio Managers","",{}).segmentId !== "SEG001",
+     "very-high-comp non-clinical does NOT land in Senior Clinical");
+  ok(D2.inferDimensions({name:"Portfolio Manager"}).clinical === false,
+     "clinical flag not set by pay level alone");
+  ok(D2.inferDimensions({name:"Customer Success Manager"}).supervisory === false,
+     "bare 'manager' is not treated as people-leadership");
+  ok(D2.inferDimensions({name:"Shift Supervisor"}).supervisory === true,
+     "'supervisor' is");
+
+  // Coverage — the gap this was meant to close.
+  const reach = new Set(D2.SEGMENTS.flatMap(s =>
+    [...s.highValueBenefits, ...s.mediumValueBenefits, ...s.lowValueBenefits]));
+  const unreachable = D2.BENEFITS.filter(b => !reach.has(b.id));
+  ok(unreachable.length === 0, "every benefit is now reachable from some segment",
+     unreachable.length ? `(${unreachable.map(b=>b.id).join(",")} still orphaned)` : "(was 10 of 30)");
+  const f5 = D2.BENEFITS.filter(b => b.financial === 5);
+  ok(f5.every(b => reach.has(b.id)),
+     "all financial:5 benefits reachable", `(${f5.length} of them)`);
 
   // ── Revise agent ─────────────────────────────────────────────────────────
   console.log("\n── Revise agent ──");

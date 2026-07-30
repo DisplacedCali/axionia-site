@@ -198,170 +198,277 @@ export function coveredStates(): string[] {
 // ── Model segment → library segment matching ────────────────────────────────
 
 /**
- * The workforce step invents segments specific to the company ("Portfolio
- * Managers & Investment Principals"). The benefit library is keyed to five
- * fixed segments. Something has to bridge them, and until now nothing did:
- * Workforce Intelligence analysed the model's segments while Benefit Design
- * prescribed for library segments chosen by industry keyword. One report,
- * two different workforces.
+ * Match a model-generated workforce segment to the library.
  *
- * This matches by role vocabulary and returns a CONFIDENCE. Low confidence
- * produces no match rather than a bad one — prescribing childcare subsidies to
- * portfolio managers because both landed in "Administrative" is worse than
- * saying the library doesn't cover them.
+ * Scores on DIMENSIONS rather than role vocabulary. The previous keyword
+ * approach failed structurally: the five original segments were named after
+ * healthcare roles, so "Portfolio Managers" matched nothing while
+ * "Maintenance Technicians" matched Clinical Support on the word "technician".
  *
- * Known gap it exposes: all five library segments are healthcare-shaped. There
- * is no segment for highly-compensated non-clinical professionals — investment
- * staff, lawyers, engineers, senior technical. Those legitimately return null.
+ * What actually determines benefit economics is compensation level, work model,
+ * and how hard the role is to replace. A surgeon and an investment principal
+ * are both very-high-comp and hard to replace, and they want broadly the same
+ * things — income protection above group caps, premium access, tax-advantaged
+ * structures. Only the clinical flag separates them.
+ *
+ * Dimensions come from the model where it provides them (retentionRisk,
+ * replacementComplexity, and comp/work inferred from the role name), so adding
+ * an industry needs no new keyword list.
  */
 
-type SegmentHint = { id: string; weight: number; terms: string[] };
+import type { CompLevel, Replaceability, Segment, WorkModel } from "./types";
 
-const SEGMENT_HINTS: SegmentHint[] = [
-  {
-    id: "SEG001",
-    weight: 3,
-    terms: [
-      "physician", "doctor", "dentist", "surgeon", "md", "dds",
-      "nurse practitioner", "physician assistant", "clinician", "provider",
-      "attending", "specialist",
-    ],
-  },
-  {
-    id: "SEG002",
-    weight: 3,
-    terms: [
-      "nurse", "rn", "lpn", "hygienist", "technologist",
-      "therapist", "clinical support", "medical assistant",
-      "paramedic", "pharmacist", "radiolog", "sonograph", "phlebotom",
-      "surgical tech", "lab tech", "pharmacy tech", "respiratory",
-    ],
-  },
-  {
-    id: "SEG003",
-    weight: 3,
-    terms: [
-      "aide", "cna", "caregiver", "frontline", "front line", "hourly",
-      "associate", "operator", "warehouse", "retail", "cashier", "driver",
-      "production", "assembly", "line worker", "shift worker", "field",
-      "janitor", "food service", "housekeep", "laborer", "picker", "packer",
-      // Industrial trades. "technician" on its own is ambiguous — a maintenance
-      // technician is industrial, not clinical — so the trades are listed here
-      // and SEG002 requires clinical vocabulary.
-      "maintenance", "mechanic", "electrician", "millwright", "machinist",
-      "welder", "plumber", "hvac", "fitter", "installer", "trades",
-    ],
-  },
-  {
-    id: "SEG004",
-    weight: 3,
-    terms: [
-      "administrative", "admin", "office", "clerical", "billing", "scheduling",
-      "reception", "front desk", "customer service", "coordinator", "clerk",
-      "data entry", "back office", "support staff",
-    ],
-  },
-  {
-    id: "SEG005",
-    weight: 3,
-    terms: [
-      "manager", "supervisor", "team lead", "team leader", "foreman",
-      "practice manager", "branch manager", "shift supervisor", "operations",
-      "director", "head of",
-    ],
-  },
+export interface InferredDimensions {
+  comp: CompLevel;
+  work: WorkModel;
+  replaceability: Replaceability;
+  licensed: boolean;
+  clinical: boolean;
+  supervisory: boolean;
+  /** Which signals were actually present rather than defaulted. */
+  observed: string[];
+}
+
+const COMP_SIGNALS: Array<[CompLevel, string[]]> = [
+  ["very_high", [
+    "portfolio manager", "principal", "partner", "managing director", "executive",
+    "chief", "physician", "surgeon", "dentist", "attorney", "founder", "president",
+    "md", "vp ", "head of",
+  ]],
+  ["high", [
+    "engineer", "developer", "architect", "scientist", "actuary", "quant",
+    "analyst", "consultant", "manager", "supervisor", "specialist", "technician",
+    "electrician", "machinist", "millwright", "welder", "nurse practitioner",
+    "physician assistant", "lead", "senior",
+  ]],
+  ["medium", [
+    "nurse", "rn", "hygienist", "therapist", "technologist", "coordinator",
+    "account", "sales", "marketing", "customer success",
+  ]],
+  ["low", [
+    "assistant", "aide", "cna", "clerk", "receptionist", "associate", "operator",
+    "cashier", "warehouse", "picker", "packer", "janitor", "housekeep", "server",
+    "entry", "helper", "labor",
+  ]],
+];
+
+const WORK_SIGNALS: Array<[WorkModel, string[]]> = [
+  ["remote", ["remote", "distributed", "work from home", "virtual"]],
+  ["field", ["field", "home health", "home care", "driver", "route", "mobile", "site"]],
+  ["shift", ["shift", "production", "assembly", "line", "plant", "floor", "overnight", "night"]],
+  ["hybrid", ["hybrid", "office", "corporate", "administrative", "hq", "research", "analytics"]],
 ];
 
 /**
- * Roles the library genuinely does not cover. Matched explicitly so they return
- * a clear "no coverage" rather than falling through to a weak keyword hit —
- * "Investment Principals" contains no library vocabulary, but "Principal"
- * shares nothing useful with "Practice Manager" either.
+ * Work model implied by the role itself, used when nothing else states one.
+ *
+ * A machine operator works shifts by definition; a maintenance technician is on
+ * the plant floor. Relying on the description alone made matching fragile —
+ * "Maintenance Technicians" with no description inferred hybrid knowledge work
+ * and landed in Technical/Engineering.
  */
-const UNCOVERED_TERMS = [
-  "portfolio manager", "investment", "principal", "partner", "analyst",
-  "trader", "banker", "attorney", "lawyer", "counsel", "engineer",
-  "developer", "software", "architect", "scientist", "researcher",
-  "consultant", "actuary", "quant", "advisor", "wealth", "broker",
+const ROLE_WORK_HINTS: Array<[WorkModel, string[]]> = [
+  ["shift", [
+    "operator", "machinist", "welder", "millwright", "maintenance", "mechanic",
+    "electrician", "hvac", "fitter", "packer", "picker", "warehouse", "assembler",
+    "technician", "custodian", "housekeep", "line cook", "server", "barista",
+  ]],
+  ["field", [
+    "aide", "home health", "home care", "caregiver", "driver", "installer",
+    "surveyor", "inspector", "courier", "route",
+  ]],
+  ["remote", ["customer success", "inside sales", "support rep", "help desk"]],
+  ["hybrid", [
+    "engineer", "developer", "architect", "scientist", "analyst", "actuary",
+    "quant", "consultant", "attorney", "accountant", "designer", "marketing",
+  ]],
 ];
+
+const CLINICAL_TERMS = [
+  "clinical", "physician", "surgeon", "dentist", "nurse", "rn", "lpn",
+  "hygienist", "therapist", "patient", "care", "medical", "health aide",
+  "pharmacist", "radiolog", "paramedic", "cna",
+];
+
+/**
+ * People-leadership vocabulary — specific phrases, not bare "manager".
+ *
+ * "Portfolio Manager" and "Customer Success Manager" are individual
+ * contributors; "Shift Supervisor" and "Branch Manager" lead people. Matching
+ * the bare word would misfile every professional whose title contains it.
+ */
+const SUPERVISORY_TERMS = [
+  "supervisor", "foreman", "team lead", "shift lead", "crew lead",
+  "branch manager", "practice manager", "store manager", "plant manager",
+  "site manager", "office manager", "superintendent", "team leader",
+  "front-line leader", "frontline leader",
+];
+
+const LICENSED_TERMS = [
+  "licensed", "registered", "certified", "credential", "rn", "lpn", "md", "dds",
+  "cpa", "pe ", "journeyman", "apprentice", "electrician", "attorney",
+];
+
+/** Infer dimensions for a model segment from its name, description and risk fields. */
+export function inferDimensions(seg: {
+  name: string;
+  description?: string | null;
+  retentionRisk?: string | null;
+  replacementComplexity?: string | null;
+}): InferredDimensions {
+  const hay = `${seg.name} ${seg.description ?? ""}`.toLowerCase();
+  const observed: string[] = [];
+
+  let comp: CompLevel = "medium";
+  for (const [level, terms] of COMP_SIGNALS) {
+    const hit = terms.find((t) => hay.includes(t));
+    if (hit) {
+      comp = level;
+      observed.push(`comp=${level} ("${hit.trim()}")`);
+      break;
+    }
+  }
+
+  let work: WorkModel | null = null;
+  for (const [model, terms] of WORK_SIGNALS) {
+    const hit = terms.find((t) => hay.includes(t));
+    if (hit) {
+      work = model;
+      observed.push(`work=${model} ("${hit.trim()}")`);
+      break;
+    }
+  }
+  if (!work) {
+    // Nothing stated. Try the role noun before falling back to a prior — the
+    // role name is usually more reliable than the pay band for this.
+    for (const [model, terms] of ROLE_WORK_HINTS) {
+      const hit = terms.find((t) => hay.includes(t));
+      if (hit) {
+        work = model;
+        observed.push(`work=${model} (role implies, "${hit.trim()}")`);
+        break;
+      }
+    }
+  }
+  if (!work) {
+    const knowledgeWork = comp === "high" || comp === "very_high";
+    work = knowledgeWork ? "hybrid" : "onsite";
+    observed.push(`work=${work} (assumed)`);
+  }
+
+  // The model supplies this directly, which is better than guessing from a name.
+  let replaceability: Replaceability = "moderate";
+  const rc = (seg.replacementComplexity ?? "").toLowerCase();
+  if (rc === "high") {
+    replaceability = "hard";
+    observed.push("replaceability=hard (model)");
+  } else if (rc === "low") {
+    replaceability = "easy";
+    observed.push("replaceability=easy (model)");
+  } else if (rc === "medium") {
+    observed.push("replaceability=moderate (model)");
+  }
+
+  const clinical = CLINICAL_TERMS.some((t) => hay.includes(t));
+  if (clinical) observed.push("clinical");
+
+  const licensed = LICENSED_TERMS.some((t) => hay.includes(t));
+  if (licensed) observed.push("licensed");
+
+  const supervisory = SUPERVISORY_TERMS.some((t) => hay.includes(t));
+  if (supervisory) observed.push("supervisory");
+
+  return { comp, work, replaceability, licensed, clinical, supervisory, observed };
+}
+
+const COMP_ORDER: CompLevel[] = ["low", "medium", "high", "very_high"];
+const REPL_ORDER: Replaceability[] = ["easy", "moderate", "hard"];
 
 export interface SegmentMatch {
   segmentId: string | null;
   confidence: "high" | "medium" | "low" | "none";
   /** Why this matched, or why nothing did. Surfaced in the report. */
   reason: string;
+  dimensions?: InferredDimensions;
 }
 
 export function matchSegmentToLibrary(
   modelSegmentName: string,
   description?: string | null,
+  extra?: { retentionRisk?: string | null; replacementComplexity?: string | null },
 ): SegmentMatch {
-  const haystack = `${modelSegmentName} ${description ?? ""}`.toLowerCase();
-
-  if (!haystack.trim()) {
+  if (!modelSegmentName?.trim()) {
     return { segmentId: null, confidence: "none", reason: "No segment name given." };
   }
 
-  const scores = new Map<string, { score: number; hits: string[] }>();
+  const dims = inferDimensions({
+    name: modelSegmentName,
+    description,
+    retentionRisk: extra?.retentionRisk,
+    replacementComplexity: extra?.replacementComplexity,
+  });
 
-  for (const hint of SEGMENT_HINTS) {
+  let best: { seg: Segment; score: number } | null = null;
+  let runnerUp = -Infinity;
+
+  for (const seg of SEGMENTS) {
+    const d = seg.dimensions;
+    if (!d) continue;
+
     let score = 0;
-    const hits: string[] = [];
-    for (const term of hint.terms) {
-      if (haystack.includes(term)) {
-        // Longer phrases are stronger evidence than single words.
-        score += hint.weight * (term.includes(" ") ? 2 : 1);
-        hits.push(term);
-      }
+
+    // Clinical is a hard discriminator, not a preference. A surgeon and an
+    // investment principal share every other dimension.
+    if (d.clinical === dims.clinical) score += 4;
+    else score -= 6;
+
+    // Compensation is the strongest remaining signal: it decides whether group
+    // caps bind, which decides which benefits matter at all.
+    const compGap = Math.abs(COMP_ORDER.indexOf(d.comp) - COMP_ORDER.indexOf(dims.comp));
+    score += compGap === 0 ? 5 : compGap === 1 ? 2 : -2;
+
+    if (d.work.includes(dims.work)) score += 3;
+
+    const rGap = Math.abs(
+      REPL_ORDER.indexOf(d.replaceability) - REPL_ORDER.indexOf(dims.replaceability),
+    );
+    score += rGap === 0 ? 2 : rGap === 1 ? 1 : 0;
+
+    if (d.licensed === dims.licensed) score += 1;
+
+    // Separates a shift supervisor from a maintenance technician: same pay band,
+    // same shift work, different economic position.
+    if (Boolean(d.supervisory) === dims.supervisory) score += 3;
+    else score -= 3;
+
+    if (!best || score > best.score) {
+      if (best) runnerUp = best.score;
+      best = { seg, score };
+    } else if (score > runnerUp) {
+      runnerUp = score;
     }
-    if (score > 0) scores.set(hint.id, { score, hits });
   }
 
-  const uncovered = UNCOVERED_TERMS.filter((t) => haystack.includes(t));
-
-  const ranked = [...scores.entries()].sort((a, b) => b[1].score - a[1].score);
-  const best = ranked[0];
-  const runnerUp = ranked[1];
-
-  // An uncovered professional role with only a weak library hit is the case
-  // that produced nonsense before: "Investment Principals" matching
-  // "Operations / Team Leaders" on the word "principal"/"operations".
-  if (uncovered.length && (!best || best[1].score <= 3)) {
+  if (!best || best.score <= 2) {
     return {
       segmentId: null,
       confidence: "none",
-      reason:
-        `No library segment covers this role type (${uncovered.slice(0, 3).join(", ")}). ` +
-        "The five library segments are clinical, frontline, administrative and operations-leader; " +
-        "highly-compensated non-clinical professionals are not represented.",
+      reason: `No library segment fits these characteristics (${dims.comp} comp, ${dims.work}, ${dims.replaceability} to replace${dims.clinical ? ", clinical" : ""}).`,
+      dimensions: dims,
     };
   }
 
-  if (!best) {
-    return {
-      segmentId: null,
-      confidence: "none",
-      reason: "No recognised role vocabulary — no library segment matched.",
-    };
-  }
-
-  const [id, { score, hits }] = best;
-  const margin = runnerUp ? score - runnerUp[1].score : score;
-
+  const margin = Number.isFinite(runnerUp) ? best.score - runnerUp : best.score;
   const confidence: SegmentMatch["confidence"] =
-    score >= 6 && margin >= 3 ? "high" : score >= 3 ? "medium" : "low";
-
-  if (confidence === "low") {
-    return {
-      segmentId: null,
-      confidence: "low",
-      reason: `Weak match only (matched on "${hits[0]}") — not confident enough to prescribe.`,
-    };
-  }
+    best.score >= 12 && margin >= 2 ? "high" : best.score >= 8 ? "medium" : "low";
 
   return {
-    segmentId: id,
+    segmentId: best.seg.id,
     confidence,
-    reason: `Matched on ${hits.slice(0, 3).map((h) => `"${h}"`).join(", ")}.`,
+    reason:
+      `Matched to ${best.seg.name} on ${dims.comp.replace("_", " ")} compensation, ` +
+      `${dims.work} work, ${dims.replaceability} to replace` +
+      (dims.clinical ? ", clinical" : "") + ".",
+    dimensions: dims,
   };
 }

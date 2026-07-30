@@ -44,12 +44,52 @@ export interface Benefit {
   axioniaPOV: string;
 }
 
+/**
+ * The dimensions that actually determine benefit economics.
+ *
+ * The original five segments were named after healthcare roles, which conflated
+ * "highly paid and hard to replace" with "clinical" — so a portfolio manager
+ * matched nothing, despite wanting broadly what a surgeon wants: income
+ * protection above group caps, premium access, tax-advantaged structures.
+ *
+ * Keying on dimensions instead means matching by inference rather than role
+ * vocabulary, and a new industry needs no new keyword list.
+ */
+export type CompLevel = "low" | "medium" | "high" | "very_high";
+export type WorkModel = "shift" | "field" | "onsite" | "hybrid" | "remote";
+export type Replaceability = "easy" | "moderate" | "hard";
+
+export interface SegmentDimensions {
+  comp: CompLevel;
+  /** Primary work model. Segments can serve adjacent models. */
+  work: WorkModel[];
+  replaceability: Replaceability;
+  /** Licensure or credential is a gate to the role. */
+  licensed: boolean;
+  /** Clinical work. Distinguishes a surgeon from an investment principal. */
+  clinical: boolean;
+  /**
+   * People-leadership responsibility.
+   *
+   * The dimension that separates a shift supervisor from a maintenance
+   * technician — same pay band, same shift work, different benefit needs. Team
+   * leaders are the retention bridge between frontline and management, which is
+   * a distinct economic position.
+   */
+  supervisory?: boolean;
+}
+
 export interface Segment {
   id: string;
   name: string;
   compensationLevel: string;
   workModel: string;
   industryExamples: string;
+  /**
+   * Structured dimensions. Optional on the type so the five original segments
+   * stayed valid while being tagged, but every segment now carries them.
+   */
+  dimensions?: SegmentDimensions;
   /** Benefit IDs, high → low value for this segment. */
   highValueBenefits: string[];
   mediumValueBenefits: string[];

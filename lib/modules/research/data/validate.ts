@@ -142,6 +142,15 @@ export function validateResearchData(): DataIssue[] {
     }
   }
 
+  // Every segment must carry dimensions, or the matcher silently skips it and
+  // that segment becomes unreachable without any error.
+  for (const seg of SEGMENTS) {
+    if (!seg.dimensions) {
+      add("error", "missing-dimensions",
+        `Segment ${seg.id} (${seg.name}) has no dimensions — matchSegmentToLibrary skips it entirely`);
+    }
+  }
+
   // Normalised weights must sum to 1, or the overall score is not what it
   // claims to be. Derived from relativeWeight, so this is a guard against a
   // future edit breaking the derivation rather than a transcription check.

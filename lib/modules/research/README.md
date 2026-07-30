@@ -114,7 +114,7 @@ runs `BEN028` → `BEN030`. The mapping is unreachable, so it's dead data rather
 than a crash. Either add the missing benefit (leadership / executive coaching,
 Career Development) or drop the mapping.
 
-### 2. Ten of thirty benefits can never appear in a report
+### 2. RESOLVED — ten of thirty benefits were unreachable
 
 No segment references them, and `getSegmentBenefits` only surfaces what a
 segment lists. The gap is not random — it is precisely the clinical and
@@ -132,10 +132,41 @@ Six of the eight benefits scored `financial: 5` are unreachable — PBM strategy
 primary care navigation, direct primary care, centers of excellence, MSK care,
 diabetes management. GLP-1 management is also unreachable.
 
-The consequence is structural: the Benefit Design tab can currently only
-recommend perks and retention levers, never the highest-financial-leverage
-clinical interventions. For a product whose thesis is economic rigour for a CFO
-audience, that's the wrong half of the library to be able to reach. Fixing it
-means extending the five segments' benefit lists to include the clinical
-categories — a content decision about which segments should surface which
-clinical programs.
+Fixed by the dimension rework. Four new segments (senior non-clinical
+professionals, technical/engineering, skilled trades, distributed remote) carry
+the clinical and income-protection benefits that no segment previously
+referenced. **All 30 benefits are now reachable and all seven `financial: 5`
+benefits can surface.**
+
+## Segment dimensions
+
+Segments are matched by DIMENSIONS, not role vocabulary:
+
+| dimension | values |
+|---|---|
+| `comp` | low · medium · high · very_high |
+| `work` | shift · field · onsite · hybrid · remote |
+| `replaceability` | easy · moderate · hard |
+| `licensed` | boolean |
+| `clinical` | boolean |
+| `supervisory` | boolean |
+
+The original five were named after healthcare roles, which conflated "highly
+paid and hard to replace" with "clinical" — so a portfolio manager matched
+nothing while a maintenance technician matched *Clinical Support* on the word
+"technician". A surgeon and an investment principal share every dimension except
+`clinical`, and they want broadly the same things.
+
+`supervisory` earns its place: it is the only thing separating a shift supervisor
+from a maintenance technician — same pay band, same shift work, different
+economic position. It matches specific phrases ("shift supervisor", "branch
+manager") rather than the bare word "manager", which would misfile every
+professional whose title contains it.
+
+`replacementComplexity` comes from the model directly. Comp and work model are
+inferred from the role name, with role-implied work models ("operator" means
+shift, "maintenance" means plant floor) checked before falling back to a prior —
+matching stays correct even with no description at all.
+
+Adding an industry needs no new keyword list. Adding a segment means tagging it
+with dimensions.

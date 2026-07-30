@@ -253,7 +253,12 @@ export function runBenefitDesign(ctx: StepContext): BenefitDesignSegment[] {
   const priorities: Array<"Critical" | "High" | "Medium"> = ["Critical", "High", "Medium"];
 
   return modelSegments.slice(0, 4).map((modelSeg, i): BenefitDesignSegment => {
-    const match = matchSegmentToLibrary(modelSeg.name, modelSeg.description);
+    // replacementComplexity comes straight from the model, which is better
+    // evidence than inferring it from a role name.
+    const match = matchSegmentToLibrary(modelSeg.name, modelSeg.description, {
+      retentionRisk: modelSeg.retentionRisk,
+      replacementComplexity: modelSeg.replacementComplexity,
+    });
     const lib = match.segmentId ? getSegmentBenefits(match.segmentId) : null;
 
     // Prefer the model's own reading of this segment over the library's generic
