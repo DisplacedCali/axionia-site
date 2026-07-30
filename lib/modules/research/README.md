@@ -2,50 +2,93 @@
 
 The Axionia Research Agent, moving from `axionia-app` into the site as a module.
 
-**Status: step 1 of 4 complete.** The data layer is here. The pipeline is not yet
-— it still runs in `~/Desktop/axionia-app` against a local Express server.
-Nothing in the site imports this module yet, so it is inert.
+**Status: steps 1–2 of 4 complete.** Data layer and pipeline are here and
+runnable via the API. Not yet wired into `/admin/new` (that's step 3, alongside
+the report UI), and the Express server in `~/Desktop/axionia-app` still works.
 
 ## Layout
 
 ```
 lib/modules/research/
-  data/
-    types.ts       contracts for Benefit / Segment / Vendor / Mandate / Axis
-    benefits.ts    30 curated benefit programs, 4 value scores each
-    segments.ts    5 workforce segments with ordered benefit preferences
-    vendors.ts     17 vendors, 18 benefit→vendor mappings, fertility set
-    mandates.ts    13 state mandates across CA IL MA MN NY
-    axes.ts        the 8 radar dimensions, weights, score bands
-    tokens.ts      brand colours, from axionia_brand_tokens.md
-    validate.ts    integrity checks — run these in CI
-    index.ts       public surface: re-exports + lookup functions
+  data/                 pure — no React, no Next, no I/O
+    types.ts            contracts for Benefit / Segment / Vendor / Mandate / Axis
+    benefits.ts         30 curated benefit programs, 4 value scores each
+    segments.ts         5 workforce segments with ordered benefit preferences
+    vendors.ts          17 vendors, 18 benefit→vendor mappings, fertility set
+    mandates.ts         13 state mandates across CA IL MA MN NY
+    axes.ts             8 radar dimensions, normalised weights, score bands
+    tokens.ts           brand colours, from axionia_brand_tokens.md
+    validate.ts         integrity checks
+    index.ts            public surface: re-exports + lookup functions
+  pipeline/             pure except llm.ts (network) — no DB access
+    prompts.ts          all prompts, ported verbatim
+    json.ts             tolerant JSON extraction + array salvage
+    llm.ts              Anthropic client + deterministic mock
+    steps.ts            the 10 steps as pure functions
+    plan.ts             DAG: dependencies, waves, plan self-check
+    runner.ts           advances one wave per call, persists, resumable
+    types.ts            job / step / result contracts
+    __dryrun__.ts       in-memory harness (not imported by the app)
+  db.ts                 research-schema access over direct pg
 ```
 
 ## The module boundary
 
-`data/` is pure. No React, no Next, no Supabase, no `fetch`. It is safe in a
-server action, an API route, a script, or a client component.
+`data/` and `pipeline/` (except `llm.ts`) are pure. Steps receive an `LlmClient`
+rather than reaching for a global, and the runner owns all persistence. That
+split is why the whole DAG is testable against a mock.
 
-Keep it that way. It's what lets the pipeline be tested without a browser and
-lets each future paid module follow the same shape.
+Keep it. It's the shape each future paid module should follow.
 
-## Planned remaining steps
+## Why direct `pg` and not supabase-js
 
-2. Extract the pipeline into pure step functions, driven off `report_requests`
-   as a job queue. **A single serverless invocation cannot run this** — the
-   pipeline takes 60–90s and Vercel's default ceiling is 10–15s. Step-wise
-   execution against the queue also makes a failed step resumable instead of
-   forcing a full re-run.
-3. Port the six report tabs as React components.
-4. Add the module registry and entitlement check, then retire the Express server.
+The `research` schema is deliberately **not** in Project Settings → API →
+Exposed schemas, so PostgREST doesn't serve it and supabase-js cannot reach it
+at all. `db.ts` connects over `DATABASE_URL` instead. The only way into the
+benchmark data is server-side code holding that connection string.
+
+## Running a job
+
+```
+POST /api/modules/research            → { jobId }  (or a cached run, if one exists)
+POST /api/modules/research/:id/advance → runs ONE wave; call until done:true
+GET  /api/modules/research/:id         → status + per-step progress
+DELETE /api/modules/research/:id       → cancel
+```
+
+Admin only. Ten model calls across seven waves, ~60–90s total.
+
+Advancing one wave per request rather than running the whole pipeline in one
+invocation is not about the timeout — Vercel's Fluid Compute would allow a
+single long call. It's that a mid-run failure would otherwise re-spend every
+prior call, progress would be invisible until the end, and closing the tab would
+lose work already paid for. The queue row is also the audit trail.
+
+Concurrency is safe: `claimJob()` is a conditional UPDATE, so a double-click
+costs a queue row rather than ten model calls. A partial unique index blocks a
+second live job for the same company.
 
 ## Verification
 
-`validateResearchData()` returns structured issues; `formatDataIssues()` prints
-them. Wire it into CI once step 2 gives it a natural call site.
+```
+npm run research:dryrun
+```
 
-Current state: **0 errors, 2 warnings.**
+Exercises the full DAG against a deterministic mock: wave ordering, dependency
+resolution, JSON extraction from fenced and prose-wrapped output, overall-score
+recomputation, optional-step degradation, required-step failure, resumability
+without repeating work, the concurrency claim, and the workforce fallback path.
+No database, no API key, no tokens.
+
+`validateResearchData()` returns structured data-integrity issues;
+`formatDataIssues()` prints them. Currently **0 errors, 2 warnings** (below).
+
+## Planned remaining steps
+
+3. Port the six report tabs as React components; wire `/admin/new` to start a
+   job and show wave progress.
+4. Add the module registry and entitlement check, then retire the Express
+   server and move `supabase_research_schema.sql` into these migrations.
 
 ## Open data questions
 

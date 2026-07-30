@@ -1,0 +1,182 @@
+/**
+ * Pipeline contracts.
+ *
+ * The step outputs mirror the shape axionia-app's `results` object had, so the
+ * existing six report tabs can consume this without reshaping — and so a run
+ * from either codebase produces the same research_runs row.
+ */
+
+import type { AxisKey } from "../data/types";
+
+export type StepId =
+  | "validate"
+  | "linkedin"
+  | "profile"
+  | "benefits"
+  | "financial"
+  | "regulatory"
+  | "workforce"
+  | "benefitdesign"
+  | "scoring"
+  | "synthesis";
+
+export type StepStatus = "pending" | "running" | "done" | "failed" | "skipped";
+
+export interface StepState {
+  status: StepStatus;
+  /** Step output. Shape depends on the step; see StepOutputs. */
+  output?: unknown;
+  error?: string;
+  attempts: number;
+  startedAt?: string;
+  finishedAt?: string;
+  ms?: number;
+  /** True when the step produced usable output via a degraded path. */
+  degraded?: boolean;
+}
+
+export type StepStates = Partial<Record<StepId, StepState>>;
+
+/** What the admin submitted. */
+export interface JobInput {
+  companyName: string;
+  website?: string | null;
+  industry?: string | null;
+  employees?: string | null;
+  /** Free-text LinkedIn/market observations the admin pasted in. */
+  notes?: string | null;
+}
+
+export interface ValidateOutput {
+  name: string;
+  industry?: string;
+  hq?: string;
+  size?: string;
+  description?: string;
+  website?: string;
+  confidence?: "high" | "medium" | "low";
+  stateOfOperations?: string[];
+}
+
+export interface StatesData {
+  states: string[];
+  primaryState: string;
+  rationale: string;
+}
+
+export interface RegulatoryOutput {
+  regulatory: string;
+  statesData: StatesData;
+}
+
+export interface WorkforceSegment {
+  name: string;
+  description?: string;
+  headcountEstimate?: string;
+  retentionRisk?: "high" | "medium" | "low";
+  retentionRiskDrivers?: string[];
+  replacementComplexity?: "high" | "medium" | "low";
+  replacementNote?: string;
+  utilization?: string;
+  topBenefit?: string;
+  premiumBenefits?: Array<{ benefit: string; rationale: string }>;
+  insight?: string;
+}
+
+export interface BenefitDesignGap {
+  benefit: string;
+  estimatedCost: string;
+  gapRationale: string;
+  retentionImpact: string;
+  urgency: "High" | "Medium" | "Low";
+  vendors: string[];
+}
+
+export interface BenefitDesignSegment {
+  segment: string;
+  priority: "Critical" | "High" | "Medium";
+  designInsight: string;
+  bestInClass: Array<{ benefit: string; economicRationale: string; competitiveSignal: string }>;
+  middleOfPack: Array<{ benefit: string; note: string }>;
+  bareMinimum: Array<{ benefit: string; note: string }>;
+  gap: BenefitDesignGap[];
+}
+
+export interface WorkforceOutput {
+  segments: WorkforceSegment[];
+  summaryBullets: string[];
+  overallInsight: string;
+  axioniaPitch: string;
+  benefitDesign?: BenefitDesignSegment[];
+}
+
+export type ScoreSet = Partial<Record<AxisKey, number>> & {
+  overallScore?: number;
+  readinessLabel?: string;
+  weakestAxis?: string;
+  topOpportunity?: string;
+  urgencySignal?: string;
+  conversationHook?: string;
+  /** True when the model failed and estimated defaults were substituted. */
+  _fallback?: boolean;
+  [key: string]: unknown;
+};
+
+/** Typed view of accumulated step outputs. */
+export interface StepOutputs {
+  validate?: ValidateOutput;
+  linkedin?: string;
+  profile?: string;
+  benefits?: string;
+  financial?: string;
+  regulatory?: RegulatoryOutput;
+  workforce?: WorkforceOutput;
+  benefitdesign?: BenefitDesignSegment[];
+  scoring?: ScoreSet;
+  synthesis?: string;
+}
+
+/** The payload written to research.research_runs on completion. */
+export interface ResearchResult {
+  company: string;
+  website?: string | null;
+  industry?: string | null;
+  hq?: string | null;
+  size?: string | null;
+  profile: string;
+  benefits: string;
+  financial: string;
+  linkedinData: string;
+  regulatory: string;
+  statesData: StatesData | null;
+  workforceData: WorkforceOutput | null;
+  scores: ScoreSet;
+  brief: string;
+  pipelineVersion: string;
+}
+
+export type JobStatus =
+  | "queued"
+  | "running"
+  | "paused"
+  | "complete"
+  | "failed"
+  | "cancelled";
+
+export interface PipelineJob {
+  id: string;
+  companyId: string | null;
+  requestId: string | null;
+  status: JobStatus;
+  input: JobInput;
+  steps: StepStates;
+  nextWave: number;
+  attempts: number;
+  lastError: string | null;
+  runId: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  model: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

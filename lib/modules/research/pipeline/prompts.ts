@@ -1,0 +1,234 @@
+/**
+ * Pipeline prompts.
+ *
+ * Ported verbatim from axionia-app src/App.js. Wording is deliberately
+ * unchanged — these have been tuned against real output, and rewriting them
+ * during a structural port would make any quality regression impossible to
+ * attribute.
+ *
+ * Pure string builders. No I/O, no model calls.
+ *
+ * One thing preserved on purpose: the truncation limits. callAPI() clipped the
+ * user prompt at 6000 chars and the system prompt at 2000. Those caps shaped
+ * every output the pipeline has ever produced, so they live in llm.ts rather
+ * than quietly disappearing.
+ */
+
+export interface CompanyContext {
+  name: string;
+  industry?: string | null;
+  hq?: string | null;
+  size?: string | null;
+  website?: string | null;
+  description?: string | null;
+}
+
+/** "Acme Dental — Dental / DSO, Minneapolis MN, ~1,200 employees" */
+export function companyLine(co: CompanyContext): string {
+  return `${co.name} — ${co.industry ?? ""}, ${co.hq ?? ""}, ${co.size ?? ""}`;
+}
+
+// ── Step 1: validate / identify ─────────────────────────────────────────────
+
+export const VALIDATE_SYSTEM =
+  "You are a company identification assistant. Given a company name, optional website, and industry hint, identify and verify the company. Return JSON with fields: name (official), industry (standardized), hq (City, State), size (e.g. ~1,200 employees), description (2-3 sentences relevant to HR and benefits decisions), website (confirmed URL), confidence (high/medium/low), stateOfOperations (array of state abbreviations where they operate).";
+
+export function validateUser(input: {
+  companyName: string;
+  website?: string | null;
+  industry?: string | null;
+}): string {
+  const parts = [`Company: ${input.companyName.trim()}`];
+  if (input.website?.trim()) parts.push(`Website: ${input.website.trim()}`);
+  if (input.industry?.trim()) parts.push(`Industry: ${input.industry.trim()}`);
+  return parts.join("\n");
+}
+
+// ── Wave 1a: LinkedIn intel + company profile ───────────────────────────────
+
+export const LINKEDIN_SYSTEM = `You are a research analyst. Return 6-8 concise bullet points (start each with -) covering:
+1. HR/benefits leadership — CHRO, VP Total Rewards, Benefits Director names and tenure if findable
+2. C-suite and key executives relevant to benefits decisions (CEO, CFO, COO) — background and priorities
+3. Investors and ownership — PE firm, major investors, board members, recent funding rounds or ownership changes
+4. Advisors or board members with HR/benefits relevance
+5. Recent HR hires, departures, or org changes
+6. Benefits-related job postings or signals
+Be specific with names and roles where findable.`;
+
+export function linkedinUser(co: CompanyContext, notes?: string | null): string {
+  let s = `Company: ${companyLine(co)}`;
+  if (co.website) s += `\nWebsite: ${co.website}`;
+  if (notes?.trim()) s += `\nNotes: ${notes.trim()}`;
+  return s;
+}
+
+export const PROFILE_SYSTEM =
+  "You are a B2B analyst. Give 4 bullet points (plain text, start each with -) about this company: workforce composition, business model, ownership structure, HR characteristics. No headers or bold.";
+
+export function profileUser(co: CompanyContext): string {
+  return `Company: ${companyLine(co)}\n${co.description ?? ""}`;
+}
+
+// ── Wave 1b: benefits posture + financial posture ───────────────────────────
+
+export const BENEFITS_SYSTEM =
+  "You are a benefits expert. Give 4 bullet points (plain text, start each with -) about this company's likely benefits situation: programs, broker/vendor relationships, workforce needs, pain points. No headers or bold.";
+
+export const FINANCIAL_SYSTEM =
+  "You are a financial analyst. Give 4 bullet points (plain text, start each with -) about financial posture relevant to benefits: margins, ownership, workforce stability, urgency signals. No headers or bold.";
+
+export function contextOnlyUser(co: CompanyContext): string {
+  return `Company: ${companyLine(co)}`;
+}
+
+// ── Wave 2a: states detection, then regulatory ──────────────────────────────
+
+export const STATES_SYSTEM =
+  "Identify all US states this company likely has significant operations in. Return JSON with fields: states (array of state abbreviations), primaryState (string), rationale (string).";
+
+export function statesUser(
+  co: CompanyContext,
+  profile: string,
+  linkedinData: string,
+): string {
+  return `Company: ${companyLine(co)}\nProfile: ${profile}\nLinkedIn: ${linkedinData ?? ""}`;
+}
+
+export function regulatorySystem(stateList: string): string {
+  return `You are a healthcare employment law and benefits compliance expert. Analyze the regulatory environment for this employer.
+Return plain bullet points starting with -.
+
+For each state in ${stateList}, flag:
+1. BENEFIT MANDATES — state-mandated coverage requirements that differ from federal baseline. For each: benefit type, law name, effective date, and critically: does it apply to self-insured ERISA plans or only fully insured plans? Flag any mandates that apply to self-insured plans prominently.
+2. PAID LEAVE — state paid family/medical leave, sick leave, or PFML requirements. Effective dates and key operational requirements.
+3. FEDERAL OVERLAY — ACA employer mandate status, ERISA obligations, FMLA, MHPAEA/mental health parity compliance requirements for this employer size and structure.
+4. WATCH SIGNALS — pending legislation or regulatory changes in these states creating near-term compliance urgency.
+
+Use ## headers for each state. Bold mandate names. Flag self-insured applicability explicitly.`;
+}
+
+export function regulatoryUser(
+  co: CompanyContext,
+  stateList: string,
+  profile: string,
+  financial: string,
+): string {
+  return `Company: ${companyLine(co)}\nStates: ${stateList}\nWorkforce: ${profile}\nFinancial: ${financial}`;
+}
+
+// ── Wave 2b: workforce segmentation ─────────────────────────────────────────
+
+export const WORKFORCE_SYSTEM = `You are a health economist specializing in workforce benefit valuation. Analyze this company's specific workforce and return JSON only.
+
+Analyze the ACTUAL workforce of this specific company — use their real role types, not generic dental or clinical labels.
+
+Key principles: Highly licensed professionals value professional development and premium health access over standard benefits. Frontline/hourly workers value immediate, usable, low-friction benefits. Administrative staff value financial wellness and career development.
+
+Return JSON with these fields only:
+- segments: array of 3-5 workforce segments specific to THIS company (use actual role names like 'Home Health Aides', 'Care Coordinators', 'Retail Associates', 'Warehouse Workers' etc), each with:
+  name, description, headcountEstimate,
+  retentionRisk: "high"|"medium"|"low",
+  retentionRiskDrivers: array of 2-3 specific factors for THIS company and market,
+  replacementComplexity: "high"|"medium"|"low",
+  replacementNote: one sentence on fill difficulty without dollar figures,
+  utilization: which benefit types this segment uses,
+  topBenefit: single most valued benefit for this segment,
+  premiumBenefits: array of {benefit, rationale},
+  insight: sharp economic insight specific to this segment and company
+- summaryBullets: array of 4-5 sharp bullets about benefit ROI and retention risk
+- overallInsight: 2-sentence synthesis
+- axioniaPitch: most compelling economic argument for Axionia`;
+
+export function workforceUser(co: CompanyContext, profile: string): string {
+  return `Company: ${companyLine(co)}\nProfile: ${profile}`;
+}
+
+/** Lighter retry when the main workforce step fails to parse. */
+export const WORKFORCE_FALLBACK_SYSTEM = `You are a workforce analyst. For this specific company, identify 3-4 workforce segments and return JSON only.
+Return: { segments: [ { name, description, headcountEstimate, retentionRisk, retentionRiskDrivers, replacementComplexity, replacementNote, topBenefit, premiumBenefits, insight } ], summaryBullets, overallInsight, axioniaPitch }
+Use the actual role types for this company. Keep each field concise.`;
+
+export function workforceFallbackUser(co: CompanyContext, profile: string): string {
+  return `Company: ${companyLine(co)}
+Industry: ${co.industry ?? ""}
+Size: ${co.size ?? ""}
+Profile: ${profile?.slice(0, 400) ?? ""}`;
+}
+
+// ── Scoring ─────────────────────────────────────────────────────────────────
+
+/**
+ * Built from the canonical axis weights rather than hardcoded.
+ *
+ * The original prompt listed weights summing to 0.91 and told the model to
+ * "multiply remaining 0.09 proportionally" — which made overallScore
+ * non-reproducible across runs. The model is no longer asked to compute the
+ * total at all: computeOverallScore() in data/axes.ts is the source of truth,
+ * and the model is asked only for the eight component scores.
+ */
+export const SCORING_SYSTEM = `You are a scoring engine for Axionia. Score this company 0-100 on EIGHT dimensions. Return ONLY valid JSON, no markdown.
+
+Dimensions:
+1. spendEfficiency - ROI from benefit spend
+2. decisionMaturity - strategic vs reactive decisions
+3. workforceAlignment - benefits match workforce composition
+4. vendorIndependence - freedom from vendor capture
+5. analyticsReadiness - evidence-based decision capability
+6. cfoEngagement - CFO involvement in benefit decisions
+7. regulatoryReadiness - preparedness for current and pending compliance (score LOW if gaps found)
+8. appreciationValue - how well benefits match what this workforce actually values (score LOW if premium segment needs unmet)
+
+Return JSON with these exact fields: spendEfficiency, decisionMaturity, workforceAlignment, vendorIndependence, analyticsReadiness, cfoEngagement, regulatoryReadiness, appreciationValue, readinessLabel (Foundation Only/Emerging/Structured/Strategic/Optimized), spendRationale, maturityRationale, alignmentRationale, vendorRationale, analyticsRationale, cfoRationale, regulatoryRationale, appreciationRationale, topOpportunity, urgencySignal, conversationHook, weakestAxis.
+
+Do NOT return overallScore — it is computed from the eight dimensions using fixed weights. Score each dimension independently on its own merits.`;
+
+export function scoringUser(args: {
+  co: CompanyContext;
+  profile: string;
+  benefits: string;
+  financial: string;
+  regulatory: string;
+  workforceInsight: string;
+}): string {
+  return `Company: ${companyLine(args.co)}
+Profile: ${args.profile}
+Benefits: ${args.benefits}
+Financial: ${args.financial}
+Regulatory: ${args.regulatory}
+Workforce: ${args.workforceInsight || "not available"}`;
+}
+
+// ── Synthesis: pre-meeting brief ────────────────────────────────────────────
+
+export const SYNTHESIS_SYSTEM = `Write a sharp internal pre-meeting brief with sections:
+## Company Snapshot
+## Benefits Intelligence
+## Financial & Workforce Context
+## Radar Diagnosis
+## Conversation Hooks
+## Watch-Outs
+2-4 bullets per section. Direct and opinionated. Include regulatory and workforce appreciation angles.`;
+
+export function synthesisUser(args: {
+  co: CompanyContext;
+  profile: string;
+  benefits: string;
+  financial: string;
+  regulatory: string;
+  workforceInsight: string;
+  scores: Record<string, unknown>;
+}): string {
+  const s = args.scores as Record<string, number | string>;
+  return `Company: ${companyLine(args.co)}
+Profile: ${args.profile}
+Benefits: ${args.benefits}
+Financial: ${args.financial}
+Regulatory: ${args.regulatory}
+Workforce: ${args.workforceInsight ?? ""}
+Radar: Spend ${s.spendEfficiency} | Maturity ${s.decisionMaturity} | Alignment ${s.workforceAlignment} | Vendor ${s.vendorIndependence} | Analytics ${s.analyticsReadiness} | CFO ${s.cfoEngagement} | Regulatory ${s.regulatoryReadiness} | Appreciation ${s.appreciationValue}
+Label: ${s.readinessLabel}`;
+}
+
+/** Appended when a step must return JSON. Ported from askJSON(). */
+export const JSON_ONLY_SUFFIX =
+  "\n\nRespond with ONLY valid JSON. No markdown fences, no explanation, no text outside the JSON object.";

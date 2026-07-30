@@ -20,3 +20,6 @@ id_rsa*
 id_ed25519*
 ssh-agent*
 eval*
+
+# research pipeline dry-run artifacts
+.dryrun-build/
