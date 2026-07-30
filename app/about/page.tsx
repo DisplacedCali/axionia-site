@@ -112,12 +112,13 @@ export default function About() {
             */}
             <StaggerItem>
               <p>
-                You&rsquo;ll notice there&rsquo;s no name on this page.
-                Axionia is early, and for now we&rsquo;d rather the work were
-                judged on whether the numbers hold up than on a biography.
-                Anyone considering an engagement is introduced directly, before
-                committing to anything — you should know exactly who you&rsquo;re
-                dealing with, and you will.
+                You&rsquo;ll notice there&rsquo;s no name on this page. That
+                is deliberate: we&rsquo;d rather the work were judged on whether
+                the numbers hold up than on a biography, which is the same
+                standard we apply to every vendor claim we take apart. Anyone
+                considering an engagement is introduced directly, before
+                committing to anything — you should know exactly who
+                you&rsquo;re dealing with, and you will.
               </p>
             </StaggerItem>
             <StaggerItem>
@@ -132,8 +133,10 @@ export default function About() {
             <StaggerItem>
               <p>
                 Axionia exists because of what those twenty years showed
-                directly. Nobody independently checks the math. Axionia is the
-                tool that does.
+                directly: a benefit decision passes through a dozen careful
+                people and still arrives unexamined. Not because anyone was
+                careless — because nobody in the chain was positioned, paid or
+                trained to be the one who checks. Axionia is that party.
               </p>
             </StaggerItem>
           </Stagger>

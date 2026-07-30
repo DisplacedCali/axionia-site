@@ -11,7 +11,6 @@ import {
 import HeroIntro from "@/components/HeroIntro";
 import HeroViz from "@/components/HeroViz";
 import RadarPreview from "@/components/RadarPreview";
-import CountUp from "@/components/CountUp";
 import WhoItsFor from "@/components/WhoItsFor";
 import PmpmStack from "@/components/PmpmStack";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
@@ -22,6 +21,35 @@ export const metadata = {
     "A vendor says their program saves you money. Axionia checks whether that's true — independently, with every assumption on the table.",
 };
 
+
+/**
+ * The five ways a well-attended review still fails. Written as method
+ * failures rather than accusations — none of these require anyone in the
+ * chain to be lazy or dishonest, which is both more accurate and the only
+ * version an HR leader can forward to their own committee.
+ */
+const REVIEW_GAPS = [
+  {
+    k: "Reviewed, not evaluated",
+    v: "Reading a vendor's ROI study and assessing one are different skills. Judging whether an effect survives its own study design takes training most people in the chain were never expected to have.",
+  },
+  {
+    k: "Judged in isolation",
+    v: "Each program is approved on its own merits, in its own meeting. Nobody is asked whether the fourth one overlaps the first three — so savings get counted twice and nobody owns the arithmetic.",
+  },
+  {
+    k: "Averaged, not specific",
+    v: "Results get quoted against a broad national base rather than your covered population. Your actual age mix, injury patterns, geography and care-seeking behaviour are what determine whether any of it transfers.",
+  },
+  {
+    k: "Disconnected from strategy",
+    v: "A recommendation can be defensible in benefits terms and still pull against the talent strategy it's meant to support. The two conversations usually happen in different rooms.",
+  },
+  {
+    k: "Not disinterested",
+    v: "Preference, familiarity and relationship shape which options get to the table at all. Most of that is ordinary human judgment rather than bad faith, which is exactly why it goes unexamined.",
+  },
+];
 
 const principles = [
   {
@@ -87,13 +115,14 @@ export default function Home() {
                   Companies buy health programs for their employees — diabetes
                   management, mental health support, physical therapy. The company
                   selling the program also supplies the study proving it works.
-                  Almost nobody checks that study.
+                  That study gets read by a lot of people and checked by almost
+                  none of them.
                 </p>
                 <p className="mt-6 text-[16px] leading-[1.75] text-gray-warm max-w-measure">
                   We check it. We take the vendor&rsquo;s claim apart, adjust it for
-                  your actual workforce, and tell you what the program is realistically
-                  worth — showing every assumption we used, so you can argue with any
-                  of them.
+                  your actual covered population, and tell you what the program is
+                  realistically worth — showing every assumption we used, so you
+                  can argue with any of them.
                 </p>
                 <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
                   That&rsquo;s it. No software to roll out, no data feed to build. You
@@ -113,62 +142,49 @@ export default function Home() {
         </Section>
       </div>
 
-      {/* ─────────────── THE PROBLEM (dark) ─────────────── */}
+      {/* ─────────────── THE PROBLEM (dark) ───────────────
+          Not "nobody looks at this." Plenty of people look at it. The failure
+          is in who's looking and how — which is a more accurate diagnosis and
+          a more respectful one, because it doesn't accuse the buyer of
+          negligence for a problem that was built around them. */}
       <DarkSection>
         <div className="grid lg:grid-cols-[1fr_1fr] gap-14 items-start">
           <div>
             <Reveal>
               <EyebrowLight>The problem</EyebrowLight>
               <h2 className="font-serif font-light text-4xl md:text-6xl leading-[1.1] max-w-xl">
-                140,000 employers.
+                Fifteen people reviewed it.
                 <br />
-                <em className="italic">Zero independent intelligence.</em>
+                <em className="italic">None of them checked it.</em>
               </h2>
             </Reveal>
             <Reveal delay={0.15}>
               <p className="mt-8 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
-                Mid-market employers are large enough to need sophisticated analysis and
-                small enough to have no internal capacity to do it themselves. Every year
-                they evaluate new benefit programs on a broker&rsquo;s recommendation and
-                a vendor&rsquo;s own ROI study. Nobody checks the math independently —
-                until now.
+                A benefit decision passes through more hands than almost anything
+                else a company buys — brokers, carriers, consultants, internal
+                committees, finance. It isn&rsquo;t that nobody is paying
+                attention. It&rsquo;s that attention and scrutiny aren&rsquo;t
+                the same thing, and almost nobody in that chain is positioned to
+                supply the second one.
+              </p>
+            </Reveal>
+            <Reveal delay={0.22}>
+              <p className="mt-6 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
+                Every one of those reviews is reasonable on its own terms. Added
+                together they still don&rsquo;t constitute a check.
               </p>
             </Reveal>
           </div>
 
-          <Stagger className="grid sm:grid-cols-3 lg:grid-cols-1 gap-8 lg:gap-10 lg:pt-4">
-            <StaggerItem className="border-t border-white/15 pt-5">
-              <div className="font-serif font-light text-5xl md:text-6xl leading-none">
-                <CountUp to={140000} />
-              </div>
-              <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-cool">
-                Mid-market employers
-                <br />
-                100–4,999 employees
-              </div>
-            </StaggerItem>
-
-            <StaggerItem className="border-t border-white/15 pt-5">
-              <div className="font-serif font-light text-5xl md:text-6xl leading-none">
-                <CountUp to={495} prefix="$" suffix="B" />
-              </div>
-              <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-cool">
-                Healthcare spend
-                <br />
-                under their control
-              </div>
-            </StaggerItem>
-
-            <StaggerItem className="border-t border-white/15 pt-5">
-              <div className="font-serif font-light text-5xl md:text-6xl leading-none text-teal">
-                0
-              </div>
-              <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-cool">
-                Independent parties
-                <br />
-                checking the math
-              </div>
-            </StaggerItem>
+          <Stagger className="grid gap-7 lg:pt-4">
+            {REVIEW_GAPS.map((g) => (
+              <StaggerItem key={g.k} className="border-t border-white/15 pt-5">
+                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-teal mb-2">
+                  {g.k}
+                </div>
+                <p className="text-[15px] leading-[1.7] text-gray-cool">{g.v}</p>
+              </StaggerItem>
+            ))}
           </Stagger>
         </div>
       </DarkSection>
@@ -272,7 +288,8 @@ export default function Home() {
             <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm">
               A custom, on-premises implementation of Axionia&rsquo;s HR AI agents for
               organizations with strict data-residency or security requirements — layered
-              on top of the standard service.
+              on top of the standard service. Common at large employers, where the
+              analysis is identical and only the deployment differs.
             </p>
             <div className="mt-7">
               <GhostButton href="/pricing">View pricing options</GhostButton>
