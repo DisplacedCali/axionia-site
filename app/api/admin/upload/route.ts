@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { STAFF_ROLES, type Role } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -25,8 +26,9 @@ export async function POST(req: Request) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Admin only." }, { status: 403 });
+  // Membership, not equality — 'owner' is also staff. See lib/authApi.ts.
+  if (!profile?.role || !STAFF_ROLES.includes(profile.role as Role)) {
+    return NextResponse.json({ error: "Staff only." }, { status: 403 });
   }
 
   const form = await req.formData();

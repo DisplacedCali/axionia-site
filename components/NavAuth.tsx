@@ -47,7 +47,8 @@ export default function NavAuth({ mobile = false }: { mobile?: boolean }) {
       setState({
         loading: false,
         email: user.email ?? null,
-        isAdmin: profile?.role === "admin",
+        // Membership, not equality: 'owner' and 'analyst' are staff too.
+        isAdmin: ["analyst", "admin", "owner"].includes(profile?.role ?? ""),
       });
     }
 

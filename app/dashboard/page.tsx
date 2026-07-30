@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Eyebrow, Section, GradientButton, GhostButton } from "@/components/ui";
 import LogoutButton from "@/components/LogoutButton";
+import { STAFF_ROLES, type Role } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,7 @@ export default async function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          {role === "admin" && (
+          {STAFF_ROLES.includes(role as Role) && (
             <Link
               href="/admin"
               className="px-4 py-2 border border-navy text-navy font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-navy hover:text-base transition-colors"
