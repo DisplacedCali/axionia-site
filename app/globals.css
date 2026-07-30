@@ -108,8 +108,13 @@ body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  /* Chrome that has no business in a client deliverable. The desktop notice was
+     printing on all 13 pages of the exported PDF. */
   header nav,
-  footer.site-footer {
+  nav,
+  footer,
+  [data-print-hide],
+  .mobile-notice {
     display: none !important;
   }
   article {

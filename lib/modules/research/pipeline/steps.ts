@@ -18,8 +18,8 @@
 
 import {
   getSegmentBenefits,
-  getSegmentsForIndustry,
   getVendorsForBenefit,
+  matchSegmentToLibrary,
   computeOverallScore,
   bandForScore,
 } from "../data";
@@ -228,60 +228,122 @@ function normaliseWorkforce(w: Partial<WorkforceOutput>): WorkforceOutput {
 // ── benefit design: pure, no model call ─────────────────────────────────────
 
 /**
- * Derived entirely from the benefit intelligence library — fast, reproducible,
- * and defensible, because every claim traces to a curated row rather than to
- * model output.
+ * Benefit design, derived from the library — now keyed to the model's OWN
+ * workforce segments rather than segments picked by industry keyword.
  *
- * NOTE: constrained by a known gap in the library. Ten of thirty benefits are
- * unreachable because no segment references them, and it is the clinical half —
- * Healthcare Access, Clinical Value and Risk/Income Protection appear in no
- * segment. Six of the eight benefits scored financial:5 therefore cannot
- * surface here. See lib/modules/research/README.md.
+ * The bug this fixes: Workforce Intelligence analysed "Portfolio Managers &
+ * Investment Principals" while Benefit Design prescribed for "Operations / Team
+ * Leaders", because the latter came from getSegmentsForIndustry(). One report,
+ * two different workforces — which is what made the output feel disconnected.
+ *
+ * Where the library has no honest match, the segment is returned with no
+ * prescription and a stated reason. Prescribing childcare subsidies to portfolio
+ * managers because both landed in "Administrative" is worse than admitting the
+ * library does not cover them — and it makes the gap visible instead of
+ * producing confident nonsense.
+ *
+ * Still constrained by a known library gap: no segment covers highly-
+ * compensated non-clinical professionals, and ten of thirty benefits are
+ * unreachable from any segment. See lib/modules/research/README.md.
  */
 export function runBenefitDesign(ctx: StepContext): BenefitDesignSegment[] {
-  const industry = ctx.outputs.validate?.industry ?? ctx.input.industry ?? "";
-  const segmentIds = getSegmentsForIndustry(industry).slice(0, 3);
+  const modelSegments = ctx.outputs.workforce?.segments ?? [];
+  if (!modelSegments.length) return [];
 
   const priorities: Array<"Critical" | "High" | "Medium"> = ["Critical", "High", "Medium"];
 
-  return segmentIds
-    .map((segId, i): BenefitDesignSegment | null => {
-      const seg = getSegmentBenefits(segId);
-      if (!seg.segment) return null;
+  return modelSegments.slice(0, 4).map((modelSeg, i): BenefitDesignSegment => {
+    const match = matchSegmentToLibrary(modelSeg.name, modelSeg.description);
+    const lib = match.segmentId ? getSegmentBenefits(match.segmentId) : null;
 
+    // Prefer the model's own reading of this segment over the library's generic
+    // note — it is specific to this company.
+    const designInsight =
+      modelSeg.insight?.trim() ||
+      lib?.segment?.notes ||
+      "";
+
+    if (!lib?.segment) {
       return {
-        segment: seg.segment.name,
+        segment: modelSeg.name,
         priority: priorities[i] ?? "Medium",
-        designInsight: seg.segment.notes ?? "",
-        bestInClass: seg.high.slice(0, 3).map((b) => ({
-          benefit: b.name,
-          economicRationale: b.axioniaPOV ?? "",
-          competitiveSignal: `Perceived value: ${b.perceived}/5 · Retention impact: ${b.retention}/5`,
-        })),
-        middleOfPack: seg.medium.slice(0, 3).map((b) => ({
-          benefit: b.name,
-          note: b.axioniaPOV ?? "Standard market offering.",
-        })),
-        bareMinimum: seg.low.slice(0, 2).map((b) => ({
-          benefit: b.name,
-          note: "Compliance/baseline — expected by candidates.",
-        })),
-        gap: seg.high.slice(0, 3).map((b) => ({
-          benefit: b.name,
-          estimatedCost: "Varies by vendor",
-          gapRationale: `High perceived value (${b.perceived}/5) and retention score (${b.retention}/5) for this segment — commonly missing at employers of this type.`,
-          retentionImpact: `Retention/attraction score: ${b.retention}/5`,
-          urgency:
-            b.perceived >= 5 && b.retention >= 5
-              ? ("High" as const)
-              : b.perceived >= 4
-                ? ("Medium" as const)
-                : ("Low" as const),
-          vendors: getVendorsForBenefit(b.id).map((v) => v.vendorName),
-        })),
+        designInsight,
+        bestInClass: [],
+        middleOfPack: [],
+        bareMinimum: [],
+        gap: [],
+        libraryMatch: { segmentId: null, confidence: match.confidence, reason: match.reason },
       };
-    })
-    .filter((s): s is BenefitDesignSegment => s !== null);
+    }
+
+    /**
+     * Gap rationale, specific to this segment and benefit.
+     *
+     * Previously every row read "High perceived value (5/5) and retention score
+     * (5/5) for this segment — commonly missing at employers of this type",
+     * identical for every benefit under every segment. That is filler, and it
+     * read as filler. Now it leads with the library's own point of view on the
+     * benefit and ties it to what the model said drives retention here.
+     */
+    const gapRationale = (b: { name: string; axioniaPOV?: string; perceived: number; retention: number; financial: number }) => {
+      const parts: string[] = [];
+      if (b.axioniaPOV?.trim()) parts.push(b.axioniaPOV.trim());
+
+      const drivers = modelSeg.retentionRiskDrivers?.filter(Boolean) ?? [];
+      if (drivers.length) {
+        parts.push(`Relevant here because ${drivers[0].toLowerCase().replace(/\.$/, "")}.`);
+      } else if (modelSeg.replacementNote?.trim()) {
+        parts.push(modelSeg.replacementNote.trim());
+      }
+
+      if (b.financial >= 4) {
+        parts.push("Financial leverage is the argument, not perception.");
+      } else if (b.perceived >= 5 && b.retention >= 5) {
+        parts.push("Retention and perceived value both score at the top of the library.");
+      }
+      return parts.join(" ");
+    };
+
+    return {
+      segment: modelSeg.name,
+      priority: priorities[i] ?? "Medium",
+      designInsight,
+      bestInClass: lib.high.slice(0, 3).map((b) => ({
+        benefit: b.name,
+        economicRationale: b.axioniaPOV ?? "",
+        competitiveSignal: `Perceived ${b.perceived}/5 · Retention ${b.retention}/5 · Financial leverage ${b.financial}/5`,
+      })),
+      middleOfPack: lib.medium.slice(0, 3).map((b) => ({
+        benefit: b.name,
+        note: b.axioniaPOV ?? "Standard market offering.",
+      })),
+      bareMinimum: lib.low.slice(0, 2).map((b) => ({
+        benefit: b.name,
+        note: "Compliance or baseline — expected by candidates.",
+      })),
+      gap: lib.high.slice(0, 3).map((b) => ({
+        benefit: b.name,
+        estimatedCost: "Varies by vendor",
+        gapRationale: gapRationale(b),
+        retentionImpact:
+          modelSeg.retentionRisk === "high"
+            ? `${modelSeg.name} carry high retention risk — this is where it bites.`
+            : `Retention weight ${b.retention}/5 for this segment.`,
+        urgency:
+          b.perceived >= 5 && b.retention >= 5
+            ? ("High" as const)
+            : b.perceived >= 4
+              ? ("Medium" as const)
+              : ("Low" as const),
+        vendors: getVendorsForBenefit(b.id).map((v) => v.vendorName),
+      })),
+      libraryMatch: {
+        segmentId: match.segmentId,
+        confidence: match.confidence,
+        reason: match.reason,
+      },
+    };
+  });
 }
 
 // ── scoring ─────────────────────────────────────────────────────────────────

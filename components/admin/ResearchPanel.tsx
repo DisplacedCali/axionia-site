@@ -238,37 +238,6 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
     router.refresh();
   }
 
-  async function save(markReviewed = false) {
-    if (!report) return;
-    const scoreEdits: Record<string, number> = {};
-    for (const a of report.axes) {
-      const v = Number(scores[a.key]);
-      if (Number.isFinite(v) && v !== a.modelScore) scoreEdits[a.key] = v;
-    }
-
-    const edits: ReportEdits = {
-      scores: scoreEdits,
-      narrative: {
-        summary: summary.trim() || undefined,
-        findings: findings.split("\n").map((f) => f.trim()).filter(Boolean),
-        profile: profile.trim() || undefined,
-        regulatory: regulatory.trim() || undefined,
-      },
-    };
-
-    const res = await saveReportEdits({
-      reportId: report.id,
-      requestId,
-      edits,
-      clientView,
-      title,
-      markReviewed,
-    });
-    if (!res.ok) return setErr(res.error);
-    flash(markReviewed ? "Saved and marked reviewed." : "Edits saved.");
-    router.refresh();
-  }
-
   const anyAsk = Boolean(ask.programs?.trim() || ask.context?.trim());
 
   return (
@@ -417,143 +386,12 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
             </div>
           )}
 
-          <div className="border border-border p-6">
-            <div className="flex items-baseline justify-between mb-5">
-              <h2 className={label}>Scorecard</h2>
-              <span className="font-serif text-[28px] leading-none text-navy">
-                {liveOverall ?? report.overallScore ?? "—"}
-                {report.band && (
-                  <span className="ml-3 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm">
-                    {report.band}
-                  </span>
-                )}
-              </span>
-            </div>
-
-            <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-              {report.axes.map((a) => {
-                const raw = scores[a.key];
-                // Only a real, parsed value counts as a change. An empty or
-                // unseeded field must not read as "you cleared this".
-                const parsed = raw === "" || raw === undefined ? null : Number(raw);
-                const changed =
-                  parsed !== null && Number.isFinite(parsed) && parsed !== a.modelScore;
-                return (
-                  <div key={a.key} className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={raw ?? ""}
-                      onChange={(e) => setScores((p) => ({ ...p, [a.key]: e.target.value }))}
-                      className={`w-16 border px-2 py-1.5 text-center font-mono text-[13px] focus:outline-none ${
-                        changed ? "border-blue text-blue" : "border-border text-navy"
-                      }`}
-                    />
-                    <span className="flex-1 text-[13px] text-navy">{a.label}</span>
-                    {changed && a.modelScore !== null && (
-                      <span
-                        className="font-mono text-[10px] text-gray-cool"
-                        title="What the model scored. Kept on the record."
-                      >
-                        was {a.modelScore}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="mt-4 font-mono text-[10px] leading-[1.6] text-gray-cool">
-              Overall recomputes from these. The model&rsquo;s original score is retained and
-              adjusted axes are marked, so the benchmark stays honest about which numbers are
-              yours.
-            </p>
-          </div>
-
-          <div className="border border-border p-6 space-y-5">
-            <h2 className={label}>Narrative</h2>
-
-            <div>
-              <label className={label}>Title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} className={`${input} mt-2`} />
-            </div>
-
-            <div>
-              <label className={label}>Summary — the first thing they read</label>
-              <textarea
-                rows={4}
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                className={`${input} mt-2`}
-              />
-            </div>
-
-            <div>
-              <label className={label}>Key findings — one per line</label>
-              <textarea
-                rows={5}
-                value={findings}
-                onChange={(e) => setFindings(e.target.value)}
-                className={`${input} mt-2 font-mono text-[13px]`}
-              />
-            </div>
-
-            <details className="border-t border-border pt-4">
-              <summary className={`${label} cursor-pointer`}>
-                Override profile / regulatory text
-              </summary>
-              <div className="mt-4 space-y-4">
-                <textarea
-                  rows={4}
-                  value={profile}
-                  onChange={(e) => setProfile(e.target.value)}
-                  placeholder="Leave empty to use the model's company profile."
-                  className={input}
-                />
-                <textarea
-                  rows={5}
-                  value={regulatory}
-                  onChange={(e) => setRegulatory(e.target.value)}
-                  placeholder="Leave empty to use the model's regulatory section."
-                  className={input}
-                />
-              </div>
-            </details>
-          </div>
-
-          <div className="border border-border p-6">
-            <h2 className={`${label} mb-4`}>What the client sees</h2>
-            <div className="flex gap-2 mb-4">
-              {(["summary", "full"] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setClientView(v)}
-                  className={`px-4 py-2 font-mono text-[10px] uppercase tracking-[0.1em] border transition-colors ${
-                    clientView === v
-                      ? "border-navy bg-navy text-base"
-                      : "border-border text-gray-warm hover:border-navy"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
+          {report.isFallback ? null : (
             <p className="text-[13px] leading-[1.7] text-gray-warm">
-              {clientView === "summary" ? (
-                <>
-                  Shows scorecard, findings, profile and regulatory exposure. Withholds
-                  workforce intelligence, benefit design and the internal brief — the paid
-                  substance.
-                </>
-              ) : (
-                <>
-                  Shows everything, including segment-level workforce analysis and the benefit
-                  design prescription. Only do this deliberately.
-                </>
-              )}
+              Scores, narrative and the client view are all edited on the report page — you
+              adjust a score while reading the rationale that justifies it.
             </p>
-          </div>
+          )}
 
           {report.blockers.length > 0 && (
             <div className="border border-caution/40 bg-amber-light/50 p-5">
@@ -568,19 +406,6 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            <button onClick={() => startTransition(() => save(false))} disabled={pending} className={btn}>
-              Save edits
-            </button>
-            <button
-              onClick={() => startTransition(() => save(true))}
-              disabled={pending}
-              className={btn}
-              title="Records that a human has read this. Required before release."
-            >
-              {report.reviewedAt ? "Save & re-confirm review" : "Save & mark reviewed"}
-            </button>
-          </div>
         </>
       )}
 

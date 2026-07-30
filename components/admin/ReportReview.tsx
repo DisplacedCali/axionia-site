@@ -6,6 +6,7 @@ import ReportRender from "@/components/ReportRender";
 import {
   markReportReviewed,
   regenerateSection,
+  saveReportEdits,
   setClientView,
 } from "@/app/admin/research-actions";
 import type { AssembledReport, ReportView, SectionId } from "@/lib/modules/research/report";
@@ -58,6 +59,38 @@ export default function ReportReview({
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
   const [view, setView] = useState<ReportView>(clientView);
+
+  /**
+   * Score edits live here now, not on the request page.
+   *
+   * You adjust a score while reading the rationale that justifies it — they are
+   * one judgement, so they belong on one screen. The request page keeps queue
+   * and status work.
+   */
+  const [scores, setScores] = useState<Record<string, string>>(() => {
+    const seed: Record<string, string> = {};
+    for (const a of report.axes) seed[a.key] = a.score === null ? "" : String(a.score);
+    return seed;
+  });
+  const [scoresDirty, setScoresDirty] = useState(false);
+
+  async function saveScores() {
+    const scoreEdits: Record<string, number> = {};
+    for (const a of report.axes) {
+      const raw = scores[a.key];
+      if (raw === "" || raw === undefined) continue;
+      const v = Number(raw);
+      if (Number.isFinite(v) && v !== a.modelScore) scoreEdits[a.key] = v;
+    }
+    const res = await saveReportEdits({
+      reportId,
+      requestId: requestId ?? "",
+      edits: { scores: scoreEdits },
+    });
+    if (!res.ok) return setErr(res.error);
+    setScoresDirty(false);
+    router.refresh();
+  }
 
   async function regenerate(section: RevisableSection) {
     const comment = comments[section]?.trim();
@@ -157,6 +190,15 @@ export default function ReportReview({
           </div>
 
           <div className="flex items-center gap-3">
+            {scoresDirty && (
+              <button
+                onClick={() => startTransition(saveScores)}
+                disabled={pending}
+                className="px-4 py-2 border border-blue text-blue font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-blue hover:text-base transition-colors"
+              >
+                Save score changes
+              </button>
+            )}
             <button onClick={() => window.print()} className={btn}>
               Print / PDF
             </button>
@@ -201,7 +243,18 @@ export default function ReportReview({
       {err && <p className="text-risk text-sm print:hidden">{err}</p>}
 
       {/* ── The report, exactly as the client sees it ─────────────── */}
-      <ReportRender report={report} slots={slots} showWithheld />
+      <ReportRender
+        report={report}
+        slots={slots}
+        showWithheld
+        editScores={{
+          values: scores,
+          onChange: (key, value) => {
+            setScores((p) => ({ ...p, [key]: value }));
+            setScoresDirty(true);
+          },
+        }}
+      />
     </div>
   );
 }

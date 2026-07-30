@@ -116,7 +116,8 @@ export const STEPS: readonly StepDefinition[] = [
     id: "benefitdesign",
     label: "Benefit Design",
     emoji: "💊",
-    dependsOn: ["validate", "workforce"],
+    // Keyed to the model's segments now, so workforce is the only real input.
+    dependsOn: ["workforce"],
     modelCalls: 0,
     optional: false,
     run: runBenefitDesign,

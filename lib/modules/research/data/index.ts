@@ -194,3 +194,174 @@ export function getMandatesTouchingSelfInsured(
 export function coveredStates(): string[] {
   return [...new Set(MANDATES.map((m) => m.state))].sort();
 }
+
+// ── Model segment → library segment matching ────────────────────────────────
+
+/**
+ * The workforce step invents segments specific to the company ("Portfolio
+ * Managers & Investment Principals"). The benefit library is keyed to five
+ * fixed segments. Something has to bridge them, and until now nothing did:
+ * Workforce Intelligence analysed the model's segments while Benefit Design
+ * prescribed for library segments chosen by industry keyword. One report,
+ * two different workforces.
+ *
+ * This matches by role vocabulary and returns a CONFIDENCE. Low confidence
+ * produces no match rather than a bad one — prescribing childcare subsidies to
+ * portfolio managers because both landed in "Administrative" is worse than
+ * saying the library doesn't cover them.
+ *
+ * Known gap it exposes: all five library segments are healthcare-shaped. There
+ * is no segment for highly-compensated non-clinical professionals — investment
+ * staff, lawyers, engineers, senior technical. Those legitimately return null.
+ */
+
+type SegmentHint = { id: string; weight: number; terms: string[] };
+
+const SEGMENT_HINTS: SegmentHint[] = [
+  {
+    id: "SEG001",
+    weight: 3,
+    terms: [
+      "physician", "doctor", "dentist", "surgeon", "md", "dds",
+      "nurse practitioner", "physician assistant", "clinician", "provider",
+      "attending", "specialist",
+    ],
+  },
+  {
+    id: "SEG002",
+    weight: 3,
+    terms: [
+      "nurse", "rn", "lpn", "hygienist", "technologist",
+      "therapist", "clinical support", "medical assistant",
+      "paramedic", "pharmacist", "radiolog", "sonograph", "phlebotom",
+      "surgical tech", "lab tech", "pharmacy tech", "respiratory",
+    ],
+  },
+  {
+    id: "SEG003",
+    weight: 3,
+    terms: [
+      "aide", "cna", "caregiver", "frontline", "front line", "hourly",
+      "associate", "operator", "warehouse", "retail", "cashier", "driver",
+      "production", "assembly", "line worker", "shift worker", "field",
+      "janitor", "food service", "housekeep", "laborer", "picker", "packer",
+      // Industrial trades. "technician" on its own is ambiguous — a maintenance
+      // technician is industrial, not clinical — so the trades are listed here
+      // and SEG002 requires clinical vocabulary.
+      "maintenance", "mechanic", "electrician", "millwright", "machinist",
+      "welder", "plumber", "hvac", "fitter", "installer", "trades",
+    ],
+  },
+  {
+    id: "SEG004",
+    weight: 3,
+    terms: [
+      "administrative", "admin", "office", "clerical", "billing", "scheduling",
+      "reception", "front desk", "customer service", "coordinator", "clerk",
+      "data entry", "back office", "support staff",
+    ],
+  },
+  {
+    id: "SEG005",
+    weight: 3,
+    terms: [
+      "manager", "supervisor", "team lead", "team leader", "foreman",
+      "practice manager", "branch manager", "shift supervisor", "operations",
+      "director", "head of",
+    ],
+  },
+];
+
+/**
+ * Roles the library genuinely does not cover. Matched explicitly so they return
+ * a clear "no coverage" rather than falling through to a weak keyword hit —
+ * "Investment Principals" contains no library vocabulary, but "Principal"
+ * shares nothing useful with "Practice Manager" either.
+ */
+const UNCOVERED_TERMS = [
+  "portfolio manager", "investment", "principal", "partner", "analyst",
+  "trader", "banker", "attorney", "lawyer", "counsel", "engineer",
+  "developer", "software", "architect", "scientist", "researcher",
+  "consultant", "actuary", "quant", "advisor", "wealth", "broker",
+];
+
+export interface SegmentMatch {
+  segmentId: string | null;
+  confidence: "high" | "medium" | "low" | "none";
+  /** Why this matched, or why nothing did. Surfaced in the report. */
+  reason: string;
+}
+
+export function matchSegmentToLibrary(
+  modelSegmentName: string,
+  description?: string | null,
+): SegmentMatch {
+  const haystack = `${modelSegmentName} ${description ?? ""}`.toLowerCase();
+
+  if (!haystack.trim()) {
+    return { segmentId: null, confidence: "none", reason: "No segment name given." };
+  }
+
+  const scores = new Map<string, { score: number; hits: string[] }>();
+
+  for (const hint of SEGMENT_HINTS) {
+    let score = 0;
+    const hits: string[] = [];
+    for (const term of hint.terms) {
+      if (haystack.includes(term)) {
+        // Longer phrases are stronger evidence than single words.
+        score += hint.weight * (term.includes(" ") ? 2 : 1);
+        hits.push(term);
+      }
+    }
+    if (score > 0) scores.set(hint.id, { score, hits });
+  }
+
+  const uncovered = UNCOVERED_TERMS.filter((t) => haystack.includes(t));
+
+  const ranked = [...scores.entries()].sort((a, b) => b[1].score - a[1].score);
+  const best = ranked[0];
+  const runnerUp = ranked[1];
+
+  // An uncovered professional role with only a weak library hit is the case
+  // that produced nonsense before: "Investment Principals" matching
+  // "Operations / Team Leaders" on the word "principal"/"operations".
+  if (uncovered.length && (!best || best[1].score <= 3)) {
+    return {
+      segmentId: null,
+      confidence: "none",
+      reason:
+        `No library segment covers this role type (${uncovered.slice(0, 3).join(", ")}). ` +
+        "The five library segments are clinical, frontline, administrative and operations-leader; " +
+        "highly-compensated non-clinical professionals are not represented.",
+    };
+  }
+
+  if (!best) {
+    return {
+      segmentId: null,
+      confidence: "none",
+      reason: "No recognised role vocabulary — no library segment matched.",
+    };
+  }
+
+  const [id, { score, hits }] = best;
+  const margin = runnerUp ? score - runnerUp[1].score : score;
+
+  const confidence: SegmentMatch["confidence"] =
+    score >= 6 && margin >= 3 ? "high" : score >= 3 ? "medium" : "low";
+
+  if (confidence === "low") {
+    return {
+      segmentId: null,
+      confidence: "low",
+      reason: `Weak match only (matched on "${hits[0]}") — not confident enough to prescribe.`,
+    };
+  }
+
+  return {
+    segmentId: id,
+    confidence,
+    reason: `Matched on ${hits.slice(0, 3).map((h) => `"${h}"`).join(", ")}.`,
+  };
+}

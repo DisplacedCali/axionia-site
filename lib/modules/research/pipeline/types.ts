@@ -114,9 +114,21 @@ export interface BenefitDesignGap {
 }
 
 export interface BenefitDesignSegment {
+  /** The MODEL's segment name, so this section matches Workforce Intelligence. */
   segment: string;
   priority: "Critical" | "High" | "Medium";
   designInsight: string;
+  /**
+   * Which library segment supplied the benefit data, and how confident the
+   * match was. null means the library does not cover this role type — stated
+   * rather than forced, so the gap is visible instead of producing a confident
+   * but wrong prescription.
+   */
+  libraryMatch?: {
+    segmentId: string | null;
+    confidence: "high" | "medium" | "low" | "none";
+    reason: string;
+  };
   bestInClass: Array<{ benefit: string; economicRationale: string; competitiveSignal: string }>;
   middleOfPack: Array<{ benefit: string; note: string }>;
   bareMinimum: Array<{ benefit: string; note: string }>;

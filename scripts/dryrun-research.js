@@ -222,6 +222,53 @@ async function runChecks(D, { createMockClient }, R) {
   ok(R.releaseBlockers({ content: missing, reviewedAt: "x" })
       .some(b => /CFO Engagement/.test(b)), "missing axis blocks release and names it");
 
+  // ── Coherence fixes ──────────────────────────────────────────────────────
+  console.log("\n── Coherence (from the PDF review) ──");
+
+  const summ = R.assembleReport({ content, view: "full" });
+  ok(summ.summary !== summ.findings[0]?.text,
+     "summary is no longer findings[0] repeated verbatim");
+  ok(summ.summary === content.workforceData.overallInsight,
+     "summary uses the workforce synthesis");
+  ok(!!summ.callToAction, "call to action present");
+  ok(summ.callToAction.question === content.scores.conversationHook,
+     "conversationHook finally rendered", `"${summ.callToAction.question}"`);
+
+  const findingTexts = summ.findings.map(f => f.text.toLowerCase());
+  ok(new Set(findingTexts).size === findingTexts.length, "no duplicate findings");
+
+  // Benefit design must now key off the MODEL's segments.
+  const bd = content.workforceData.benefitDesign ?? [];
+  const modelNames = content.workforceData.segments.map(s => s.name);
+  ok(bd.length > 0, "benefit design produced", `(${bd.length} segments)`);
+  ok(bd.every(x => modelNames.includes(x.segment)),
+     "benefit design segments match Workforce Intelligence segments",
+     `(${bd.map(x=>x.segment).join(" / ")})`);
+
+  const rationales = bd.flatMap(x => x.gap.map(g => g.gapRationale));
+  ok(rationales.length === 0 || new Set(rationales).size > 1,
+     "gap rationales are not one repeated template",
+     `(${new Set(rationales).size} distinct of ${rationales.length})`);
+  ok(!rationales.some(r => /commonly missing at\s*employers of this type/.test(r)),
+     "the old filler sentence is gone");
+
+  // Uncovered role types must decline rather than guess.
+  const M = require(path.join(OUT, "data", "index.js"));
+  const pm = M.matchSegmentToLibrary("Portfolio Managers & Investment Principals");
+  ok(pm.segmentId === null, "uncovered professional role returns no match");
+  ok(/non-clinical|not represented/i.test(pm.reason), "and says why", `"${pm.reason.slice(0,60)}…"`);
+  ok(M.matchSegmentToLibrary("Maintenance Technicians").segmentId === "SEG003",
+     "maintenance technician is industrial, not clinical");
+
+  // Mandates now feed the report.
+  ok(Array.isArray(summ.mandates.all), "curated mandates attached to the report");
+  ok(summ.mandates.all.length > 0, "mandates found for MN/IL",
+     `(${summ.mandates.all.length})`);
+  ok(summ.mandates.selfInsuredFull.every(m => m.selfInsured === true),
+     "self-insured-full list is exactly the true ones");
+  ok(summ.mandates.selfInsuredPartial.every(m => m.selfInsured === "partial"),
+     "partial list is exactly the partial ones");
+
   // ── Revise agent ─────────────────────────────────────────────────────────
   console.log("\n── Revise agent ──");
   const { reviseSection } = require(path.join(OUT, "pipeline", "revise.js"));

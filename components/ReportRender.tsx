@@ -22,6 +22,17 @@ type Props = {
   slots?: Partial<Record<SectionId, React.ReactNode>>;
   /** Show locked placeholders for withheld sections. */
   showWithheld?: boolean;
+  /**
+   * Admin score editing, inline on the scorecard.
+   *
+   * Editing scores here rather than in a separate form matters: you adjust the
+   * number while reading the rationale that justifies it. A score and its
+   * justification are one judgement, so they belong in one place.
+   */
+  editScores?: {
+    values: Record<string, string>;
+    onChange: (key: string, value: string) => void;
+  };
 };
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm";
@@ -126,7 +137,12 @@ function Section({
   );
 }
 
-export default function ReportRender({ report, slots, showWithheld = false }: Props) {
+export default function ReportRender({
+  report,
+  slots,
+  showWithheld = false,
+  editScores,
+}: Props) {
   const visible = new Set(report.visibleSections);
 
   const radarAxes: RadarAxis[] = report.axes.map((a) => ({
@@ -200,32 +216,61 @@ export default function ReportRender({ report, slots, showWithheld = false }: Pr
             <RadarChart axes={radarAxes} showPeer={false} gradientId="reportRadar" />
           </div>
 
-          <div className="mt-8 divide-y divide-border border-t border-border">
-            {report.axes.map((a) => (
-              <div key={a.key} className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1 py-3.5">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{
-                      background:
-                        CATEGORICAL[a.colorToken as keyof typeof CATEGORICAL] ?? CATEGORICAL.blue,
-                    }}
-                  />
-                  <span className="font-mono text-[13px] tabular-nums text-navy w-7 text-right">
-                    {a.score ?? "—"}
-                  </span>
-                  <span className="text-[14px] text-navy w-[150px]">{a.shortLabel}</span>
-                </div>
-                <div>
-                  <p className="text-[14px] leading-[1.65] text-gray-warm">{a.rationale}</p>
-                  {a.adjusted && (
-                    <p className="mt-1 font-mono text-[10px] text-gray-cool">
-                      Adjusted from {a.modelScore} on review.
+          {/*
+            Score, bar and rationale as one row.
+            Previously the numbers sat in a radar and the rationales ran as a
+            separate column, so in print they collapsed into overlapping text
+            and the justification read as unrelated prose. A score without its
+            reasoning beside it is just an assertion.
+          */}
+          <div className="mt-8 divide-y divide-border border-t border-b border-border">
+            {report.axes.map((a) => {
+              const hue = CATEGORICAL[a.colorToken as keyof typeof CATEGORICAL] ?? CATEGORICAL.blue;
+              return (
+                <div key={a.key} className="py-4 print:break-inside-avoid">
+                  <div className="flex items-baseline gap-3">
+                    {editScores ? (
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={editScores.values[a.key] ?? ""}
+                        onChange={(e) => editScores.onChange(a.key, e.target.value)}
+                        className={`w-14 shrink-0 border px-1.5 py-1 text-center font-mono text-[13px] tabular-nums focus:outline-none print:hidden ${
+                          a.adjusted ? "border-blue text-blue" : "border-border text-navy"
+                        }`}
+                      />
+                    ) : null}
+                    <span
+                      className={`font-mono text-[15px] tabular-nums w-8 text-right ${editScores ? "hidden print:inline" : ""}`}
+                      style={{ color: hue }}
+                    >
+                      {a.score ?? "—"}
+                    </span>
+                    <span className="flex-1 text-[15px] text-navy">{a.shortLabel}</span>
+                    {a.adjusted && a.modelScore !== null && (
+                      <span className="font-mono text-[10px] text-gray-cool shrink-0">
+                        model said {a.modelScore}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Bar carries the axis hue, so the radar and the table agree. */}
+                  <div className="mt-2 h-[3px] bg-base-2">
+                    <div
+                      className="h-full transition-all"
+                      style={{ width: `${Math.max(0, Math.min(100, a.score ?? 0))}%`, background: hue }}
+                    />
+                  </div>
+
+                  {a.rationale && (
+                    <p className="mt-2.5 text-[14px] leading-[1.7] text-gray-warm">
+                      {a.rationale}
                     </p>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Section>
       )}
@@ -254,6 +299,29 @@ export default function ReportRender({ report, slots, showWithheld = false }: Pr
               <p className="text-[15px] leading-[1.7] text-navy">{report.urgencySignal}</p>
             </div>
           )}
+
+          {/*
+            The ask. conversationHook was generated on every run and rendered
+            nowhere, so every report ended without one.
+          */}
+          {report.callToAction && (
+            <div className="mt-9 border border-navy p-6">
+              <p className={`${eyebrow} mb-2`}>Where to start</p>
+              {report.callToAction.headline && (
+                <p className="font-serif text-[21px] font-light leading-[1.45] text-navy">
+                  {report.callToAction.headline}
+                </p>
+              )}
+              {report.callToAction.question && (
+                <p className="mt-4 text-[15px] leading-[1.7] text-gray-warm">
+                  The question worth asking internally:{" "}
+                  <span className="text-navy italic">
+                    &ldquo;{report.callToAction.question}&rdquo;
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
         </Section>
       )}
 
@@ -265,11 +333,118 @@ export default function ReportRender({ report, slots, showWithheld = false }: Pr
 
       {visible.has("regulatory") && (
         <Section id="regulatory" title="Regulatory Exposure" slot={slots?.regulatory}>
+          {/*
+            Curated library FIRST, model prose second.
+
+            The mandate library carries the one fact that decides whether a
+            mandate matters to a self-insured employer — whether ERISA
+            preemption saves them — and it was going entirely unrendered while
+            five pages of model prose said the same things less reliably.
+            Curated rows are the spine; the model annotates.
+          */}
+          {report.mandates.selfInsuredFull.length > 0 && (
+            <div className="border-l-2 border-risk pl-5 mb-8">
+              <p className={`${eyebrow} mb-2`} style={{ color: SEMANTIC.risk }}>
+                Reaches self-insured plans — ERISA preemption does not apply
+              </p>
+              <ul className="space-y-3">
+                {report.mandates.selfInsuredFull.map((m) => (
+                  <li key={m.id}>
+                    <p className="text-[15px] leading-[1.6] text-navy">
+                      <span className="font-mono text-[11px] mr-2 text-gray-warm">{m.state}</span>
+                      <span className="font-medium">{m.benefit}</span>
+                    </p>
+                    <p className="mt-0.5 font-mono text-[10px] text-gray-cool">
+                      {m.law} · effective {m.effectiveDate}
+                    </p>
+                    {m.axioniaTake && (
+                      <p className="mt-1.5 text-[14px] leading-[1.65] text-gray-warm">
+                        {m.axioniaTake}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {report.mandates.selfInsuredPartial.length > 0 && (
+            <div className="border-l-2 border-caution pl-5 mb-8">
+              <p className={`${eyebrow} mb-2`} style={{ color: SEMANTIC.caution }}>
+                Partial reach — federal floor applies, state adds enforcement
+              </p>
+              <ul className="space-y-2">
+                {report.mandates.selfInsuredPartial.map((m) => (
+                  <li key={m.id} className="text-[14px] leading-[1.65] text-navy">
+                    <span className="font-mono text-[11px] mr-2 text-gray-warm">{m.state}</span>
+                    {m.benefit} — <span className="text-gray-warm">{m.erisa}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {report.mandates.all.length > 0 && (
+            <table className="w-full text-left mb-8 border-t border-border">
+              <thead>
+                <tr className={eyebrow}>
+                  <th className="py-2.5 pr-3 font-normal">State</th>
+                  <th className="py-2.5 pr-3 font-normal">Mandate</th>
+                  <th className="py-2.5 pr-3 font-normal">Effective</th>
+                  <th className="py-2.5 font-normal">Self-insured</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {report.mandates.all.map((m) => (
+                  <tr key={m.id} className="align-top">
+                    <td className="py-2.5 pr-3 font-mono text-[12px] text-gray-warm">{m.state}</td>
+                    <td className="py-2.5 pr-3 text-[14px] text-navy">{m.benefit}</td>
+                    <td className="py-2.5 pr-3 font-mono text-[11px] text-gray-cool whitespace-nowrap">
+                      {m.effectiveDate}
+                    </td>
+                    <td className="py-2.5">
+                      {/* Dot + word, never colour alone — brand tokens §5, accessibility. */}
+                      <span className="flex items-center gap-2 whitespace-nowrap">
+                        <span
+                          className="h-1.5 w-1.5 rounded-full shrink-0"
+                          style={{
+                            background:
+                              m.selfInsured === true
+                                ? SEMANTIC.risk
+                                : m.selfInsured === "partial"
+                                  ? SEMANTIC.caution
+                                  : SEMANTIC.noSignal,
+                          }}
+                        />
+                        <span className="font-mono text-[11px] text-gray-warm">
+                          {m.selfInsured === true
+                            ? "Applies"
+                            : m.selfInsured === "partial"
+                              ? "Partial"
+                              : "Preempted"}
+                        </span>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {report.mandates.uncoveredStates.length > 0 && (
+            <p className="mb-6 text-[13px] leading-[1.7] text-gray-warm">
+              The commentary below also covers{" "}
+              <span className="text-navy">{report.mandates.uncoveredStates.join(", ")}</span>, which
+              the curated mandate library does not yet include — treat those passages as
+              model-generated and unverified.
+            </p>
+          )}
+
           <Prose text={report.regulatory} />
+
           {report.statesData?.states?.length ? (
-            <p className="mt-5 font-mono text-[10px] text-gray-cool">
+            <p className="mt-5 font-mono text-[10px] leading-[1.6] text-gray-cool">
               States assessed: {report.statesData.states.join(", ")}
-              {report.statesData.rationale ? ` · ${report.statesData.rationale}` : ""}
             </p>
           ) : null}
         </Section>
@@ -344,6 +519,20 @@ export default function ReportRender({ report, slots, showWithheld = false }: Pr
                     {seg.designInsight}
                   </p>
                 )}
+
+                {/*
+                  No library coverage for this role type. Said plainly rather
+                  than prescribing the nearest-match benefits, which is how
+                  portfolio managers previously got childcare subsidies.
+                */}
+                {seg.gap.length === 0 && (
+                  <p className="text-[14px] leading-[1.7] text-gray-warm border-l-2 border-stone pl-4">
+                    No prescription generated — the benefit library does not yet cover this role
+                    type, so anything shown here would be a guess.
+                    {seg.libraryMatch?.reason ? ` ${seg.libraryMatch.reason}` : ""}
+                  </p>
+                )}
+
                 <ul className="divide-y divide-border border-y border-border">
                   {seg.gap.map((g) => (
                     <li key={g.benefit} className="py-3.5">

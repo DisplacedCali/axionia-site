@@ -9,7 +9,15 @@
  * "we expose the entire model" requires in practice, not just in copy.
  */
 
-import { AXES, bandForScore, computeOverallScore, type AxisKey } from "./data";
+import {
+  AXES,
+  bandForScore,
+  computeOverallScore,
+  getMandatesForStates,
+  getSelfInsuredMandates,
+  type AxisKey,
+  type Mandate,
+} from "./data";
 import type { ResearchResult, ScoreSet } from "./pipeline/types";
 
 export type ReportView = "summary" | "full";
@@ -88,8 +96,14 @@ export interface AssembledReport {
   /** True if any score was hand-adjusted — must be surfaced, see note below. */
   anyScoreAdjusted: boolean;
 
+  /** Short synthesis. Distinct from findings — see assembleReport. */
   summary: string;
   findings: Finding[];
+  /**
+   * What to do next. The pipeline generates conversationHook on every run and
+   * nothing rendered it, so every report ended without an ask.
+   */
+  callToAction: { headline: string; question: string } | null;
   profile: string;
   regulatory: string;
   brief: string;
@@ -98,6 +112,15 @@ export interface AssembledReport {
 
   workforce: ResearchResult["workforceData"];
   statesData: ResearchResult["statesData"];
+
+  /** Curated mandates for the detected states — the spine of the regulatory section. */
+  mandates: {
+    all: Mandate[];
+    selfInsuredFull: Mandate[];
+    selfInsuredPartial: Mandate[];
+    /** States the model detected that the library doesn't cover yet. */
+    uncoveredStates: string[];
+  };
 
   /** Sections to render, in order, after view + overrides. */
   visibleSections: SectionId[];
@@ -147,11 +170,21 @@ function deriveFindings(result: ResearchResult, edits: ReportEdits): Finding[] {
 
   const out: string[] = [];
   const s = result.scores;
+
+  // topOpportunity leads the findings; the summary uses overallInsight instead,
+  // so the two no longer print the same sentence.
   if (s?.topOpportunity) out.push(String(s.topOpportunity));
   if (s?.urgencySignal) out.push(String(s.urgencySignal));
+
+  const seen = new Set(out.map((t) => t.trim().toLowerCase()));
   for (const b of result.workforceData?.summaryBullets ?? []) {
     if (out.length >= 5) break;
-    if (b?.trim()) out.push(b.trim());
+    const t = b?.trim();
+    // Guard against the model repeating itself across steps.
+    if (t && !seen.has(t.toLowerCase())) {
+      out.push(t);
+      seen.add(t.toLowerCase());
+    }
   }
   return out.slice(0, 5).map((text) => ({ text, edited: false }));
 }
@@ -219,8 +252,23 @@ export function assembleReport(args: {
       : null,
     anyScoreAdjusted: anyAdjusted,
 
-    summary: pick(edits.narrative?.summary, String(modelScores.topOpportunity ?? "")),
+    // Summary is the workforce synthesis, NOT topOpportunity.
+    //
+    // Both used to read topOpportunity, so the summary and findings[0] printed
+    // the same sentence twice — which is why the summary read long and made no
+    // point. overallInsight is a genuine synthesis and a different sentence.
+    summary: pick(
+      edits.narrative?.summary,
+      c.workforceData?.overallInsight || String(modelScores.topOpportunity ?? ""),
+    ),
     findings: deriveFindings(c, edits),
+    callToAction:
+      modelScores.topOpportunity || modelScores.conversationHook
+        ? {
+            headline: String(edits.narrative?.topOpportunity ?? modelScores.topOpportunity ?? ""),
+            question: String(modelScores.conversationHook ?? ""),
+          }
+        : null,
     profile: pick(edits.narrative?.profile, c.profile),
     regulatory: pick(edits.narrative?.regulatory, c.regulatory),
     brief: pick(edits.narrative?.brief, c.brief),
@@ -229,6 +277,20 @@ export function assembleReport(args: {
 
     workforce: c.workforceData ?? null,
     statesData: c.statesData ?? null,
+    mandates: (() => {
+      const states = c.statesData?.states ?? [];
+      const all = getMandatesForStates(states);
+      const si = getSelfInsuredMandates(states);
+      const covered = new Set(all.map((m) => m.state.toUpperCase()));
+      return {
+        all,
+        selfInsuredFull: si.full,
+        selfInsuredPartial: si.partial,
+        uncoveredStates: states
+          .map((x) => x.toUpperCase())
+          .filter((x) => !covered.has(x)),
+      };
+    })(),
 
     visibleSections: visible,
     withheldSections: withheld,
