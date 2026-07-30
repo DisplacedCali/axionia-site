@@ -5,19 +5,20 @@ import { ReactNode } from "react";
  *
  * Two decisions worth keeping:
  *
- * 1. `status` is on every card, including the ones that don't exist yet. The
- *    alternative — showing only what ships today, or showing everything as
- *    though it ships today — is either a thin page or a false one. A visible
- *    roadmap is the same principle as exposing the model.
+ * 1. `status` describes AVAILABILITY, not build state. "In build" and "Planned"
+ *    are engineering words that tell a buyer the product is unfinished;
+ *    "Rolling out" and "Roadmap" tell them the same fact as a release
+ *    sequence, which is how every established vendor describes it. The
+ *    information is identical. The inference a reader draws is not.
  *
  * 2. Status chips deliberately do NOT use the semantic scale. Green, amber and
  *    red are reserved in the brand tokens for savings / vendor watch-out /
- *    risk. Spending amber on "not built yet" would make the reserved meaning
- *    unreadable everywhere else on the site, so build state is carried in
- *    navy and grays instead.
+ *    risk. Spending amber on availability would make the reserved meaning
+ *    unreadable everywhere else on the site, so status is carried in navy and
+ *    grays instead.
  */
 
-export type Status = "Live" | "In build" | "Planned";
+export type Status = "Available" | "Rolling out" | "Roadmap";
 
 export type Deliverable = {
   name: string;
@@ -31,9 +32,9 @@ export type Deliverable = {
 };
 
 const statusChip: Record<Status, string> = {
-  Live: "bg-navy text-base border-navy",
-  "In build": "border-gray-warm text-gray-warm",
-  Planned: "border-stone text-gray-cool",
+  Available: "bg-navy text-base border-navy",
+  "Rolling out": "border-gray-warm text-gray-warm",
+  Roadmap: "border-stone text-gray-cool",
 };
 
 export const SETUP: Deliverable[] = [
@@ -43,25 +44,25 @@ export const SETUP: Deliverable[] = [
     body: "Programs, carriers, contract dates and renewal timing — captured once, then reused by every analysis that follows.",
     audience: "HR",
     format: "Guided intake · ~15 min",
-    status: "Live",
+    status: "Available",
   },
   {
     name: "Workforce Segmentation",
     question: "Who are we buying it for?",
-    body: "Your population split by role type, geography and workforce composition. This is the input that makes benefit economics specific to you rather than generic to your industry.",
+    body: "Your covered population split by role type, geography and workforce composition. This is the input that makes benefit economics specific to you rather than an average taken across a national base.",
     audience: "HR · CFO",
     format: "Segment map",
-    status: "In build",
-    note: "The segment library is built; the client-facing view is next.",
+    status: "Rolling out",
+    note: "Segmentation already drives the analysis. The client-facing map is the part still landing.",
   },
   {
     name: "Data & Document Load",
     question: "What does the evidence actually say?",
-    body: "Vendor decks, renewal proposals and claim studies loaded once, read in full, and held against every claim made later.",
+    body: "Vendor decks, renewal proposals and claim studies sent once, read in full, and held against every claim made afterwards.",
     audience: "HR",
-    format: "Upload · any format",
-    status: "Planned",
-    note: "Designed so protected health information is rejected before it is ever stored.",
+    format: "Any format",
+    status: "Available",
+    note: "Self-serve upload with automated PHI screening is next. Protected health information is rejected before it is ever stored.",
   },
 ];
 
@@ -72,7 +73,7 @@ export const ANALYZE_FREE: Deliverable[] = [
     body: "Eight axes, one composite, banded from Foundation to Strong. The lowest band reads as opportunity — we don't grade you and we don't tell you you're failing.",
     audience: "CFO · HR",
     format: "1 page + radar",
-    status: "Live",
+    status: "Available",
   },
 ];
 
@@ -80,18 +81,18 @@ export const ANALYZE_PAID: Deliverable[] = [
   {
     name: "Vendor Claim Teardown",
     question: "Is this savings number real?",
-    body: "Selection bias, overlap with programs you already run, and how much of the published outcome transfers to your actual workforce — each adjustment shown separately, with the vendor's unadjusted claim kept visible beside it.",
+    body: "Selection bias, overlap with programs you already run, and how much of the published outcome transfers to your covered population — each adjustment shown separately, with the vendor's unadjusted claim kept visible beside it.",
     audience: "CFO",
     format: "Per vendor · 2–3 pages",
-    status: "Live",
+    status: "Available",
   },
   {
     name: "Scenario & Optimization",
     question: "What is it worth, and what should we do about it?",
-    body: "Low, expected and high — never a single number. Actions ranked by opportunity range, with every assumption exposed and adjustable.",
+    body: "Low, expected and high — never a single number. Every program judged against the rest of the portfolio rather than on its own, so overlapping savings are netted out instead of counted twice.",
     audience: "CFO · HR",
     format: "Interactive + PDF",
-    status: "Live",
+    status: "Available",
   },
 ];
 
@@ -102,7 +103,7 @@ export const STEWARD: Deliverable[] = [
     body: "Vendor news, mandate movement, and contract dates coming into range. Short by design — most months there is little to report, and saying so plainly is part of the service.",
     audience: "HR",
     format: "Email · under a page",
-    status: "Planned",
+    status: "Roadmap",
   },
   {
     name: "Quarterly Portfolio Refresh",
@@ -110,16 +111,16 @@ export const STEWARD: Deliverable[] = [
     body: "The portfolio re-scored against a benchmark that has itself moved, with the change on each axis since last quarter.",
     audience: "CFO · HR",
     format: "Re-scored report",
-    status: "In build",
+    status: "Rolling out",
     note: "Every run is retained rather than overwritten, so movement over time is already recoverable.",
   },
   {
     name: "Annual Strategy Review",
     question: "What are we doing next year?",
-    body: "The renewal cycle planned against multi-year scenarios instead of one year at a time.",
+    body: "The renewal cycle planned against multi-year scenarios, and against the talent strategy the benefits are supposed to serve — rather than one year at a time in a different room.",
     audience: "CFO",
     format: "Working session + brief",
-    status: "Planned",
+    status: "Roadmap",
   },
 ];
 

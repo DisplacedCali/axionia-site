@@ -205,7 +205,7 @@ export default function Platform() {
         <Reveal delay={0.12}>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <GhostButton href="/platform/outputs">
-              See all nine, and what ships today
+              See all nine, and when each one lands
             </GhostButton>
             <p className="text-[14px] leading-[1.6] text-gray-warm">
               On-premises deployment for strict data-residency or procurement

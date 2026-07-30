@@ -23,7 +23,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 export const metadata = {
   title: "What you receive",
   description:
-    "Every deliverable in an Axionia engagement and when it lands — set up, analysis, and the monthly, quarterly and annual cycle that follows. Including what we haven't built yet.",
+    "Every deliverable in an Axionia engagement and when it lands — set up, analysis, and the monthly, quarterly and annual cycle that follows.",
 };
 
 export default function Outputs() {
@@ -57,10 +57,9 @@ export default function Outputs() {
           </Reveal>
           <Reveal delay={0.18}>
             <p className="mt-5 max-w-measure text-[15px] leading-[1.7] text-gray-warm">
-              Below is every deliverable, what question it answers, and who it
-              was written for &mdash; including the ones we haven&rsquo;t built
-              yet, marked as such. We&rsquo;d rather you saw the roadmap than a
-              finished-looking catalogue.
+              Below is every deliverable, what question it answers, who it was
+              written for, and where it sits in the release sequence. We publish
+              that sequence rather than implying everything arrives at once.
             </p>
           </Reveal>
           <Reveal delay={0.24}>
@@ -164,26 +163,31 @@ export default function Outputs() {
         </Reveal>
       </Section>
 
-      {/* ─────────────── WHAT'S NOT BUILT ─────────────── */}
+      {/* ─────────────── RELEASE SEQUENCE ─────────────── */}
       <DarkSection>
         <div className="max-w-3xl">
           <Reveal>
-            <EyebrowLight>Being straight about it</EyebrowLight>
+            <EyebrowLight>On sequencing</EyebrowLight>
             <h2 className="font-serif font-light text-3xl md:text-5xl leading-[1.1]">
-              Four of these nine ship today.
+              Nothing here is a maybe.
             </h2>
           </Reveal>
           <Reveal delay={0.12}>
             <p className="mt-7 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
-              The rest are marked <em className="italic">in build</em> or{" "}
-              <em className="italic">planned</em>, and we&rsquo;ve said what
-              exists behind each one. You could read that as early, and
-              you&rsquo;d be right. It&rsquo;s also why the Founding Member
-              programme exists and why it&rsquo;s only ten seats &mdash; the
-              people who join now have a say in which of these gets built next.
+              Setup and the full analysis are available today. The stewardship
+              cadence lands across the engagement rather than on day one, which
+              is also how you&rsquo;d consume it &mdash; a quarterly refresh has
+              nothing to refresh in month one.
             </p>
           </Reveal>
-          <Reveal delay={0.2}>
+          <Reveal delay={0.18}>
+            <p className="mt-6 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
+              The order is not ours alone to set. Founding Members hold a council
+              seat and vote on what lands next, which is most of what the ten
+              seats are actually for.
+            </p>
+          </Reveal>
+          <Reveal delay={0.24}>
             <div className="mt-10 flex flex-wrap gap-4">
               <GradientButton href="/request-report">
                 Start with the free score
