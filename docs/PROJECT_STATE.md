@@ -59,6 +59,10 @@ costs one wave and the job survives a closed tab.
   files for one account in one place. Read-only; actions stay where they work.
 - **Open queue** — `/admin` now has view (open / unassigned / mine / all) as a
   separate axis from status, with inline claim-and-release on each row.
+- **Buyer deck** — `docs/decks/axionia_buyer_deck.html`, self-contained, opens
+  in a browser. Deliberately **not** in `public/`: it carries commercial terms
+  and a confidentiality notice, and anything under `public/` is fetchable by
+  anyone who guesses the path. Serve it from `/admin/present` when that exists.
 
 ### Not built
 
