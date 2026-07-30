@@ -20,7 +20,7 @@ const AUDIENCES = [
   {
     tag: "Private equity & corporate development",
     title: "Benefit spend is an EBITDA line nobody diligences.",
-    body: "A mid-market target with 800 employees is carrying somewhere north of $10M in annual health spend, usually assembled over a decade with no independent review. We tell you what's recoverable post-close, what's locked into contract, and what the seller's run-rate assumes that it shouldn't.",
+    body: "An 800-person target is carrying somewhere north of $10M in annual health spend, and it scales from there — usually assembled over a decade, one approval at a time, with no independent review of the whole. We tell you what's recoverable post-close, what's locked into contract, and what the seller's run-rate assumes that it shouldn't.",
     output: "Pre-LOI screen or full diligence memo",
   },
   {

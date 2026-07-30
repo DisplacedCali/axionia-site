@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s — Axionia",
   },
   description:
-    "The company selling a benefits program also supplies the study proving it works. Axionia checks it independently — benchmarking, scenario modeling and vendor claim review for mid-market employers.",
+    "The company selling a benefits program also supplies the study proving it works. Axionia checks it independently — benchmarking, scenario modeling and vendor claim review for self-funded employers at any scale.",
   keywords: [
     "employee benefits analysis",
     "benefits benchmarking",

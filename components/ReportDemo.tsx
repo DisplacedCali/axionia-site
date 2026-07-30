@@ -377,11 +377,16 @@ export default function ReportDemo() {
                 {employees.toLocaleString("en-US")}
               </span>
             </div>
+            {/*
+              Ceiling raised from 5,000. The old bound quietly told a large
+              employer the product wasn't for them, which was never true — the
+              analysis is identical at scale, only the deployment differs.
+            */}
             <input
               type="range"
               min={200}
-              max={5000}
-              step={20}
+              max={50000}
+              step={100}
               value={employees}
               onChange={(e) => setEmployees(Number(e.target.value))}
               className="w-full accent-blue cursor-pointer"
@@ -389,7 +394,7 @@ export default function ReportDemo() {
             />
             <div className="flex justify-between mt-1 font-mono text-[9px] text-gray-cool">
               <span>200</span>
-              <span>5,000</span>
+              <span>50,000</span>
             </div>
           </div>
 

@@ -84,7 +84,7 @@ const OBLIGATIONS = [
 ];
 
 const QUALIFIES = [
-  "500–4,999 covered lives — enough spend that independent analysis pays for itself",
+  "Enough covered lives that independent analysis pays for itself — no upper limit",
   "Self-funded or level-funded, so the savings actually accrue to you",
   "A renewal, RFP or major program decision inside the next twelve months",
   "A named executive sponsor who'll actually attend council sessions",

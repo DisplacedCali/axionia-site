@@ -151,9 +151,10 @@ export default function PmpmStack() {
       </div>
 
       <p className="mt-8 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
-        Ranges reflect typical mid-market pricing and vary widely by vendor, contract
-        structure and eligible population. Yours will differ — the point is the
-        arithmetic, not the specific figures.
+        Ranges are illustrative and vary widely by vendor, contract structure and
+        covered population — larger employers typically negotiate lower per-member
+        rates and carry more programs, which moves the total in both directions.
+        Yours will differ. The point is the arithmetic, not the specific figures.
       </p>
     </div>
   );

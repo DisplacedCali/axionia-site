@@ -294,6 +294,8 @@ export default function Pricing() {
                 requirements, Axionia offers a custom on-premises implementation of its
                 HR AI agents — a dedicated buy-up layered on top of the standard service,
                 not a replacement for it. Your data stays inside your infrastructure.
+                This is the usual path at large employers, who tend to have both the
+                procurement requirements and the internal capacity to host it.
               </p>
               <p className="mt-4 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
                 Because every on-prem deployment is scoped to the buyer&rsquo;s
