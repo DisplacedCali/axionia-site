@@ -87,8 +87,20 @@ No database, no API key, no tokens.
 
 3. Port the six report tabs as React components; wire `/admin/new` to start a
    job and show wave progress.
-4. Add the module registry and entitlement check, then retire the Express
-   server and move `supabase_research_schema.sql` into these migrations.
+4. Add the module registry and entitlement check.
+
+## Schema
+
+`supabase/research_schema.sql` — the `research` schema and everything in it.
+Idempotent. It moved here from axionia-app: keeping it in a different repo from
+its only consumer is how the database ended up a version behind, with
+`normalize_domain()` missing while `db.ts` called it.
+
+axionia-app is superseded and its `/research/save` is disabled. Both codebases
+wrote to the same `research_runs` and `radar_scores`, but derived `overallScore`
+differently — that repo takes it from the model, this one recomputes it from
+normalised weights. Mixing the two would make the benchmark inconsistent about
+how its headline number is produced.
 
 ## Open data questions
 
