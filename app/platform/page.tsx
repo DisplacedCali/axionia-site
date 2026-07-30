@@ -19,41 +19,33 @@ export const metadata = {
 };
 
 
-const modules = [
+/**
+ * The three phases, in the same vocabulary /platform/outputs uses.
+ *
+ * This replaced a five-module list that described the same product with a
+ * different noun set and a different count. Two pages saying "five modules"
+ * and "nine deliverables" about one engagement is the kind of thing a buyer
+ * notices and can't unsee, so the phases live here as a summary and the
+ * deliverables are enumerated in exactly one place.
+ */
+const phases = [
   {
-    name: "Portfolio Scorer",
-    tag: "Free",
-    body: "A benchmark of your current benefit portfolio against comparable employers — score bands from Foundation to Strong, framed as opportunity, never failure. The front door to everything else.",
-    ctaLabel: "Get your free report",
-    ctaHref: "/request-report",
+    num: "01",
+    name: "Set up",
+    tag: "Once",
+    body: "Your programs, carriers and renewal dates, the workforce you're actually buying for, and the vendor material you already have. Captured once and reused by everything after it.",
   },
   {
-    name: "Research Agent",
-    tag: "Included",
-    body: "Independent, vendor-by-vendor research delivered as a leave-behind before your next renewal conversation — reviewed for accuracy, not auto-published.",
-    ctaLabel: "Ask about the Research Agent",
-    ctaHref: "/contact?interest=research-agent",
+    num: "02",
+    name: "Analyse",
+    tag: "Free, then paid",
+    body: "The portfolio scored on eight axes against comparable employers — that part is free. Then the vendor claims taken apart adjustment by adjustment, and the result modeled as a range rather than a number.",
   },
   {
-    name: "Scenario Modeling",
-    tag: "Included",
-    body: "Every recommendation is shown as a range — low, expected, high — never a single false-precision number. You see the assumptions, not just the output.",
-    ctaLabel: "Ask about scenario modeling",
-    ctaHref: "/contact?interest=scenario-modeling",
-  },
-  {
-    name: "Workforce-Aligned Strategy",
-    tag: "Included",
-    body: "Benefit economics differ for a manual/replaceable workforce versus a knowledge/talent-retention workforce. We model your actual composition, not a generic template.",
-    ctaLabel: "Ask about workforce strategy",
-    ctaHref: "/contact?interest=workforce-strategy",
-  },
-  {
-    name: "On-Prem HR AI Agents",
-    tag: "Enterprise buy-up",
-    body: "A custom, on-premises implementation of the same AI agents for organizations with strict data-residency, security, or procurement requirements.",
-    ctaLabel: "Contact us about on-prem",
-    ctaHref: "/contact?interest=on-prem",
+    num: "03",
+    name: "Steward",
+    tag: "Continuous",
+    body: "What changed this month, where the portfolio moved this quarter against a benchmark that moved too, and what the renewal cycle should look like next year.",
   },
 ];
 
@@ -175,34 +167,56 @@ export default function Platform() {
           <div className="max-w-2xl mb-14">
             <Eyebrow>What&rsquo;s included</Eyebrow>
             <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-              Five modules, one methodology
+              Three phases, <em className="italic">nine deliverables.</em>
             </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              Set it up once, analyse it properly, then keep it current. The
+              third phase is the one a report can&rsquo;t do.
+            </p>
           </div>
         </Reveal>
 
         <Stagger className="grid gap-px bg-border border border-border">
-          {modules.map((m) => (
+          {phases.map((p) => (
             <StaggerItem
-              key={m.name}
+              key={p.name}
               className="group grid md:grid-cols-[1fr_2fr] gap-4 md:gap-10 bg-base p-8 md:p-10 transition-colors duration-300 hover:bg-base-2"
             >
               <div>
-                <h3 className="font-serif text-2xl">{m.name}</h3>
+                <div className="flex items-baseline gap-3">
+                  <span className="font-mono text-[11px] tracking-[0.14em] text-blue">
+                    {p.num}
+                  </span>
+                  <h3 className="font-serif text-2xl">{p.name}</h3>
+                </div>
                 <span className="inline-block mt-3 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm border border-border group-hover:border-blue group-hover:text-blue transition-colors duration-300">
-                  {m.tag}
+                  {p.tag}
                 </span>
               </div>
               <div>
                 <p className="text-[15px] leading-[1.7] text-gray-warm max-w-measure">
-                  {m.body}
+                  {p.body}
                 </p>
-                <div className="mt-6">
-                  <GhostButton href={m.ctaHref}>{m.ctaLabel}</GhostButton>
-                </div>
               </div>
             </StaggerItem>
           ))}
         </Stagger>
+
+        <Reveal delay={0.12}>
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <GhostButton href="/platform/outputs">
+              See all nine, and what ships today
+            </GhostButton>
+            <p className="text-[14px] leading-[1.6] text-gray-warm">
+              On-premises deployment for strict data-residency or procurement
+              requirements is an enterprise add-on —{" "}
+              <a href="/pricing" className="text-blue underline">
+                see pricing
+              </a>
+              .
+            </p>
+          </div>
+        </Reveal>
       </Section>
 
       {/* ─────────────── WORKFLOW WALKTHROUGH ─────────────── */}
