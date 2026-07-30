@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   advanceResearch,
@@ -94,6 +94,14 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "text-gray-cool",
 };
 
+function seedScores(report: Props["report"]): Record<string, string> {
+  const seed: Record<string, string> = {};
+  for (const a of report?.axes ?? []) {
+    seed[a.key] = a.score === null ? "" : String(a.score);
+  }
+  return seed;
+}
+
 export default function ResearchPanel({ requestId, ask, report, activeJob }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -117,11 +125,31 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
   );
   const [profile, setProfile] = useState(report?.edits.narrative?.profile ?? "");
   const [regulatory, setRegulatory] = useState(report?.edits.narrative?.regulatory ?? "");
-  const [scores, setScores] = useState<Record<string, string>>(() => {
-    const seed: Record<string, string> = {};
-    for (const a of report?.axes ?? []) seed[a.key] = a.score === null ? "" : String(a.score);
-    return seed;
-  });
+  const [scores, setScores] = useState<Record<string, string>>(() => seedScores(report));
+  const [seededFor, setSeededFor] = useState<string | null>(report?.hasContent ? report.id : null);
+
+  /**
+   * Re-seed when research arrives.
+   *
+   * The panel mounts before any research exists, so every useState initializer
+   * ran against a null report and the fields stayed empty even after
+   * router.refresh() brought the data in — React keeps initial state across
+   * re-renders. Keyed on report id so it seeds exactly once per report and
+   * never clobbers edits in progress.
+   */
+  useEffect(() => {
+    if (!report?.hasContent) return;
+    if (seededFor === report.id) return;
+
+    setScores(seedScores(report));
+    setTitle(report.title);
+    setSummary(report.edits.narrative?.summary ?? report.narrative.summary ?? "");
+    setFindings((report.edits.narrative?.findings ?? report.narrative.findings ?? []).join("\n"));
+    setProfile(report.edits.narrative?.profile ?? "");
+    setRegulatory(report.edits.narrative?.regulatory ?? "");
+    setClientView(report.clientView);
+    setSeededFor(report.id);
+  }, [report, seededFor]);
 
   const flash = (m: string) => {
     setMsg(m);
@@ -139,7 +167,9 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
     let total = 0;
     let weight = 0;
     for (const [k, wt] of Object.entries(w)) {
-      const v = Number(scores[k]);
+      const raw = scores[k];
+      if (raw === "" || raw === undefined) return null;
+      const v = Number(raw);
       if (!Number.isFinite(v)) return null;
       total += v * wt;
       weight += wt;
@@ -386,14 +416,19 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
 
             <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
               {report.axes.map((a) => {
-                const changed = Number(scores[a.key]) !== a.modelScore;
+                const raw = scores[a.key];
+                // Only a real, parsed value counts as a change. An empty or
+                // unseeded field must not read as "you cleared this".
+                const parsed = raw === "" || raw === undefined ? null : Number(raw);
+                const changed =
+                  parsed !== null && Number.isFinite(parsed) && parsed !== a.modelScore;
                 return (
                   <div key={a.key} className="flex items-center gap-3">
                     <input
                       type="number"
                       min={0}
                       max={100}
-                      value={scores[a.key] ?? ""}
+                      value={raw ?? ""}
                       onChange={(e) => setScores((p) => ({ ...p, [a.key]: e.target.value }))}
                       className={`w-16 border px-2 py-1.5 text-center font-mono text-[13px] focus:outline-none ${
                         changed ? "border-blue text-blue" : "border-border text-navy"
