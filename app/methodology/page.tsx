@@ -8,6 +8,8 @@ import {
   GradientButton,
   GradientRule,
 } from "@/components/ui";
+import ResearchPipeline from "@/components/ResearchPipeline";
+import IncentiveMap from "@/components/IncentiveMap";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -171,6 +173,54 @@ export default function Methodology() {
           </Reveal>
         </Section>
       </div>
+
+      {/* ─────────────── INSIDE THE ANALYSIS (dark) ─────────────── */}
+      <DarkSection>
+        <Reveal>
+          <EyebrowLight>Inside the analysis</EyebrowLight>
+          <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight max-w-2xl">
+            What actually runs{" "}
+            <em className="italic">when we look at a vendor&rsquo;s claim.</em>
+          </h2>
+          <p className="mt-6 text-[15px] leading-[1.7] text-gray-cool max-w-measure">
+            Six research passes run against your intake — four at once, then two
+            more — before anything reaches the attribution model. The pipeline
+            ends on human review, which is the point: nothing is published
+            automatically.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.12}>
+          <div className="mt-12">
+            <ResearchPipeline />
+          </div>
+        </Reveal>
+      </DarkSection>
+
+      {/* ─────────────── INCENTIVES ─────────────── */}
+      <Section className="py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mb-10">
+            <Eyebrow>Follow the money</Eyebrow>
+            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+              Everyone advising you gets paid.{" "}
+              <em className="italic">
+                Almost none of them get paid less if you overspend.
+              </em>
+            </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              A method is only worth as much as the independence behind it. You
+              have no shortage of people telling you things about your benefit
+              programs — it&rsquo;s worth knowing what happens to each of their
+              revenue when your spend goes up.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <IncentiveMap />
+        </Reveal>
+      </Section>
 
       {/* ─────────────── WHAT WE WON'T CLAIM (dark) ─────────────── */}
       <DarkSection>

@@ -10,8 +10,6 @@ import {
 } from "@/components/ui";
 import WorkflowDemo from "@/components/WorkflowDemo";
 import ReportDemo from "@/components/ReportDemo";
-import ResearchPipeline from "@/components/ResearchPipeline";
-import IncentiveMap from "@/components/IncentiveMap";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -140,34 +138,6 @@ export default function Platform() {
         </Section>
       </div>
 
-      {/* ─────────────── INCENTIVES ─────────────── */}
-      <Section className="py-16 sm:py-24">
-        <Reveal>
-          <div className="max-w-2xl mb-10">
-            <Eyebrow>Follow the money</Eyebrow>
-            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-              Everyone advising you gets paid.{" "}
-              <em className="italic">Almost none of them get paid less if you overspend.</em>
-            </h2>
-            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
-              You have no shortage of people telling you things about your benefit
-              programs. It&rsquo;s worth knowing what happens to each of their revenue
-              when your spend goes up.
-            </p>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <IncentiveMap />
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <div className="mt-10">
-            <GhostButton href="/methodology">Read the methodology</GhostButton>
-          </div>
-        </Reveal>
-      </Section>
-
       {/* ─────────────── HOW IT WORKS (dark) ─────────────── */}
       <DarkSection>
         <Reveal>
@@ -190,24 +160,11 @@ export default function Platform() {
         </Stagger>
 
         <Reveal delay={0.15}>
-          <div className="mt-20 pt-12 border-t border-white/15">
-            <EyebrowLight>Inside the analysis</EyebrowLight>
-            <h3 className="font-serif font-light text-2xl md:text-3xl max-w-xl leading-snug mb-3">
-              What actually runs when we look at a vendor&rsquo;s claim.
-            </h3>
-            <p className="text-[15px] leading-[1.7] text-gray-cool max-w-measure mb-10">
-              Six research passes run against your intake — four at once, then two
-              more — before anything reaches the attribution model. Nothing is
-              published automatically.
-            </p>
-            <ResearchPipeline />
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.15}>
           <div className="mt-14 flex flex-wrap gap-4">
             <GradientButton href="/request-report">Get your free report</GradientButton>
-            <GhostButtonLight href="/contact">Talk to us</GhostButtonLight>
+            <GhostButtonLight href="/platform/outputs">
+              See everything you receive
+            </GhostButtonLight>
           </div>
         </Reveal>
       </DarkSection>
