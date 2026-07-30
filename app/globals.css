@@ -92,3 +92,34 @@ body {
     animation: none;
   }
 }
+
+
+/* ── Print / PDF ────────────────────────────────────────────────────────────
+   The report preview doubles as the PDF export. No extra dependency: the
+   rendered page IS the artifact. Nav, controls and comment boxes carry
+   print:hidden; this handles page setup and colour fidelity. */
+@media print {
+  @page {
+    margin: 16mm 14mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  header nav,
+  footer.site-footer {
+    display: none !important;
+  }
+  article {
+    max-width: none !important;
+  }
+  /* Keep a section and its heading together rather than splitting mid-thought. */
+  section {
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: "";
+  }
+}

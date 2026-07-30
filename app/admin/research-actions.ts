@@ -12,6 +12,7 @@ import {
 } from "@/lib/modules/research/db";
 import { createAnthropicClient } from "@/lib/modules/research/pipeline/llm";
 import { advanceJob } from "@/lib/modules/research/pipeline/runner";
+import { reviseSection, type RevisableSection } from "@/lib/modules/research/pipeline/revise";
 import { assembleReport, releaseBlockers, type ReportEdits, type ReportView } from "@/lib/modules/research/report";
 import type { JobInput, ResearchResult } from "@/lib/modules/research/pipeline/types";
 import { STEPS } from "@/lib/modules/research/pipeline/plan";
@@ -312,4 +313,155 @@ export async function checkReportReadiness(reportId: string): Promise<{
     visibleSections: assembled.visibleSections,
     withheldSections: assembled.withheldSections,
   };
+}
+
+
+/**
+ * Rewrite one section from an analyst comment.
+ *
+ * The comment is the instruction: "this read is too generous, they've never seen
+ * a claims file" produces a rewritten section, rather than the analyst having to
+ * type replacement prose themselves. The correction is the part that needs their
+ * judgement; the prose is not.
+ *
+ * Writes into the `edits` overlay. `content` is untouched, so a section can be
+ * regenerated repeatedly and the model's original stays on the record.
+ */
+export async function regenerateSection(args: {
+  reportId: string;
+  requestId: string;
+  section: RevisableSection;
+  comment: string;
+}): Promise<Result<{ text: string; note: string }>> {
+  const { user } = await requireAdmin();
+
+  if (!args.comment.trim()) {
+    return { ok: false, error: "Add a comment describing what to change." };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("reports")
+    .select("content, edits, client_view")
+    .eq("id", args.reportId)
+    .single();
+
+  if (error || !data?.content) {
+    return { ok: false, error: error?.message ?? "No research attached to this report." };
+  }
+
+  const content = data.content as ResearchResult;
+  const edits = (data.edits ?? {}) as ReportEdits;
+
+  // Revise whatever the section currently says — the last revision if there is
+  // one, otherwise the model's original. Iterating refines rather than restarts.
+  const assembled = assembleReport({
+    content,
+    edits,
+    view: (data.client_view ?? "summary") as ReportView,
+  });
+
+  const current =
+    args.section === "findings"
+      ? assembled.findings.map((f) => f.text).join("\n")
+      : args.section === "summary"
+        ? assembled.summary
+        : args.section === "profile"
+          ? assembled.profile
+          : args.section === "regulatory"
+            ? assembled.regulatory
+            : assembled.brief;
+
+  let llm;
+  try {
+    llm = createAnthropicClient();
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+
+  let revised;
+  try {
+    revised = await reviseSection({
+      section: args.section,
+      current,
+      comment: args.comment.trim(),
+      content,
+      llm,
+    });
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+
+  const narrative = { ...(edits.narrative ?? {}) };
+  if (args.section === "findings") {
+    narrative.findings = revised.text
+      .split("\n")
+      .map((f) => f.replace(/^[-•]\s*/, "").trim())
+      .filter(Boolean);
+  } else {
+    narrative[args.section] = revised.text;
+  }
+
+  // Keep the comment and the model's note alongside the revision, so the reason
+  // for a change survives past the moment it was made.
+  const revisions = { ...((edits as Record<string, unknown>).revisions as Record<string, unknown> ?? {}) };
+  revisions[args.section] = {
+    comment: args.comment.trim(),
+    note: revised.note,
+    at: new Date().toISOString(),
+    by: user.id,
+  };
+
+  const { error: saveErr } = await admin
+    .from("reports")
+    .update({
+      edits: { ...edits, narrative, revisions, editedAt: new Date().toISOString(), editedBy: user.id },
+      // A revision invalidates any prior review — the text changed since it was
+      // read, so it has to be read again.
+      reviewed_at: null,
+      reviewed_by: null,
+      ...(args.section === "summary" ? { summary: revised.text } : {}),
+    })
+    .eq("id", args.reportId);
+
+  if (saveErr) return { ok: false, error: saveErr.message };
+
+  revalidatePath(`/admin/reports/${args.reportId}`);
+  revalidatePath(`/admin/requests/${args.requestId}`);
+  return { ok: true, text: revised.text, note: revised.note };
+}
+
+/** Mark a report read by a human. Required before release. */
+export async function markReportReviewed(args: {
+  reportId: string;
+  requestId?: string;
+}): Promise<Result<object>> {
+  const { user } = await requireAdmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("reports")
+    .update({ reviewed_at: new Date().toISOString(), reviewed_by: user.id })
+    .eq("id", args.reportId);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/admin/reports/${args.reportId}`);
+  if (args.requestId) revalidatePath(`/admin/requests/${args.requestId}`);
+  return { ok: true };
+}
+
+/** Change which rendering the client gets. */
+export async function setClientView(args: {
+  reportId: string;
+  view: ReportView;
+}): Promise<Result<object>> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("reports")
+    .update({ client_view: args.view })
+    .eq("id", args.reportId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/admin/reports/${args.reportId}`);
+  return { ok: true };
 }

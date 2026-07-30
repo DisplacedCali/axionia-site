@@ -391,6 +391,22 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
       {/* ── Review ────────────────────────────────────────────────────── */}
       {report?.hasContent && (
         <>
+          <a
+            href={`/admin/reports/${report.id}`}
+            className="block border border-navy bg-navy px-6 py-5 text-base hover:opacity-90 transition-opacity"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-70">
+              Research complete
+            </span>
+            <span className="mt-1 block font-serif text-[22px] font-light">
+              Read the report →
+            </span>
+            <span className="mt-1 block text-[13px] opacity-70">
+              Renders exactly what the client sees. Comment on a section and regenerate it,
+              or print to PDF.
+            </span>
+          </a>
+
           {report.isFallback && (
             <div className="border border-risk/40 bg-red-light/60 p-5">
               <h2 className={`${label} mb-2 text-risk`}>Scores are estimated, not assessed</h2>

@@ -222,6 +222,62 @@ async function runChecks(D, { createMockClient }, R) {
   ok(R.releaseBlockers({ content: missing, reviewedAt: "x" })
       .some(b => /CFO Engagement/.test(b)), "missing axis blocks release and names it");
 
+  // ── Revise agent ─────────────────────────────────────────────────────────
+  console.log("\n── Revise agent ──");
+  const { reviseSection } = require(path.join(OUT, "pipeline", "revise.js"));
+
+  const reviseMock = createMockClient({
+    responses: {
+      "revise:findings": JSON.stringify({
+        text: "Absence cost, not premium, is the lever here.",
+        note: "Removed the vendor name and sharpened the economic claim.",
+      }),
+      "revise:profile": "Plain prose, no JSON envelope at all.",
+    },
+  });
+
+  const r1 = await reviseSection({
+    section: "findings",
+    current: "Old finding text.",
+    comment: "Drop the vendor name and lead with absence economics.",
+    content,
+    llm: reviseMock,
+  });
+  ok(r1.text.includes("Absence cost"), "structured revision parsed");
+  ok(r1.note.length > 0, "revision note captured for the audit trail");
+
+  const r2 = await reviseSection({
+    section: "profile",
+    current: "Old profile.",
+    comment: "Tighten it.",
+    content,
+    llm: reviseMock,
+  });
+  ok(r2.text.startsWith("Plain prose"),
+     "unstructured model output still accepted rather than losing the call");
+
+  let threw = false;
+  try {
+    await reviseSection({
+      section: "brief",
+      current: "x",
+      comment: "y",
+      content,
+      llm: createMockClient({ responses: { "revise:brief": "no" } }),
+    });
+  } catch { threw = true; }
+  ok(threw, "too-short output rejected instead of overwriting good text with junk");
+
+  // The overlay must carry the revision without touching content.
+  const withRevision = R.assembleReport({
+    content,
+    view: "summary",
+    edits: { narrative: { findings: [r1.text] } },
+  });
+  ok(withRevision.findings[0].text === r1.text, "revision surfaces through the overlay");
+  ok(withRevision.findings[0].edited === true, "revised finding marked as edited");
+  ok(content.scores.cfoEngagement === 55, "content still untouched after revision");
+
   fs.rmSync(OUT, { recursive: true, force: true });
   console.log("\n" + (fail === 0 ? "ALL CHECKS PASSED" : `${fail} CHECK(S) FAILED`));
   process.exit(fail ? 1 : 0);
