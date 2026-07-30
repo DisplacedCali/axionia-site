@@ -98,8 +98,8 @@ export default function About() {
                 That work spans biostatistics, health economics, actuarial
                 modeling, fraud detection, value-based care design and payer
                 strategy. It includes designing and selling risk products,
-                underwriting deals up to $500M, and peer-reviewed research in
-                health economics. The attribution framework behind every Axionia
+                underwriting more than $20B in risk, and peer-reviewed research
+                in health economics. The attribution framework behind every Axionia
                 report — de-duplicating vendor claims, adjusting for selection
                 bias — comes directly out of it.
               </p>
@@ -166,10 +166,10 @@ export default function About() {
           </StaggerItem>
           <StaggerItem className="border-t border-white/15 pt-5">
             <div className="font-serif font-light text-5xl md:text-6xl leading-none">
-              <CountUp to={500} prefix="$" suffix="M" />
+              <CountUp to={20} prefix="$" suffix="B+" />
             </div>
             <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-cool">
-              Largest deal
+              Total risk
               <br />
               underwritten
             </div>
