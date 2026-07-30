@@ -28,7 +28,13 @@ export default async function AdminLayout({
               </Link>
             ))}
           </nav>
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+          <Link
+            href="/admin/new"
+            className="ml-auto px-3 py-1.5 border border-navy text-navy font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-navy hover:text-base transition-colors"
+          >
+            + Start research
+          </Link>
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool hidden lg:inline">
             {profile?.email}
           </span>
         </div>

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Logo from "./Logo";
+import NavAuth from "./NavAuth";
 
 const links = [
   { href: "/platform", label: "Platform" },
@@ -71,17 +72,8 @@ export default function Nav() {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-            <Link href="/login" className="text-gray-warm hover:text-navy transition-colors">
-              Log in
-            </Link>
-            <Link
-              href="/request-report"
-              className="px-4 py-2 border border-navy text-navy hover:bg-navy hover:text-base transition-colors"
-            >
-              Free report
-            </Link>
-          </div>
+          {/* reflects the real session — see NavAuth for why it's client-side */}
+          <NavAuth />
 
           <button
             onClick={() => setOpen((o) => !o)}
@@ -152,21 +144,9 @@ export default function Nav() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.28, duration: 0.3 }}
-                className="mt-7 flex flex-col gap-3"
+                className="mt-7"
               >
-                <Link
-                  href="/request-report"
-                  className="relative overflow-hidden text-center px-6 py-4 font-mono text-[11px] uppercase tracking-[0.14em] text-base"
-                >
-                  <span className="absolute inset-0 bg-axionia-gradient" />
-                  <span className="relative z-10">Get your free report</span>
-                </Link>
-                <Link
-                  href="/login"
-                  className="text-center px-6 py-4 border border-navy text-navy font-mono text-[11px] uppercase tracking-[0.14em]"
-                >
-                  Client log in
-                </Link>
+                <NavAuth mobile />
               </motion.div>
 
               <motion.p

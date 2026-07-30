@@ -42,7 +42,7 @@ export default async function AdminQueue({
   let query = admin
     .from("report_requests")
     .select(
-      "id, contact_name, contact_email, company_name, kind, status, created_at, company_id, alignment"
+      "id, contact_name, contact_email, company_name, kind, status, created_at, company_id, alignment, origin"
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -133,12 +133,25 @@ export default async function AdminQueue({
                 className="grid md:grid-cols-[1.4fr_1.4fr_0.7fr_0.9fr_0.7fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-base-2 transition-colors"
               >
                 <span>
-                  <span className="block text-[15px] text-navy">
-                    {r.contact_name || "—"}
-                  </span>
-                  <span className="block text-[12px] text-gray-cool">
-                    {r.contact_email}
-                  </span>
+                  {r.origin === "admin" ? (
+                    <>
+                      <span className="block text-[15px] text-navy">
+                        Internal research
+                      </span>
+                      <span className="block font-mono text-[9px] uppercase tracking-[0.1em] text-blue mt-0.5">
+                        Admin-initiated · no requester
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="block text-[15px] text-navy">
+                        {r.contact_name || "—"}
+                      </span>
+                      <span className="block text-[12px] text-gray-cool">
+                        {r.contact_email}
+                      </span>
+                    </>
+                  )}
                 </span>
                 <span className="text-[14px] text-gray-warm self-center">
                   {r.company_name || "—"}

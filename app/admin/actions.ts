@@ -40,6 +40,114 @@ export async function saveAdminNotes(
   return { ok: true };
 }
 
+/* ─────────────── admin-initiated research ─────────────── */
+
+/**
+ * Start research on any company, with or without a user account.
+ *
+ * The company row is the anchor: output lands in that company's folder and
+ * waits there. If someone from the company later signs up with a matching
+ * email domain, the company-scoped RLS policy means released reports become
+ * visible to them automatically — no backfill needed.
+ */
+export async function createAdminRequest(input: {
+  companyName: string;
+  domain?: string;
+  employees?: string;
+  industry?: string;
+  notes?: string;
+}): Promise<{ ok: true; requestId: string } | { ok: false; error: string }> {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const companyName = input.companyName.trim();
+  if (!companyName) return { ok: false, error: "Company name is required." };
+
+  const rawDomain = (input.domain ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const domain = rawDomain || null;
+
+  // ── resolve or create the company ──
+  let companyId: string | null = null;
+
+  if (domain) {
+    const { data: existing } = await admin
+      .from("companies")
+      .select("id")
+      .eq("domain", domain)
+      .maybeSingle();
+    companyId = existing?.id ?? null;
+  }
+
+  if (!companyId) {
+    // No domain given: fall back to matching on name so repeat research on the
+    // same company doesn't create duplicate folders.
+    if (!domain) {
+      const { data: byName } = await admin
+        .from("companies")
+        .select("id")
+        .ilike("name", companyName)
+        .maybeSingle();
+      companyId = byName?.id ?? null;
+    }
+
+    if (!companyId) {
+      const { data: created, error: createErr } = await admin
+        .from("companies")
+        .insert({
+          // A synthetic domain keeps the unique constraint satisfied when we
+          // genuinely don't know one; it's replaced the moment a real contact
+          // arrives from that company.
+          domain: domain ?? `internal.${companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+          name: companyName,
+          notes: "Created by admin-initiated research.",
+        })
+        .select("id")
+        .single();
+      if (createErr) return { ok: false, error: createErr.message };
+      companyId = created.id;
+    }
+  }
+
+  // ── refresh or first pull? ──
+  let kind: "new" | "refresh" = "new";
+  const { count } = await admin
+    .from("reports")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("status", "ready");
+  if ((count ?? 0) > 0) kind = "refresh";
+
+  const { data: request, error } = await admin
+    .from("report_requests")
+    .insert({
+      user_id: null,
+      company_id: companyId,
+      contact_email: null,
+      contact_name: null,
+      company_name: companyName,
+      kind,
+      status: "in_review",
+      origin: "admin",
+      // No requester, so there's no alignment question to answer.
+      alignment: "cleared",
+      alignment_reason: "Admin-initiated research — no external requester.",
+      admin_notes: input.notes || null,
+      payload: {
+        employees: input.employees || null,
+        industry: input.industry || null,
+        email_domain: domain,
+        admin_initiated: true,
+      },
+    })
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin");
+  return { ok: true, requestId: request.id };
+}
+
 /* ─────────────── alignment validation ─────────────── */
 
 /**
@@ -258,10 +366,12 @@ export async function releaseReport(args: {
     .update({ status: "sent" })
     .eq("id", args.requestId);
 
-  // notify the client
+  // Notify the client — but admin-initiated research has no requester to
+  // notify. The report simply sits in the company folder until someone from
+  // that company signs up, at which point RLS makes it visible to them.
   const { data: request } = await admin
     .from("report_requests")
-    .select("contact_email, contact_name")
+    .select("contact_email, contact_name, origin")
     .eq("id", args.requestId)
     .single();
 

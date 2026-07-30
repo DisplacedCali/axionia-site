@@ -90,7 +90,18 @@ export default async function RequestDetail({
             {request.company_name || request.contact_email}
           </h1>
           <p className="mt-2 text-[15px] text-gray-warm">
-            {request.contact_name || "—"} · {request.contact_email}
+            {request.origin === "admin" ? (
+              <>
+                Internal research — no external requester
+                {request.payload?.email_domain
+                  ? ` · ${request.payload.email_domain}`
+                  : " · placeholder company folder"}
+              </>
+            ) : (
+              <>
+                {request.contact_name || "—"} · {request.contact_email}
+              </>
+            )}
           </p>
         </div>
         {request.kind === "refresh" && (
@@ -109,7 +120,7 @@ export default async function RequestDetail({
             reason={request.alignment_reason}
             note={request.alignment_note}
             companyName={request.company_name}
-            contactEmail={request.contact_email}
+            contactEmail={request.contact_email ?? "—"}
           />
         </div>
       )}
