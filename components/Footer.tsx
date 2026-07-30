@@ -37,7 +37,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-10 font-mono text-[9px] tracking-[0.1em] text-gray-cool">
-        © {new Date().getFullYear()} Axionia. A CareVisory LLC company.
+        © {new Date().getFullYear()} Axionia. All rights reserved.
       </div>
     </footer>
   );

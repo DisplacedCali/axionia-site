@@ -97,7 +97,7 @@ const shell = (body: string) => `
     <div style="height:3px;width:56px;background:linear-gradient(135deg,#4AC9DC 0%,#2463EB 70%,#3CBF6C 130%);margin:14px 0 28px;"></div>
     ${body}
     <div style="margin-top:36px;padding-top:20px;border-top:1px solid #E6E2D9;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:0.1em;color:#AEB4BC;text-transform:uppercase;">
-      Axionia — A CareVisory LLC company
+      Axionia — Independent analysis of employee benefit programs
     </div>
   </div>
 </div>`;

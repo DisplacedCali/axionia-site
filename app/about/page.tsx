@@ -17,10 +17,18 @@ export const metadata = {
 };
 
 
-const credentials = [
-  { k: "Yale", v: "Executive MBA, healthcare focus" },
-  { k: "UCLA", v: "M.S. Biostatistics" },
-  { k: "St. Olaf", v: "B.A. Math, Economics & Statistics" },
+/**
+ * Disciplines rather than institutions.
+ *
+ * A named school list is a search key — combined with a job history it
+ * identifies one person whether or not a name sits above it. What a buyer
+ * actually needs to know is which methods sit behind the number, and that
+ * survives de-identification intact.
+ */
+const disciplines = [
+  { k: "Biostatistics", v: "Study design, inference, and what a result can carry" },
+  { k: "Health economics", v: "Actuarial and cost-effectiveness modeling" },
+  { k: "Payer strategy", v: "Risk products, value-based care design, fraud detection" },
 ];
 
 export default function About() {
@@ -56,12 +64,14 @@ export default function About() {
         <div className="grid md:grid-cols-[1fr_1.5fr] gap-14">
           <Reveal>
             <div className="md:sticky md:top-10">
-              <p className="font-serif italic text-3xl leading-snug">Tom Dow</p>
+              <p className="font-serif italic text-3xl leading-snug">
+                What sits behind the number
+              </p>
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-cool mt-2">
-                Founder, Axionia
+                The methods, not the résumé
               </p>
               <div className="mt-8 space-y-4">
-                {credentials.map((c) => (
+                {disciplines.map((c) => (
                   <div key={c.k} className="border-t border-border pt-3">
                     <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue">
                       {c.k}
@@ -76,29 +86,38 @@ export default function About() {
           <Stagger className="text-[15px] leading-[1.8] text-gray-warm space-y-6">
             <StaggerItem>
               <p>
-                Tom has spent over 20 years in healthcare analytics — currently SVP of
-                Analytics at WIN, and previously in analytics and health economics
-                leadership roles at Quartet Health, Emerging Therapy Solutions, and
-                Genoa/Optum, plus healthcare advisory work at PwC. He also runs
-                CareVisory, an independent advisory practice, which Axionia operates
-                under.
+                Axionia is built by a healthcare analytics executive with more
+                than twenty years across payer, provider, pharma and consulting —
+                most of it spent building the models that benefit decisions are
+                supposed to rest on, at organizations on the other side of the
+                table from the employer.
               </p>
             </StaggerItem>
             <StaggerItem>
               <p>
-                His background spans biostatistics, health economics, actuarial modeling,
-                fraud detection, value-based care design, and payer strategy — work that
-                has touched payer, provider, pharma, and consulting organizations. He has
-                designed and sold risk products, underwritten deals up to $500M, and
-                conducted peer-reviewed pharmaceutical economics research.
+                That work spans biostatistics, health economics, actuarial
+                modeling, fraud detection, value-based care design and payer
+                strategy. It includes designing and selling risk products,
+                underwriting deals up to $500M, and peer-reviewed research in
+                health economics. The attribution framework behind every Axionia
+                report — de-duplicating vendor claims, adjusting for selection
+                bias — comes directly out of it.
               </p>
             </StaggerItem>
+            {/*
+              Says plainly that the page is anonymous, and why, rather than
+              leaving a visitor to notice the absence and draw their own
+              conclusion. Framed as a policy with a resolution — you meet the
+              person before you commit — which is also true.
+            */}
             <StaggerItem>
               <p>
-                He holds an Executive MBA from Yale with a healthcare focus, an M.S. in
-                Biostatistics from UCLA, and a B.A. in Math, Economics, and Statistics
-                from St. Olaf College — where he was a collegiate swimmer, five-time NCAA
-                Division III All-American, and team captain.
+                You&rsquo;ll notice there&rsquo;s no name on this page.
+                Axionia is early, and for now we&rsquo;d rather the work were
+                judged on whether the numbers hold up than on a biography.
+                Anyone considering an engagement is introduced directly, before
+                committing to anything — you should know exactly who you&rsquo;re
+                dealing with, and you will.
               </p>
             </StaggerItem>
             <StaggerItem>
@@ -112,8 +131,9 @@ export default function About() {
             </StaggerItem>
             <StaggerItem>
               <p>
-                Axionia exists because of what those 20 years showed him directly. Nobody
-                independently checks the math. Axionia is the tool that does.
+                Axionia exists because of what those twenty years showed
+                directly. Nobody independently checks the math. Axionia is the
+                tool that does.
               </p>
             </StaggerItem>
           </Stagger>

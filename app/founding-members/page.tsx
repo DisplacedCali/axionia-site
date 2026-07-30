@@ -386,9 +386,8 @@ export default function FoundingMembers() {
                 <p className="text-[15px] leading-[1.75] text-gray-warm">
                   Axionia is built by a healthcare analytics executive with more than
                   twenty years across payer, provider, pharma and consulting —
-                  SVP-level analytics and health-economics leadership, a Yale MBA, a
-                  master&rsquo;s in biostatistics from UCLA, and risk deals underwritten
-                  to $500M.
+                  SVP-level analytics and health-economics leadership, graduate
+                  training in biostatistics, and risk deals underwritten to $500M.
                 </p>
                 <p className="mt-4 text-[15px] leading-[1.75] text-gray-warm">
                   The attribution framework behind every report — de-duplicating vendor

@@ -31,7 +31,7 @@ export type Alignment = "matched" | "review";
 export type AlignmentResult = {
   status: Alignment;
   reason: string;
-  /** Domain labels considered, e.g. ["aya","yale"] for aya.yale.edu */
+  /** Domain labels considered, e.g. ["benefits","northwind"] for benefits.northwind.co.uk */
   labels: string[];
 };
 
@@ -43,7 +43,7 @@ function tokenize(name: string): string[] {
     .filter((t) => t.length > 0 && !CORPORATE_SUFFIXES.has(t));
 }
 
-/** Domain labels minus the public suffix: aya.yale.edu → ["aya","yale"] */
+/** Domain labels minus the public suffix: benefits.northwind.co.uk → ["benefits","northwind"] */
 function domainLabels(domain: string): string[] {
   return domain
     .toLowerCase()
