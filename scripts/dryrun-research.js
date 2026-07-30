@@ -33,6 +33,7 @@ function main() {
       [
         ...globTs("lib/modules/research/data"),
         ...globTs("lib/modules/research/pipeline"),
+        "lib/modules/research/report.ts",
         "--outDir", OUT,
         "--module", "commonjs",
         "--target", "ES2020",
@@ -50,9 +51,11 @@ function main() {
   }
   console.log("ok\n");
 
-  require(path.join(OUT, "pipeline", "__dryrun__.js"));
-  runChecks(require(path.join(OUT, "pipeline", "__dryrun__.js")),
-            require(path.join(OUT, "pipeline", "llm.js")));
+  runChecks(
+    require(path.join(OUT, "pipeline", "__dryrun__.js")),
+    require(path.join(OUT, "pipeline", "llm.js")),
+    require(path.join(OUT, "report.js")),
+  );
 }
 
 function globTs(dir) {
@@ -62,7 +65,7 @@ function globTs(dir) {
     .map((f) => path.join(dir, f));
 }
 
-async function runChecks(D, { createMockClient }) {
+async function runChecks(D, { createMockClient }, R) {
   let fail = 0;
   const ok = (cond, msg, extra = "") => {
     console.log(`  ${cond ? "✓" : "✗"} ${msg}${extra ? "  " + extra : ""}`);
@@ -155,6 +158,69 @@ async function runChecks(D, { createMockClient }) {
   }));
   ok(seen6.includes("workforce-fallback"), "fallback agent invoked");
   ok(!!f6?.done, "completed via fallback");
+
+  // ── Report assembly ──────────────────────────────────────────────────────
+  console.log("\n── Report assembly ──");
+  const content = final.result;
+
+  const summary = R.assembleReport({ content, view: "summary" });
+  const full    = R.assembleReport({ content, view: "full" });
+
+  ok(!summary.visibleSections.includes("workforce"),
+     "summary withholds Workforce Intelligence");
+  ok(!summary.visibleSections.includes("benefitDesign"),
+     "summary withholds Benefit Design");
+  ok(!summary.visibleSections.includes("brief"),
+     "summary withholds the internal brief");
+  ok(summary.visibleSections.includes("regulatory"),
+     "summary includes Regulatory Exposure");
+  ok(summary.visibleSections.length === 4,
+     "summary shows 4 sections", `(${summary.visibleSections.join(",")})`);
+  ok(full.visibleSections.length === 7, "full shows all 7 sections");
+  ok(summary.withheldSections.length === 3, "summary reports 3 withheld sections");
+
+  ok(summary.findings.length > 0, "findings derived without an extra model call",
+     `(${summary.findings.length})`);
+  ok(summary.findings.every(f => f.edited === false), "derived findings not marked edited");
+
+  console.log("\n── Edit overlay ──");
+  const edited = R.assembleReport({
+    content,
+    view: "summary",
+    edits: {
+      scores: { cfoEngagement: 80 },
+      narrative: { findings: ["Hand-written finding."], summary: "Rewritten summary." },
+      hiddenSections: ["regulatory"],
+    },
+  });
+  ok(edited.scores.cfoEngagement === 80, "score override applied");
+  ok(content.scores.cfoEngagement === 55, "content NOT mutated by the overlay",
+     `(still ${content.scores.cfoEngagement})`);
+  ok(edited.anyScoreAdjusted === true, "adjustment flagged");
+  ok(edited.axes.find(a => a.key === "cfoEngagement").modelScore === 55,
+     "model's original score still visible alongside the override");
+  ok(edited.overallScore !== summary.overallScore,
+     "overall recomputed from the edited axis",
+     `${summary.overallScore} -> ${edited.overallScore}`);
+  ok(edited.findings.length === 1 && edited.findings[0].edited === true,
+     "narrative override replaces findings and is marked edited");
+  ok(edited.summary === "Rewritten summary.", "summary override applied");
+  ok(!edited.visibleSections.includes("regulatory"),
+     "explicit hide overrides the view default");
+
+  console.log("\n── Release guard ──");
+  const clean = R.releaseBlockers({ content, reviewedAt: "2026-07-29T00:00:00Z" });
+  ok(clean.length === 0, "reviewed, complete report has no blockers", clean.join("; "));
+  ok(R.releaseBlockers({ content, reviewedAt: null })
+      .some(b => /reviewed/i.test(b)), "unreviewed report is blocked");
+  const fb = JSON.parse(JSON.stringify(content));
+  fb.scores._fallback = true;
+  ok(R.releaseBlockers({ content: fb, reviewedAt: "x" })
+      .some(b => /fallback/i.test(b)), "fallback scores block release");
+  const missing = JSON.parse(JSON.stringify(content));
+  delete missing.scores.cfoEngagement;
+  ok(R.releaseBlockers({ content: missing, reviewedAt: "x" })
+      .some(b => /CFO Engagement/.test(b)), "missing axis blocks release and names it");
 
   fs.rmSync(OUT, { recursive: true, force: true });
   console.log("\n" + (fail === 0 ? "ALL CHECKS PASSED" : `${fail} CHECK(S) FAILED`));

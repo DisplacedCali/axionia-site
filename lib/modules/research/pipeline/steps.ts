@@ -58,6 +58,15 @@ function co(ctx: StepContext): P.CompanyContext {
   };
 }
 
+/** The client's stated ask plus analyst notes, for prompts that should use it. */
+function ask(ctx: StepContext): string {
+  return P.clientAskBlock({
+    programs: ctx.input.programs,
+    context: ctx.input.context,
+    analystContext: ctx.input.analystContext,
+  });
+}
+
 /** Thrown when a step cannot produce usable output. */
 export class StepError extends Error {
   constructor(message: string, readonly stepId: string) {
@@ -106,8 +115,11 @@ export async function runProfile(ctx: StepContext): Promise<string> {
 export async function runBenefits(ctx: StepContext): Promise<string> {
   const res = await ctx.llm.complete({
     system: P.BENEFITS_SYSTEM,
-    user: P.contextOnlyUser(co(ctx)),
+    // The client's named programs land here — this is the step where "look at
+    // GLP-1 coverage" changes the answer rather than decorating it.
+    user: P.contextOnlyUser(co(ctx), ask(ctx)),
     label: "benefits",
+    maxTokens: 2000,
   });
   return res.text;
 }
@@ -322,6 +334,7 @@ export async function runScoring(ctx: StepContext): Promise<ScoreSet> {
     financial: ctx.outputs.financial ?? "",
     regulatory: ctx.outputs.regulatory?.regulatory ?? "",
     workforceInsight: ctx.outputs.workforce?.overallInsight ?? "",
+    ask: ask(ctx),
   };
 
   let raw: ScoreSet | null = null;
@@ -371,6 +384,7 @@ export async function runSynthesis(ctx: StepContext): Promise<string> {
       regulatory: ctx.outputs.regulatory?.regulatory ?? "",
       workforceInsight: ctx.outputs.workforce?.overallInsight ?? "",
       scores: ctx.outputs.scoring ?? {},
+      ask: ask(ctx),
     }),
     label: "synthesis",
     maxTokens: 2500,

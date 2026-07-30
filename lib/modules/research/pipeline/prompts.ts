@@ -28,6 +28,38 @@ export function companyLine(co: CompanyContext): string {
   return `${co.name} — ${co.industry ?? ""}, ${co.hq ?? ""}, ${co.size ?? ""}`;
 }
 
+/**
+ * What the client asked to have examined, plus anything the analyst added.
+ *
+ * The intake form collects "Programs or vendors you'd like looked at" and a
+ * free-text context field, and both were being discarded. They are the single
+ * most valuable customisation signal available: the client stating, in their
+ * own words, what they want looked at. Appended to the steps where it changes
+ * the answer — benefits posture, scoring, and the brief.
+ *
+ * Returns "" when there is nothing, so callers can concatenate unconditionally
+ * without introducing an empty labelled section.
+ */
+export function clientAskBlock(input: {
+  programs?: string | null;
+  context?: string | null;
+  analystContext?: string | null;
+}): string {
+  const parts: string[] = [];
+  if (input.programs?.trim()) {
+    parts.push(`Programs or vendors the client specifically asked to have examined: ${input.programs.trim()}`);
+  }
+  if (input.context?.trim()) {
+    parts.push(`Context the client provided: ${input.context.trim()}`);
+  }
+  if (input.analystContext?.trim()) {
+    // Flagged as analyst-supplied so the model treats it as established fact
+    // rather than something to hedge about.
+    parts.push(`Analyst notes from source documents (treat as verified): ${input.analystContext.trim()}`);
+  }
+  return parts.length ? "\n\n" + parts.join("\n") : "";
+}
+
 // ── Step 1: validate / identify ─────────────────────────────────────────────
 
 export const VALIDATE_SYSTEM =
@@ -72,13 +104,17 @@ export function profileUser(co: CompanyContext): string {
 // ── Wave 1b: benefits posture + financial posture ───────────────────────────
 
 export const BENEFITS_SYSTEM =
-  "You are a benefits expert. Give 4 bullet points (plain text, start each with -) about this company's likely benefits situation: programs, broker/vendor relationships, workforce needs, pain points. No headers or bold.";
+  "You are a benefits expert. Give 4 bullet points (plain text, start each with -) about this company's likely benefits situation: programs, broker/vendor relationships, workforce needs, pain points. No headers or bold. " +
+  "If the client named specific programs or vendors, address those directly in at least two bullets — say what the program is typically worth to an employer of this type and what to be sceptical about in the vendor's own claims. Be specific rather than generic.";
 
 export const FINANCIAL_SYSTEM =
   "You are a financial analyst. Give 4 bullet points (plain text, start each with -) about financial posture relevant to benefits: margins, ownership, workforce stability, urgency signals. No headers or bold.";
 
-export function contextOnlyUser(co: CompanyContext): string {
-  return `Company: ${companyLine(co)}`;
+export function contextOnlyUser(
+  co: CompanyContext,
+  ask: string = "",
+): string {
+  return `Company: ${companyLine(co)}${ask}`;
 }
 
 // ── Wave 2a: states detection, then regulatory ──────────────────────────────
@@ -189,13 +225,14 @@ export function scoringUser(args: {
   financial: string;
   regulatory: string;
   workforceInsight: string;
+  ask?: string;
 }): string {
   return `Company: ${companyLine(args.co)}
 Profile: ${args.profile}
 Benefits: ${args.benefits}
 Financial: ${args.financial}
 Regulatory: ${args.regulatory}
-Workforce: ${args.workforceInsight || "not available"}`;
+Workforce: ${args.workforceInsight || "not available"}${args.ask ?? ""}`;
 }
 
 // ── Synthesis: pre-meeting brief ────────────────────────────────────────────
@@ -207,7 +244,9 @@ export const SYNTHESIS_SYSTEM = `Write a sharp internal pre-meeting brief with s
 ## Radar Diagnosis
 ## Conversation Hooks
 ## Watch-Outs
-2-4 bullets per section. Direct and opinionated. Include regulatory and workforce appreciation angles.`;
+2-4 bullets per section. Direct and opinionated. Include regulatory and workforce appreciation angles.
+
+If the client named specific programs or vendors, answer that question explicitly in Conversation Hooks — they asked it, so leaving it unaddressed is the one thing they will notice.`;
 
 export function synthesisUser(args: {
   co: CompanyContext;
@@ -217,6 +256,7 @@ export function synthesisUser(args: {
   regulatory: string;
   workforceInsight: string;
   scores: Record<string, unknown>;
+  ask?: string;
 }): string {
   const s = args.scores as Record<string, number | string>;
   return `Company: ${companyLine(args.co)}
@@ -226,7 +266,7 @@ Financial: ${args.financial}
 Regulatory: ${args.regulatory}
 Workforce: ${args.workforceInsight ?? ""}
 Radar: Spend ${s.spendEfficiency} | Maturity ${s.decisionMaturity} | Alignment ${s.workforceAlignment} | Vendor ${s.vendorIndependence} | Analytics ${s.analyticsReadiness} | CFO ${s.cfoEngagement} | Regulatory ${s.regulatoryReadiness} | Appreciation ${s.appreciationValue}
-Label: ${s.readinessLabel}`;
+Label: ${s.readinessLabel}${args.ask ?? ""}`;
 }
 
 /** Appended when a step must return JSON. Ported from askJSON(). */

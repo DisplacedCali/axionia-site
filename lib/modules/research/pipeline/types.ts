@@ -37,7 +37,7 @@ export interface StepState {
 
 export type StepStates = Partial<Record<StepId, StepState>>;
 
-/** What the admin submitted. */
+/** What the admin submitted, plus anything carried over from the intake. */
 export interface JobInput {
   companyName: string;
   website?: string | null;
@@ -45,6 +45,27 @@ export interface JobInput {
   employees?: string | null;
   /** Free-text LinkedIn/market observations the admin pasted in. */
   notes?: string | null;
+
+  /**
+   * "Programs or vendors you'd like looked at" — collected by the public
+   * intake form and stored in report_requests.payload.programs. It was being
+   * captured and then discarded; this is the client's own statement of what
+   * they want examined, so it belongs in the prompts.
+   */
+  programs?: string | null;
+
+  /** The intake's free-text "additional context" field. */
+  context?: string | null;
+
+  /**
+   * Analyst context. Where you type what you learned from a vendor deck or
+   * renewal packet you read yourself.
+   *
+   * Deliberately manual: the pipeline does not parse attachments. Document
+   * ingestion needs the PHI firewall and is the substance of the paid tier,
+   * so for the free report a human reads the artifact and summarises it here.
+   */
+  analystContext?: string | null;
 }
 
 export interface ValidateOutput {
