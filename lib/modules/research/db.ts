@@ -175,6 +175,24 @@ export async function cancelJob(jobId: string): Promise<void> {
   );
 }
 
+/**
+ * The live job for a request, if any.
+ *
+ * Lets the admin page resume a progress view after a reload — the job outlives
+ * the browser, only the view was lost.
+ */
+export async function getActiveJobForRequest(requestId: string): Promise<PipelineJob | null> {
+  const { rows } = await getPool().query(
+    `select * from research.pipeline_jobs
+      where request_id = $1
+        and status in ('queued','running','paused')
+      order by created_at desc
+      limit 1`,
+    [requestId],
+  );
+  return rows[0] ? toJob(rows[0]) : null;
+}
+
 export async function listJobs(limit = 50): Promise<Row[]> {
   const { rows } = await getPool().query(
     "select * from research.pipeline_queue limit $1",

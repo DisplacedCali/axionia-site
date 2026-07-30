@@ -4,6 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 import { Section } from "@/components/ui";
 import ReviewPanel from "@/components/admin/ReviewPanel";
+import ResearchPanel from "@/components/admin/ResearchPanel";
+import { assembleReport, releaseBlockers, type ReportEdits, type ReportView } from "@/lib/modules/research/report";
+import type { ResearchResult } from "@/lib/modules/research/pipeline/types";
+import { activeResearchJob } from "@/app/admin/research-actions";
 import AlignmentPanel from "@/components/admin/AlignmentPanel";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +31,7 @@ export default async function RequestDetail({
   // draft attached to this request (if any)
   const { data: draft } = await admin
     .from("reports")
-    .select("id, title, summary, status, version, supersedes_id, created_at")
+    .select("id, title, summary, status, version, supersedes_id, created_at, content, edits, client_view, reviewed_at, research_run_id")
     .eq("request_id", request.id)
     .maybeSingle();
 
@@ -74,6 +78,74 @@ export default async function RequestDetail({
     .order("created_at", { ascending: false });
 
   const payload = (request.payload ?? {}) as Record<string, unknown>;
+
+  // ── Research view-model ────────────────────────────────────────────────────
+  // Assembled server-side so the panel receives the same merged shape the
+  // client renderer will, rather than re-deriving the overlay in two places.
+  const content = (draft?.content ?? null) as ResearchResult | null;
+  const edits = (draft?.edits ?? {}) as ReportEdits;
+  const clientView = (draft?.client_view ?? "summary") as ReportView;
+
+  const assembled = content
+    ? assembleReport({ content, edits, view: clientView })
+    : null;
+
+  const researchReport =
+    draft && assembled
+      ? {
+          id: draft.id,
+          title: draft.title ?? "",
+          clientView,
+          reviewedAt: draft.reviewed_at ?? null,
+          hasContent: true,
+          axes: assembled.axes.map((a) => ({
+            key: a.key,
+            label: a.shortLabel,
+            score: a.score,
+            modelScore: a.modelScore,
+            rationale: a.rationale,
+            adjusted: a.adjusted,
+          })),
+          narrative: {
+            summary: assembled.summary,
+            findings: assembled.findings.map((f) => f.text),
+            profile: assembled.profile,
+            regulatory: assembled.regulatory,
+          },
+          edits,
+          overallScore: assembled.overallScore,
+          band: assembled.band?.band ?? null,
+          isFallback: assembled.isFallback,
+          visibleSections: assembled.visibleSections,
+          withheldSections: assembled.withheldSections,
+          blockers: releaseBlockers({
+            content,
+            edits,
+            reviewedAt: draft.reviewed_at ?? null,
+          }),
+        }
+      : draft
+        ? {
+            id: draft.id,
+            title: draft.title ?? "",
+            clientView,
+            reviewedAt: draft.reviewed_at ?? null,
+            hasContent: false,
+            axes: [],
+            narrative: { summary: "", findings: [], profile: "", regulatory: "" },
+            edits,
+            overallScore: null,
+            band: null,
+            isFallback: false,
+            visibleSections: [],
+            withheldSections: [],
+            blockers: ["No research output attached to this report."],
+          }
+        : null;
+
+  // Resume a run still in flight after a reload — the job outlives the browser,
+  // only the progress view was lost.
+  const activeJob = await activeResearchJob(request.id);
 
   return (
     <Section className="pt-12 pb-24">
@@ -126,7 +198,18 @@ export default async function RequestDetail({
       )}
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-10 mt-10">
-        {/* ── review + release ── */}
+        {/* ── research, then review + release ── */}
+        <div className="space-y-10">
+          <ResearchPanel
+            requestId={request.id}
+            ask={{
+              programs: (payload.programs as string) ?? null,
+              context: (payload.context as string) ?? null,
+            }}
+            report={researchReport}
+            activeJob={activeJob}
+          />
+
         <ReviewPanel
           request={{
             id: request.id,
@@ -153,6 +236,7 @@ export default async function RequestDetail({
             sizeBytes: f.size_bytes,
           }))}
         />
+        </div>
 
         {/* ── context sidebar ── */}
         <div className="space-y-8">
