@@ -10,6 +10,7 @@ import {
 } from "@/components/ui";
 import WorkflowDemo from "@/components/WorkflowDemo";
 import ReportDemo from "@/components/ReportDemo";
+import ObjectiveWeighting from "@/components/ObjectiveWeighting";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -129,6 +130,11 @@ export default function Platform() {
           </Reveal>
         </Section>
       </div>
+
+      {/* ─────────────── OBJECTIVE WEIGHTING ─────────────── */}
+      <Section className="py-16 sm:py-24">
+        <ObjectiveWeighting />
+      </Section>
 
       {/* ─────────────── HOW IT WORKS (dark) ─────────────── */}
       <DarkSection>

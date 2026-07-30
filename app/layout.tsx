@@ -3,6 +3,7 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import MobileNotice from "@/components/MobileNotice";
+import SiteChrome from "@/components/SiteChrome";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
 
@@ -52,10 +53,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="font-sans bg-base text-navy min-h-screen flex flex-col">
-        <Nav />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <MobileNotice />
+        <SiteChrome nav={<Nav />} footer={<Footer />} notice={<MobileNotice />}>
+          {children}
+        </SiteChrome>
       </body>
     </html>
   );

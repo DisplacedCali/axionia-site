@@ -59,10 +59,21 @@ costs one wave and the job survives a closed tab.
   files for one account in one place. Read-only; actions stay where they work.
 - **Open queue** — `/admin` now has view (open / unassigned / mine / all) as a
   separate axis from status, with inline claim-and-release on each row.
-- **Buyer deck** — `docs/decks/axionia_buyer_deck.html`, self-contained, opens
-  in a browser. Deliberately **not** in `public/`: it carries commercial terms
-  and a confidentiality notice, and anything under `public/` is fetchable by
-  anyone who guesses the path. Serve it from `/admin/present` when that exists.
+- **Buyer deck** — `/deck`. Public URL so it can be sent to someone with no
+  account, but `noindex` and absent from nav, footer and sitemap: a link you
+  choose to share is not the same as a page search engines surface. Arrow keys
+  advance; every slide stays mounted so `@media print` can reveal all of them
+  and page-break between — unmounting inactive slides prints a one-page PDF.
+  Slides live in `components/deck/slides.tsx`, chrome in `DeckShell.tsx`.
+- **Deck logging** — every view and print writes to `deck_events` (migration
+  012). Signed-in viewers print directly; anonymous ones give name, email and
+  organisation first, unverified, and are also written to `leads` with
+  `interest = 'buyer-deck'`. **No IP is recorded** — that's a privacy-policy
+  decision, and the site has no policy yet.
+- **Objective weighting** — `lib/objectives.ts`, rendered on `/platform` and in
+  the deck. Axionia scores the evidence, never the objective; weights reorder
+  recommendations and must never be allowed to put a dollar figure on a soft
+  outcome, which `/methodology` publicly commits to not doing.
 
 ### Not built
 
