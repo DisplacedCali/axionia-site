@@ -11,14 +11,20 @@ type NavChild = { href: string; label: string; note: string };
 type NavGroup = { label: string; href: string; children: NavChild[] };
 
 /**
- * Three groups, not six flat links. The old nav mixed product, offer and
- * company at one level, and left /methodology and /request-report reachable
- * only from the footer or from in-page CTAs — /request-report is the primary
- * conversion and had no persistent presence at all.
+ * Groups, not flat links. The old nav mixed product, offer and company at one
+ * level, and left /methodology and /request-report reachable only from the
+ * footer or from in-page CTAs — /request-report is the primary conversion and
+ * had no persistent presence at all.
  *
  * Every child carries a `note`. The nav is the only place a visitor sees the
  * whole site at once, so it's the cheapest place to explain what a page is
  * before they spend a click finding out.
+ *
+ * A group with no children renders as a plain link. /who-its-for is the only
+ * one: it answers "should I buy this at all", which is a question asked before
+ * anyone opens a menu, so burying it one hover deep under Platform defeated it.
+ * All four labels stay noun phrases — an imperative here would put a CTA in the
+ * navigation.
  */
 const groups: NavGroup[] = [
   {
@@ -29,11 +35,6 @@ const groups: NavGroup[] = [
         href: "/platform",
         label: "Overview",
         note: "The methodology in one page",
-      },
-      {
-        href: "/who-its-for",
-        label: "Who it's for",
-        note: "The decisions we're built for",
       },
       {
         href: "/platform#report",
@@ -56,6 +57,11 @@ const groups: NavGroup[] = [
         note: "Commissioned independent research",
       },
     ],
+  },
+  {
+    label: "Who it's for",
+    href: "/who-its-for",
+    children: [],
   },
   {
     label: "Pricing",
@@ -140,7 +146,9 @@ export default function Nav() {
   }, [openGroup]);
 
   const groupActive = (g: NavGroup) =>
-    g.children.some((c) => basePath(c.href) === pathname);
+    g.children.length === 0
+      ? basePath(g.href) === pathname
+      : g.children.some((c) => basePath(c.href) === pathname);
 
   return (
     <>
@@ -160,6 +168,30 @@ export default function Nav() {
             {groups.map((g) => {
               const isOpen = openGroup === g.label;
               const active = groupActive(g);
+
+              // Childless group: a link, not a disclosure. Rendering it as a
+              // button with an empty panel would promise a menu that isn't
+              // there and cost a click to find out.
+              if (g.children.length === 0) {
+                return (
+                  <Link
+                    key={g.label}
+                    href={g.href}
+                    onMouseEnter={() => setOpenGroup(null)}
+                    className={`relative group py-1 uppercase tracking-[0.12em] transition-colors ${
+                      active ? "text-navy" : "hover:text-navy"
+                    }`}
+                  >
+                    {g.label}
+                    <span
+                      className={`absolute -bottom-0.5 left-0 h-px w-full origin-left bg-axionia-gradient transition-transform duration-300 ease-out ${
+                        active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                      }`}
+                    />
+                  </Link>
+                );
+              }
+
               return (
                 <div
                   key={g.label}
@@ -305,6 +337,17 @@ export default function Nav() {
                     transition={{ delay: 0.04 + i * 0.045, duration: 0.3 }}
                     className="border-b border-border"
                   >
+                    {g.children.length === 0 ? (
+                      <Link
+                        href={g.href}
+                        className={`block py-4 font-serif text-[28px] leading-tight ${
+                          groupActive(g) ? "text-blue" : "text-navy"
+                        }`}
+                      >
+                        {g.label}
+                      </Link>
+                    ) : (
+                    <>
                     <button
                       type="button"
                       aria-expanded={expanded}
@@ -357,6 +400,8 @@ export default function Nav() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+                    </>
+                    )}
                   </motion.div>
                 );
               })}

@@ -122,7 +122,10 @@ costs one wave and the job survives a closed tab.
   benefits leader the early adopter, broker/health plan the channel. Carries the
   low-data-requirement differentiator (end to end on documents you already own,
   works on top of an existing warehouse rather than replacing it) and an
-  explicit not-a-fit list. In nav under Platform, in the footer, in the sitemap.
+  explicit not-a-fit list. **Top-level nav item**, not a Platform child — it
+  answers "should I buy this at all", which is asked before anyone opens a menu.
+  `NavGroup` now supports `children: []`, which renders a plain link rather than
+  a disclosure button with an empty panel. Also in the footer and sitemap.
   Uses `pos-dark` / `caution-dark` / `risk-dark`, added to `tailwind.config.ts`
   from the semantic scale's dark-text variants — the base semantic hues are
   calibrated as marks on the warm base, not as small type on it.
