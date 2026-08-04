@@ -160,6 +160,69 @@ export async function saveWaveResult(args: {
   return toJob(rows[0]);
 }
 
+/**
+ * Ratify (and optionally correct) the company identity, releasing the gate.
+ *
+ * The corrected values are written into `steps.validate.output`, which is what
+ * every downstream step reads — so a correction here changes the premise the
+ * remaining nine model calls are built on, which is the entire point.
+ *
+ * `modelOutput` keeps what the model originally said. It is set once and never
+ * overwritten, so a second pass through the gate can't quietly launder a
+ * correction into "what the model thought".
+ *
+ * Status goes back to 'paused' rather than 'running': `claimJob` picks up
+ * 'paused', and going straight to 'running' would make the job look claimed by
+ * a worker that doesn't exist until the next poll.
+ */
+export async function confirmValidation(args: {
+  jobId: string;
+  corrections: Record<string, unknown>;
+  confirmedBy: string;
+}): Promise<PipelineJob | null> {
+  const job = await getJob(args.jobId);
+  if (!job) return null;
+
+  const prior = job.steps.validate;
+  if (!prior || prior.status !== "done") return null;
+
+  const original = (prior.output ?? {}) as Record<string, unknown>;
+
+  // Drop empty strings so a blank field means "leave the model's value" rather
+  // than "set this to nothing" — the form submits every input, not just the
+  // ones that were touched.
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(args.corrections)) {
+    if (typeof v === "string" && !v.trim()) continue;
+    if (v === undefined || v === null) continue;
+    clean[k] = typeof v === "string" ? v.trim() : v;
+  }
+
+  const steps: StepStates = {
+    ...job.steps,
+    validate: {
+      ...prior,
+      output: { ...original, ...clean },
+      modelOutput: prior.modelOutput ?? original,
+      confirmedAt: new Date().toISOString(),
+      confirmedBy: args.confirmedBy,
+    },
+  };
+
+  const { rows } = await getPool().query(
+    `update research.pipeline_jobs
+        set steps     = $2,
+            next_wave = 1,
+            status    = 'paused'
+      where id = $1
+        and status = 'awaiting_confirmation'
+      returning *`,
+    [args.jobId, steps],
+  );
+
+  return rows[0] ? toJob(rows[0]) : null;
+}
+
 export async function attachRunId(jobId: string, runId: string): Promise<void> {
   await getPool().query(
     "update research.pipeline_jobs set run_id = $2 where id = $1",

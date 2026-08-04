@@ -215,18 +215,49 @@ export async function advanceJob(
   const nextWave = settled ? waveIndex + 1 : waveIndex;
   const isLast = nextWave >= WAVES.length;
 
+  /*
+    The identity gate.
+
+    Wave 1 is `validate` alone, and all nine remaining model calls read its
+    answer. Stopping here costs one click; not stopping here once cost a whole
+    run analysing a fertility vendor as a behavioral health employer, coherently
+    and expensively, because the premise was set at call two.
+
+    Placed in the runner rather than the UI on purpose. The advance endpoint,
+    a retry and any future caller all pass through here; a check in the panel
+    would only guard the path someone happened to be looking at.
+  */
+  const awaitingConfirmation =
+    settled && waveIndex === 0 && !steps.validate?.confirmedAt;
+
   const saved = await saveWaveResult({
     jobId: job.id,
     steps,
-    nextWave,
+    // Hold at the gate. Advancing next_wave here would let a poll walk past a
+    // job that is meant to be waiting for a person.
+    nextWave: awaitingConfirmation ? waveIndex : nextWave,
     companyId: job.companyId,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     model,
     // 'paused' rather than 'queued' so a stalled retry is distinguishable
     // from a job that has never started.
-    status: isLast ? "running" : "paused",
+    status: awaitingConfirmation
+      ? "awaiting_confirmation"
+      : isLast
+        ? "running"
+        : "paused",
   });
+
+  if (awaitingConfirmation) {
+    return {
+      job: saved,
+      wave: waveIndex,
+      ranSteps: toRun,
+      done: false,
+      progress: progressOf(steps),
+    };
+  }
 
   if (isLast) return finish(saved, steps, llm, toRun);
 

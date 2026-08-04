@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  confirmValidation,
   createJob,
   getActiveJobForRequest,
   getCachedRun,
@@ -138,6 +139,83 @@ export async function advanceResearch(jobId: string): Promise<
       tokens: { input: r.job.inputTokens, output: r.job.outputTokens },
       retryAfterMs: r.done ? null : r.wave === null ? 3000 : 250,
     };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+/**
+ * What the model concluded about the company, for the confirmation gate.
+ *
+ * Returned as a plain shape rather than the raw step so the panel never has to
+ * know the pipeline's internals to render a form.
+ */
+export async function pendingIdentity(jobId: string): Promise<
+  Result<{
+    confirmed: boolean;
+    identity: {
+      name: string;
+      industry: string;
+      hq: string;
+      size: string;
+      description: string;
+      confidence: string;
+    };
+  }>
+> {
+  await requireAdmin();
+  try {
+    const job = await getJob(jobId);
+    if (!job) return { ok: false, error: "Job not found." };
+
+    const v = (job.steps.validate?.output ?? {}) as Record<string, unknown>;
+    const s = (k: string) => (typeof v[k] === "string" ? (v[k] as string) : "");
+
+    return {
+      ok: true,
+      confirmed: Boolean(job.steps.validate?.confirmedAt),
+      identity: {
+        name: s("name"),
+        industry: s("industry"),
+        hq: s("hq"),
+        size: s("size"),
+        description: s("description"),
+        confidence: s("confidence") || "unknown",
+      },
+    };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+/**
+ * Ratify or correct the identity and release the gate.
+ *
+ * The corrections become the premise the remaining nine model calls are built
+ * on. That is the whole point — a fertility vendor once ran as a behavioral
+ * health employer for eight consecutive calls because nothing between the
+ * first answer and the rest of the report asked a person.
+ */
+export async function confirmIdentity(args: {
+  jobId: string;
+  requestId: string;
+  corrections: Record<string, string>;
+}): Promise<Result<object>> {
+  const { user } = await requireAdmin();
+  try {
+    const job = await confirmValidation({
+      jobId: args.jobId,
+      corrections: args.corrections,
+      confirmedBy: user.id,
+    });
+    if (!job) {
+      return {
+        ok: false,
+        error: "This job is not waiting for confirmation — it may already have moved on.",
+      };
+    }
+    revalidatePath(`/admin/requests/${args.requestId}`);
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

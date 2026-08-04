@@ -105,6 +105,46 @@ async function runChecks(D, { createMockClient }, R) {
   ok(Math.abs(s.overallScore - expected) < 0.15, "recomputed from normalised weights", `~${expected}`);
   ok(s._fallback !== true, "real scores, not fallback");
 
+  // ── Identity gate ────────────────────────────────────────────────────────
+  /*
+    A run once analysed a fertility vendor as a behavioral health employer:
+    wrong at call two, faithfully inherited by the other eight. The job must
+    now stop after wave 1 until a person ratifies the identity.
+
+    The happy path above passes because MemoryJobStore.create marks validate
+    pre-confirmed — otherwise every existing check would park at the gate. This
+    exercises the gate itself.
+  */
+  console.log("\n── Identity gate ──");
+  const sg = new D.MemoryJobStore();
+  const jg = sg.create({ companyName: "Meridian Manufacturing" }, { gated: true });
+  const llmG = createMockClient({ responses: D.MOCK_RESPONSES });
+
+  const first = await D.advance(sg, jg.id, llmG);
+  ok(sg.get(jg.id).status === "awaiting_confirmation",
+     "job parks after wave 1", `(${sg.get(jg.id).status})`);
+  ok(sg.get(jg.id).steps.validate?.status === "done", "validate still ran");
+  ok(!first?.done, "and the job is not done");
+
+  const spend = [];
+  await D.advance(sg, jg.id, createMockClient({
+    responses: D.MOCK_RESPONSES, onCall: (l) => spend.push(l),
+  }));
+  ok(spend.length === 0, "a poll at the gate spends nothing", `(${spend.length} calls)`);
+  ok(sg.get(jg.id).nextWave === 0, "and does not walk past the gate");
+
+  D.confirmIdentity(sg, jg.id, { industry: "Fertility & family building" });
+  const st = sg.get(jg.id);
+  ok(st.status === "paused", "confirming releases the gate", `(${st.status})`);
+  ok(st.steps.validate.output.industry === "Fertility & family building",
+     "the correction becomes the premise downstream reads");
+  ok(st.steps.validate.modelOutput.industry !== "Fertility & family building",
+     "and the model's original is preserved beside it",
+     `(${st.steps.validate.modelOutput.industry})`);
+
+  const afterG = await drive(sg, jg.id, createMockClient({ responses: D.MOCK_RESPONSES }));
+  ok(!!afterG?.done, "job completes after confirmation");
+
   console.log("\n── Optional step degrades ──");
   const s2 = new D.MemoryJobStore();
   const j2 = s2.create({ companyName: "Meridian Manufacturing" });

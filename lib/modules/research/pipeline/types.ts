@@ -33,6 +33,19 @@ export interface StepState {
   ms?: number;
   /** True when the step produced usable output via a degraded path. */
   degraded?: boolean;
+
+  /**
+   * Identity confirmation. Set on the `validate` step only.
+   *
+   * `output` is what downstream steps read, so a correction is written there
+   * directly — and `modelOutput` preserves what the model originally said.
+   * Same principle as reports.content vs reports.edits: a correction must
+   * never erase what it corrected, or "we expose the entire model" stops being
+   * true at the one point where the model was most consequentially wrong.
+   */
+  modelOutput?: unknown;
+  confirmedAt?: string;
+  confirmedBy?: string;
 }
 
 export type StepStates = Partial<Record<StepId, StepState>>;
@@ -204,6 +217,15 @@ export type JobStatus =
   | "queued"
   | "running"
   | "paused"
+  /**
+   * Parked after wave 1 until a human ratifies the company identity.
+   *
+   * Distinct from 'paused', which means "between waves, resume when polled".
+   * This means "will not proceed until a person acts". See migration 016 — a
+   * run once analysed a fertility vendor as a behavioral health employer, and
+   * eight subsequent model calls inherited it faithfully.
+   */
+  | "awaiting_confirmation"
   | "complete"
   | "failed"
   | "cancelled";

@@ -152,6 +152,27 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Identity confirmation gate** (migrations 016 **and 017** — two files
+  because `alter type ... add value` can't be used in the transaction that adds
+  it, and the Supabase editor wraps a submission in one transaction; 016 adds
+  the enum value, 017 rebuilds the one-active-job index that needs it). The job now stops after wave
+  1 with status `awaiting_confirmation` until a person ratifies or corrects the
+  company identity. A live run analysed **WIN — a fertility and family-building
+  vendor — as a behavioral health employer**: wrong at call two, faithfully
+  inherited by the other eight, internally consistent about a fiction.
+  Commenting couldn't fix it, because the revise agent edits wording and this
+  was a premise.
+  The gate lives in **`runner.ts`, not the panel** — the advance endpoint, a
+  retry and any future caller all pass through the runner; a check in the UI
+  would guard only the path someone happened to be looking at. `claimJob`
+  already refuses anything outside queued/paused, so a poll at the gate costs
+  nothing. Corrections write to `steps.validate.output` (what downstream reads)
+  with the model's original kept in `steps.validate.modelOutput` — same
+  principle as `reports.content` vs `reports.edits`: a correction must never
+  erase what it corrected.
+  The dry-run store's `create()` **pre-confirms unless `{ gated: true }`** —
+  otherwise every other check would park waiting for a human who doesn't exist
+  in a script. The gate has its own checks.
 - **Intake industry list rebuilt, and a workforce question added.** Two live
   bugs in `getSegmentsForIndustry`, both from raw-substring matching against a
   five-option list. **"Retail & Hospitality" matched `"hospital"`** and returned
@@ -211,6 +232,36 @@ costs one wave and the job survives a closed tab.
 - Paid tier: artifact ingestion, entitlement checks, module registry.
 
 ### Open, deliberately
+
+- **Revision reaches less of the report than it looks like it does.** Found
+  while diagnosing the WIN run. Three separate gaps:
+  1. **`summary` has no comment box.** `RevisableSection` includes it and the
+     revise agent handles it, but `REVISABLE` in `ReportReview.tsx` exposes only
+     findings / profile / regulatory / brief. The summary is the paragraph a
+     client reads first — and `assembleReport` derives it from
+     `workforceData.overallInsight` — so commenting on findings rewrites
+     findings while the text you were actually reading is untouched. The agent
+     reports success honestly; the fix lands somewhere you aren't looking.
+  2. **Workforce Intelligence and Benefit Design aren't revisable at all.** No
+     comment box, no overlay path. A mischaracterisation in `workforceData`
+     propagates into the summary, the workforce section and benefit design with
+     no way to correct it short of a re-run.
+  3. **A stale code comment** in `ReportReview.tsx` claims "the summary is
+     edited through the findings section" — an intention nobody implemented.
+  The identity gate prevents the common cause of all three. These are still
+  worth closing, because not every wrong premise is visible at wave 1.
+
+- **Staleness by DAG — the structural fix, not built.** When a fact is
+  corrected after a run, everything with that step in its transitive
+  `dependsOn` closure is stale. The plan already declares those edges and the
+  runner is already resumable with a plan self-check, so this is mostly
+  bookkeeping over machinery that exists. **Deterministic graph traversal, not
+  a model call** — something deciding what to re-run is one more thing that can
+  be confidently wrong. Decided behaviour: show which steps are stale with
+  their model-call cost and let the analyst choose, rather than auto-re-running.
+  The distinction underneath: *wording wrong* → revise agent; *fact wrong* →
+  correct upstream and invalidate. Only the first exists today, which is why a
+  factual error got handed an editorial tool.
 
 - **Output is long-winded — regulatory section FIXED, rest unmeasured.** Two
   bugs, not one. The prompt asked for **federal overlay per state**, and ACA,
@@ -319,7 +370,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`015`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`017`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.
@@ -331,6 +382,14 @@ it anywhere else.
 ---
 
 ## Lessons worth keeping
+
+**A new enum value can't be used in the migration that adds it.** 016 added
+`awaiting_confirmation` and then built an index referencing it, in one file.
+The Supabase editor runs a submission as one transaction, so it failed with
+`55P04: unsafe use of new value`. The constraint was even noted in that file's
+header and the index was put there anyway — knowing the rule isn't the same as
+structuring for it. Any future enum addition gets two migration files: add the
+value, then use it.
 
 **Migrations written in one session and never run.** Four of them sat as files
 while code assumed they were applied, which cost five debugging round trips —

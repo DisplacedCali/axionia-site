@@ -124,7 +124,16 @@ export class MemoryJobStore {
   private jobs = new Map<string, PipelineJob>();
   private seq = 0;
 
-  create(input: JobInput): PipelineJob {
+  /**
+   * `opts.gated` opts into the identity confirmation gate.
+   *
+   * Default is OFF here and ON in production, which looks backwards and isn't:
+   * every other check in the dry run exercises the pipeline end to end, and
+   * they would all park after wave 1 waiting for a human who doesn't exist in
+   * a script. Pre-confirming is how the rest of the suite stays about what it
+   * is about. The gate has its own checks.
+   */
+  create(input: JobInput, opts: { gated?: boolean } = {}): PipelineJob {
     const id = `job-${++this.seq}`;
     const now = new Date().toISOString();
     const job: PipelineJob = {
@@ -133,7 +142,9 @@ export class MemoryJobStore {
       requestId: null,
       status: "queued",
       input,
-      steps: {},
+      steps: opts.gated
+        ? {}
+        : { validate: { status: "pending", attempts: 0, confirmedAt: now } },
       nextWave: 0,
       attempts: 0,
       lastError: null,
@@ -233,7 +244,14 @@ export async function advance(
     const id = toRun[i];
     const def = STEPS_BY_ID.get(id)!;
     if (r.status === "fulfilled") {
-      steps[id] = { status: "done", output: r.value.output, attempts: r.value.attempts };
+      steps[id] = {
+        // Spread the prior state so `confirmedAt` survives the step running —
+        // dropping it would re-park a job that had already been confirmed.
+        ...steps[id],
+        status: "done",
+        output: r.value.output,
+        attempts: r.value.attempts,
+      };
       return;
     }
     const reason = r.reason as Error;
@@ -263,16 +281,53 @@ export async function advance(
 
   const nextWave = settled ? waveIndex + 1 : waveIndex;
   const isLast = nextWave >= WAVES.length;
+
+  // Mirrors runner.ts. See the note there — the gate lives in the runner so
+  // every caller passes through it, and this file exists to mirror the runner.
+  const awaitingConfirmation =
+    settled && waveIndex === 0 && !steps.validate?.confirmedAt;
+
   store.save(jobId, {
     steps,
-    nextWave,
-    status: isLast ? "running" : "paused",
+    nextWave: awaitingConfirmation ? waveIndex : nextWave,
+    status: awaitingConfirmation
+      ? "awaiting_confirmation"
+      : isLast
+        ? "running"
+        : "paused",
     inputTokens: job.inputTokens + usage.inputTokens,
     outputTokens: job.outputTokens + usage.outputTokens,
   });
 
+  if (awaitingConfirmation) return { wave: waveIndex, ranSteps: toRun, done: false };
   if (isLast) return finish(store, jobId, steps, toRun);
   return { wave: waveIndex, ranSteps: toRun, done: false };
+}
+
+/** Mirrors db.confirmValidation — merge corrections, keep the model's original. */
+export function confirmIdentity(
+  store: MemoryJobStore,
+  jobId: string,
+  corrections: Record<string, unknown>,
+): void {
+  const job = store.get(jobId);
+  if (!job) return;
+  const prior = job.steps.validate;
+  if (!prior) return;
+  const original = (prior.output ?? {}) as Record<string, unknown>;
+  store.save(jobId, {
+    steps: {
+      ...job.steps,
+      validate: {
+        ...prior,
+        output: { ...original, ...corrections },
+        modelOutput: prior.modelOutput ?? original,
+        confirmedAt: new Date().toISOString(),
+      },
+    },
+    nextWave: 1,
+    status: "paused",
+  });
 }
 
 function finish(

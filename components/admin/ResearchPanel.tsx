@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   advanceResearch,
   attachResearchToReport,
+  confirmIdentity,
+  pendingIdentity,
   saveReportEdits,
   startResearchForRequest,
 } from "@/app/admin/research-actions";
@@ -129,6 +131,46 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
   const [seededFor, setSeededFor] = useState<string | null>(report?.hasContent ? report.id : null);
 
   /**
+   * The identity gate. Non-null means the job is parked after wave 1 waiting
+   * for a person to ratify who this company is.
+   *
+   * `identity` is what the model said; `identityDraft` is what will be saved.
+   * Keeping both means the form can show the model's original next to a
+   * correction rather than silently replacing it.
+   */
+  type Identity = {
+    name: string;
+    industry: string;
+    hq: string;
+    size: string;
+    description: string;
+    confidence: string;
+  };
+  const [identity, setIdentity] = useState<Identity | null>(null);
+  const [identityDraft, setIdentityDraft] = useState<Identity | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
+  /*
+    Surface the gate on a cold load too. The job survives a closed tab by
+    design, so arriving at this page fresh has to show the form — otherwise a
+    parked job looks like a stalled one and the natural response is to re-run
+    it, paying for wave 1 twice.
+  */
+  useEffect(() => {
+    if (activeJob?.status !== "awaiting_confirmation") return;
+    if (identityDraft) return;
+    let cancelled = false;
+    void pendingIdentity(activeJob.id).then((r) => {
+      if (cancelled || !r.ok || r.confirmed) return;
+      setIdentity(r.identity);
+      setIdentityDraft(r.identity);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeJob?.id, activeJob?.status, identityDraft]);
+
+  /**
    * Re-seed when research arrives.
    *
    * The panel mounts before any research exists, so every useState initializer
@@ -207,6 +249,21 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
       setPercent(r.percent);
       setTokens(r.tokens);
 
+      /*
+        The identity gate. The runner parks the job after wave 1 and won't
+        advance until a person ratifies who this company is, so the polling
+        loop stops here and hands over to the form. Polling on would spin
+        against a job that is deliberately not moving.
+      */
+      if (r.status === "awaiting_confirmation") {
+        setRunning(false);
+        const id2 = await pendingIdentity(id);
+        if (!id2.ok) return setErr(id2.error);
+        setIdentity(id2.identity);
+        setIdentityDraft(id2.identity);
+        return;
+      }
+
       if (r.done && r.runId) {
         setRunning(false);
         const attached = await attachResearchToReport({
@@ -230,6 +287,24 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
     setErr("Stopped after 25 waves without completing. Check the job queue.");
   }
 
+  /** Ratify the identity and resume the remaining nine model calls. */
+  async function confirmAndResume() {
+    if (!jobId || !identityDraft) return;
+    setConfirming(true);
+    setErr(null);
+    const res = await confirmIdentity({
+      jobId,
+      requestId,
+      corrections: { ...identityDraft },
+    });
+    setConfirming(false);
+    if (!res.ok) return setErr(res.error);
+    setIdentity(null);
+    setIdentityDraft(null);
+    setRunning(true);
+    await drive(jobId);
+  }
+
   async function useCached() {
     if (!cachedRun) return;
     const res = await attachResearchToReport({ requestId, runId: cachedRun.runId, clientView });
@@ -242,6 +317,79 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
 
   return (
     <div className="space-y-8">
+      {/* ── Identity gate ─────────────────────────────────────────────── */}
+      {identityDraft && (
+        <div className="border-2 border-blue bg-blue-light/40 p-6">
+          <h2 className={`${label} mb-1`}>Confirm before the rest runs</h2>
+          <p className="text-[14px] leading-[1.7] text-navy max-w-measure mb-1">
+            Nine more model calls read this answer. Correct anything wrong now —
+            afterwards it is a re-run, not an edit.
+          </p>
+          {identity?.confidence && identity.confidence !== "high" && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-caution mb-4">
+              Model confidence: {identity.confidence}
+            </p>
+          )}
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {(
+              [
+                ["name", "Company"],
+                ["industry", "Industry"],
+                ["hq", "Headquarters"],
+                ["size", "Size"],
+              ] as const
+            ).map(([k, lbl]) => (
+              <div key={k}>
+                <label className={label}>{lbl}</label>
+                <input
+                  value={identityDraft[k]}
+                  onChange={(e) =>
+                    setIdentityDraft((p) => (p ? { ...p, [k]: e.target.value } : p))
+                  }
+                  className={`${input} mt-2`}
+                />
+                {/* The model's original, when it no longer matches. Correcting
+                    a premise shouldn't erase what was corrected. */}
+                {identity && identity[k] !== identityDraft[k] && (
+                  <p className="mt-1 font-mono text-[10px] text-gray-cool">
+                    model said: {identity[k] || "—"}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <label className={label}>
+              What this company actually does
+            </label>
+            <textarea
+              rows={3}
+              value={identityDraft.description}
+              onChange={(e) =>
+                setIdentityDraft((p) => (p ? { ...p, description: e.target.value } : p))
+              }
+              placeholder="Business model, who they serve, how they make money."
+              className={`${input} mt-2`}
+            />
+            <p className="mt-1.5 text-[12px] leading-[1.6] text-gray-warm">
+              This is the field that goes wrong most expensively — it decides how
+              every later step characterises the workforce.
+            </p>
+          </div>
+
+          <div className="mt-5 flex items-center gap-3">
+            <button onClick={confirmAndResume} disabled={confirming} className={btn}>
+              {confirming ? "Resuming…" : "Confirm and continue"}
+            </button>
+            <span className="font-mono text-[10px] text-gray-cool">
+              9 model calls follow
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── What the client asked for ─────────────────────────────────── */}
       {anyAsk && (
         <div className="border border-blue/30 bg-blue-light/40 p-6">
