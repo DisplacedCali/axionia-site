@@ -418,6 +418,23 @@ export async function runScoring(ctx: StepContext): Promise<ScoreSet> {
   };
 
   let raw: ScoreSet | null = null;
+
+  /*
+    Why the fallback fired, captured rather than discarded.
+
+    This used to be a bare `catch` with the comment "fall through to the
+    fallback set below" — the error object was dropped on the floor. The step
+    then returned normally, so nothing anywhere recorded a cause: the step was
+    'done', `steps.scoring.error` was unset, `last_error` was null, and there
+    was no log line. A report could say "estimated defaults were substituted"
+    and the only honest answer to "why" was that we had thrown it away.
+
+    Two distinct failure paths, and the second is the quieter one: the model
+    can return perfectly parseable JSON that is simply missing axes. That
+    raises nothing at all — it just fails the completeness check below.
+  */
+  let reason: string | null = null;
+
   try {
     const res = await completeJson(ctx.llm, {
       system: P.SCORING_SYSTEM,
@@ -426,17 +443,38 @@ export async function runScoring(ctx: StepContext): Promise<ScoreSet> {
       maxTokens: 2000,
     });
     raw = extractJson<ScoreSet>(res.text);
+    if (!raw) {
+      reason =
+        "The model's scoring response could not be parsed as JSON. " +
+        `It returned ${res.text.trim().length} characters starting: ` +
+        `"${res.text.trim().slice(0, 120)}…"`;
+    }
   } catch (e) {
     if (!(e instanceof LlmError)) throw e;
-    // Fall through to the fallback set below.
+    reason =
+      `The scoring model call failed: ${e.message}` +
+      (e.status ? ` (HTTP ${e.status})` : "");
   }
 
   // A score set missing axes is not a partial success — it would enter the
   // benchmark averages as if complete. Treat it as a fallback instead.
-  const complete =
-    raw && AXIS_KEYS.every((k) => typeof raw?.[k] === "number" && !Number.isNaN(raw[k]));
+  const missing = raw
+    ? AXIS_KEYS.filter((k) => typeof raw?.[k] !== "number" || Number.isNaN(raw[k]))
+    : AXIS_KEYS;
+  const complete = Boolean(raw) && missing.length === 0;
 
-  const scores: ScoreSet = complete ? { ...raw } : { ...FALLBACK_SCORES };
+  if (raw && !complete && !reason) {
+    // Name the axes. "Incomplete" sends you re-reading the whole prompt;
+    // "missing CFO Engagement and Decision Maturity" points at the two lines
+    // of it that matter.
+    reason =
+      `The model returned ${AXIS_KEYS.length - missing.length} of ` +
+      `${AXIS_KEYS.length} axes. Missing or non-numeric: ${missing.join(", ")}.`;
+  }
+
+  const scores: ScoreSet = complete
+    ? { ...raw }
+    : { ...FALLBACK_SCORES, _fallbackReason: reason ?? "Cause not recorded." };
 
   // Overall score is computed here, never taken from the model. The original
   // prompt asked the model to redistribute a 0.09 weight residual in prose,

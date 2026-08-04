@@ -156,6 +156,8 @@ export interface AssembledReport {
 
   /** Set when the pipeline substituted estimated scores. */
   isFallback: boolean;
+  /** Why scoring fell back, when the run recorded it. See ScoreSet. */
+  fallbackReason: string | null;
 }
 
 function pick(edited: string | undefined, original: string | undefined): string {
@@ -323,6 +325,12 @@ export function assembleReport(args: {
     withheldSections: withheld,
 
     isFallback: Boolean(modelScores._fallback),
+    // Runs from before this was recorded have no reason. Say so rather than
+    // rendering an empty box that looks like a bug.
+    fallbackReason:
+      typeof modelScores._fallbackReason === "string"
+        ? modelScores._fallbackReason
+        : null,
   };
 }
 

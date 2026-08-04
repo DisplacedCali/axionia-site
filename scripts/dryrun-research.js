@@ -421,6 +421,49 @@ async function runChecks(D, { createMockClient }, R) {
   ok(withRevision.findings[0].edited === true, "revised finding marked as edited");
   ok(content.scores.cfoEngagement === 55, "content still untouched after revision");
 
+  // ── Fallback cause capture ───────────────────────────────────────────────
+  /*
+    runScoring used to catch the LlmError and discard it, so "estimated
+    defaults were substituted" came with no way to find out why. Both failure
+    paths must now name themselves — and the quiet one is the second: the model
+    can return parseable JSON that is simply missing axes, which raises nothing.
+  */
+  console.log("\n── Fallback cause ──");
+
+  const sfA = new D.MemoryJobStore();
+  const jfA = sfA.create({ companyName: "Meridian Manufacturing" });
+  const fA = await drive(sfA, jfA.id, createMockClient({
+    responses: D.MOCK_RESPONSES, failOn: ["scoring"],
+  }));
+  ok(fA?.result?.scores?._fallback === true, "call failure falls back");
+  ok(typeof fA?.result?.scores?._fallbackReason === "string",
+     "and records why", `"${(fA?.result?.scores?._fallbackReason ?? "").slice(0, 60)}…"`);
+  ok(/failed/i.test(fA?.result?.scores?._fallbackReason ?? ""),
+     "the reason names a failed call");
+
+  const sfB = new D.MemoryJobStore();
+  const jfB = sfB.create({ companyName: "Meridian Manufacturing" });
+  const fB = await drive(sfB, jfB.id, createMockClient({
+    // Valid JSON, three axes short. Raises nothing — this is the silent path.
+    responses: {
+      ...D.MOCK_RESPONSES,
+      scoring: JSON.stringify({
+        spendEfficiency: 40, vendorIndependence: 35, analyticsReadiness: 30,
+        cfoEngagement: 45, workforceAlignment: 33,
+      }),
+    },
+  }));
+  ok(fB?.result?.scores?._fallback === true, "an incomplete score set falls back too");
+  const rB = fB?.result?.scores?._fallbackReason ?? "";
+  ok(/5 of 8/.test(rB), "and counts what came back", `"${rB.slice(0, 70)}…"`);
+  ok(/decisionMaturity/.test(rB) && /regulatoryReadiness/.test(rB),
+     "and names the missing axes rather than saying 'incomplete'");
+
+  const asmF = R.assembleReport({ content: fB.result, view: "full" });
+  ok(asmF.fallbackReason === rB, "the reason reaches the rendered report");
+  ok(R.assembleReport({ content, view: "full" }).fallbackReason === null,
+     "a healthy run carries no reason");
+
   // ── Industry → segment matching ──────────────────────────────────────────
   /*
     "Retail & Hospitality" used to match "hospital" on a raw substring and

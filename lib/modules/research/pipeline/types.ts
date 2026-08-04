@@ -177,6 +177,21 @@ export type ScoreSet = Partial<Record<AxisKey, number>> & {
   conversationHook?: string;
   /** True when the model failed and estimated defaults were substituted. */
   _fallback?: boolean;
+  /**
+   * WHY the fallback happened, in plain words.
+   *
+   * `runScoring` used to catch the LlmError and discard it, so a report could
+   * say "estimated defaults were substituted" with no way to find out why: the
+   * step still completed, `steps.scoring.error` was never set, `last_error`
+   * stayed null and nothing logged. For a product whose worst failure is
+   * showing estimates as real analysis, not knowing the cause is most of the
+   * problem.
+   *
+   * Lives on the score set rather than the step because it travels with
+   * `reports.content` — the immutable record — so the reason survives as long
+   * as the number it explains.
+   */
+  _fallbackReason?: string;
   [key: string]: unknown;
 };
 

@@ -229,6 +229,17 @@ export default function ReportRender({
             Scoring failed on this run and estimated defaults were substituted. Not
             releasable and excluded from benchmarks.
           </p>
+          {report.fallbackReason && (
+            <p className="mt-2 font-mono text-[11px] leading-[1.6] text-navy/80">
+              {report.fallbackReason}
+            </p>
+          )}
+          {!report.fallbackReason && (
+            <p className="mt-2 font-mono text-[11px] leading-[1.6] text-gray-warm">
+              No cause recorded — this run predates cause capture. Re-running will
+              record one if it happens again.
+            </p>
+          )}
         </div>
       )}
 

@@ -408,6 +408,18 @@ it anywhere else.
 
 ## Lessons worth keeping
 
+**A swallowed error is worse than a loud one, and this one was invisible for
+months.** `runScoring` caught the `LlmError` and dropped it — the comment said
+"fall through to the fallback set below" — then returned normally. So the step
+was `done`, `steps.scoring.error` was unset, `last_error` was null, nothing
+logged, and a report could say "estimated defaults were substituted" with no
+recoverable cause anywhere. Worse, the **more likely** failure raised nothing at
+all: the model can return parseable JSON that is simply missing axes, which
+just fails the completeness check silently. `_fallbackReason` now records both,
+travelling with `reports.content` so the reason outlives the run, and names the
+missing axes rather than saying "incomplete". Any `catch` that discards `e`
+deserves the same suspicion.
+
 **A new enum value can't be used in the migration that adds it.** 016 added
 `awaiting_confirmation` and then built an index referencing it, in one file.
 The Supabase editor runs a submission as one transaction, so it failed with
