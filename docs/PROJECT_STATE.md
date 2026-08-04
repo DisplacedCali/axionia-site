@@ -159,10 +159,11 @@ costs one wave and the job survives a closed tab.
 
 ### Not built
 
-- **Release email for a rendered (non-file) report.** `/reports/[id]` now
-  exists, so there is finally something to link to. **This is the next piece** —
-  a released report is currently only discoverable by the client logging in and
-  looking.
+- **Resend is still unconfigured.** `RESEND_API_KEY` is absent, so every
+  transactional send — including the release email — is skipped and written to
+  `email_log` with `status = 'skipped'`. The workflow works; no mail leaves the
+  building. **This is the next piece**, and it's config rather than code. See
+  `docs/EMAIL-SETUP.md`.
 - Client-side signed download for legacy file-only reports. `/reports/[id]`
   detects `content: null` and says the report was delivered as a document
   rather than rendering an empty one. Few enough of those exist that replying
@@ -200,11 +201,21 @@ weights. Never store or trust a model-supplied total — the original prompt ask
 the model to redistribute a 0.09 weight residual in prose, which made the
 headline number irreproducible between runs.
 
-**Fallback scores block release.** When scoring fails the pipeline substitutes
-estimates flagged `_fallback`. Those are excluded from benchmark views and
-`releaseBlockers()` refuses to release them. For a product selling analytical
-rigour, showing estimated defaults as a real assessment is the worst available
-failure.
+**Fallback scores block release — in the action, not just the UI.** When
+scoring fails the pipeline substitutes estimates flagged `_fallback`. Those are
+excluded from benchmark views, and `releaseReport()` calls
+`hardReleaseBlockers()` and refuses. For a product selling analytical rigour,
+showing estimated defaults as a real assessment is the worst available failure,
+and a disabled button doesn't prevent it — a stale tab or a future call path
+reaches the action directly.
+
+Blockers carry a severity. **hard** = the report looks finished and isn't
+(fallback scores, missing axes) and is enforced server-side. **soft** = visibly
+incomplete rather than quietly wrong (empty profile, not marked reviewed) and
+stays advisory. That split is what keeps the gate from needing an override
+flag, and an override used routinely is UI-only enforcement with extra steps.
+Both lists derive from one `computeBlockers()` — two independent lists would
+drift, and the one that drifts silently is the one that stops blocking.
 
 **The `research` schema is not PostgREST-exposed.** Don't add it to Project
 Settings → API → Exposed schemas. That's why `db.ts` uses direct `pg` over

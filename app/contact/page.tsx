@@ -15,11 +15,17 @@ const interestLabels: Record<string, string> = {
   "research-agent": "Research Agent",
   "scenario-modeling": "Scenario Modeling",
   "workforce-strategy": "Workforce-Aligned Strategy",
+  "benefit-design": "Benefit Design analysis",
 };
 
 function ContactForm() {
   const params = useSearchParams();
-  const initialInterest = params.get("interest") || "general";
+  // Fall back rather than trusting the query string. An interest that isn't in
+  // the table renders a select with nothing selected, and the visitor can't
+  // tell why the form looks broken. These URLs get hand-typed and pasted into
+  // emails, so a bad value is a matter of time.
+  const rawInterest = params.get("interest") || "general";
+  const initialInterest = interestLabels[rawInterest] ? rawInterest : "general";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");

@@ -154,8 +154,18 @@ export function reportReleased(
         p(
           "Every figure in it traces back to an assumption you can see and question. If anything looks wrong, reply to this email — that feedback makes the next version better."
         ) +
-        // The bridge: this reader has just seen the work. It's the single best
-        // moment to raise the founding cohort, and it costs one short paragraph.
+        /*
+          The bridge: this reader has just seen the work. It's the single best
+          moment to raise the founding cohort, and it costs one short paragraph.
+
+          It links to /contact, NOT to a public tier page. The founding-member
+          route was deliberately deleted — see the comment in app/pricing/
+          page.tsx: a published prepay-and-council-seat tier reads as raising
+          capital, and a buyer evaluating a five-year relationship reacts badly
+          to that. This email kept pointing at the deleted route and 404'd on
+          the highest-intent click in the funnel. Don't re-add the link without
+          re-opening that positioning decision.
+        */
         `<div style="margin-top:28px;padding-top:20px;border-top:1px solid #E6E2D9;">
            <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#706C63;margin-bottom:8px;">If this was useful</div>
            <p style="font-size:14px;line-height:1.7;color:#706C63;margin:0 0 10px;">
@@ -163,7 +173,7 @@ export function reportReleased(
              analysis on every renewal and every vendor pitch for five years, at a rate
              locked at enrollment.
            </p>
-           <a href="${siteUrl}/founding-members" style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#2463EB;">See founding membership →</a>
+           <a href="${siteUrl}/contact?interest=founding-member" style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#2463EB;">Ask about founding membership →</a>
          </div>`
     ),
   };

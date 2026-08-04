@@ -10,6 +10,11 @@ import {
   type Role,
 } from "@/lib/auth";
 import { sendEmail, reportReleased } from "@/lib/email";
+import {
+  hardReleaseBlockers,
+  type ReportEdits,
+} from "@/lib/modules/research/report";
+import type { ResearchResult } from "@/lib/modules/research/pipeline/types";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -353,12 +358,34 @@ export async function releaseReport(args: {
 
   const { data: report, error: repErr } = await admin
     .from("reports")
-    .select("id, user_id, title")
+    .select("id, user_id, title, content, edits, reviewed_at")
     .eq("id", args.reportId)
     .single();
 
   if (repErr || !report) {
     return { ok: false, error: repErr?.message ?? "Report not found." };
+  }
+
+  /*
+    Server-side release gate.
+
+    The admin UI already disables the button on these, but a disabled button is
+    a courtesy, not a guarantee — a stale tab, a double submit, or any future
+    code path that calls this action reaches it without passing the UI. Only
+    the HARD blockers are enforced here: fallback scores and missing axes both
+    render as a finished assessment while being estimates or gaps, and a client
+    cannot tell from the page. Soft blockers (empty profile, not marked
+    reviewed) describe a report that is visibly incomplete rather than quietly
+    wrong, and stay advisory so this gate never needs an override flag.
+  */
+  const blockers = hardReleaseBlockers({
+    content: (report.content ?? null) as ResearchResult | null,
+    edits: (report.edits ?? {}) as ReportEdits,
+    reviewedAt: report.reviewed_at ?? null,
+  });
+
+  if (blockers.length) {
+    return { ok: false, error: `Cannot release — ${blockers.join(" ")}` };
   }
 
   const { error } = await admin
@@ -384,7 +411,14 @@ export async function releaseReport(args: {
 
   if (request?.contact_email) {
     const site = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
-    const mail = reportReleased(request.contact_name, `${site}/dashboard`, site);
+    // Deep-link to the report, not the dashboard. Signed-out recipients get
+    // bounced to login and returned here, so the extra step only costs the
+    // people who need it anyway.
+    const mail = reportReleased(
+      request.contact_name,
+      `${site}/reports/${report.id}`,
+      site,
+    );
     await sendEmail({
       to: request.contact_email,
       subject: mail.subject,

@@ -60,7 +60,9 @@ const WITHHELD_COPY: Record<
     label: "Workforce Intelligence",
     blurb:
       "Your covered population broken into segments, with the retention and replacement economics that decide which benefits actually pay back for each one. This is what turns a portfolio score into a specific answer about your workforce rather than your industry's.",
-    interest: "workforce",
+    // Must match a key in interestLabels in app/contact/page.tsx — an unknown
+    // value lands on a select with nothing selected.
+    interest: "workforce-strategy",
     cta: "Ask about the full analysis",
   },
   benefitDesign: {

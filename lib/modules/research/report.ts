@@ -302,36 +302,88 @@ export function assembleReport(args: {
 /**
  * Whether a report is safe to release.
  *
- * Deliberately strict about fallback scores. The pipeline substitutes estimated
- * defaults when scoring fails, and those are flagged `_fallback` and excluded
- * from the benchmark views — but nothing stops them being shown to a client as
- * if they were a real assessment. That would be the single most damaging
- * failure available to a product selling analytical rigour, so it blocks
- * release rather than warning.
+ * Blockers carry a severity, because the four are not the same kind of problem.
+ *
+ * **hard** — the report looks finished and isn't. Fallback scores and missing
+ * axes both render as a complete assessment while being estimates or gaps, and
+ * a client has no way to tell from the page. Showing those as real analysis is
+ * the single most damaging failure available to a product selling analytical
+ * rigour, so `releaseReport()` refuses on them server-side. A disabled button is
+ * not a guarantee: a stale tab, a double submit or a future call path all reach
+ * the action without passing the UI.
+ *
+ * **soft** — the report is visibly incomplete rather than quietly wrong. An
+ * empty profile is obvious on sight, and "not reviewed" is a process checkbox,
+ * not a defect in the artifact. These warn in the admin and don't block, which
+ * is what keeps the hard gate from acquiring an override flag — and an override
+ * used routinely is UI-only enforcement with extra steps.
  */
+export type BlockerSeverity = "hard" | "soft";
+export interface ReleaseBlocker {
+  message: string;
+  severity: BlockerSeverity;
+}
+
+function computeBlockers(args: {
+  content: ResearchResult | null;
+  edits?: ReportEdits;
+  reviewedAt?: string | null;
+}): ReleaseBlocker[] {
+  const problems: ReleaseBlocker[] = [];
+  const c = args.content;
+
+  if (!c) {
+    return [
+      { message: "No research output attached to this report.", severity: "hard" },
+    ];
+  }
+
+  if (c.scores?._fallback) {
+    problems.push({
+      message:
+        "Scores are estimated fallbacks, not a real assessment. Re-run the scoring step before releasing.",
+      severity: "hard",
+    });
+  }
+
+  const missingAxes = AXES.filter((a) => typeof c.scores?.[a.key] !== "number");
+  if (missingAxes.length) {
+    problems.push({
+      message: `Missing scores for: ${missingAxes.map((a) => a.shortLabel).join(", ")}.`,
+      severity: "hard",
+    });
+  }
+
+  if (!c.profile?.trim()) {
+    problems.push({ message: "Company profile is empty.", severity: "soft" });
+  }
+  if (!args.reviewedAt) {
+    problems.push({ message: "Not yet marked as reviewed.", severity: "soft" });
+  }
+
+  return problems;
+}
+
+/** Everything worth showing the admin before they release. */
 export function releaseBlockers(args: {
   content: ResearchResult | null;
   edits?: ReportEdits;
   reviewedAt?: string | null;
 }): string[] {
-  const problems: string[] = [];
-  const c = args.content;
+  return computeBlockers(args).map((b) => b.message);
+}
 
-  if (!c) return ["No research output attached to this report."];
-
-  if (c.scores?._fallback) {
-    problems.push(
-      "Scores are estimated fallbacks, not a real assessment. Re-run the scoring step before releasing.",
-    );
-  }
-
-  const missingAxes = AXES.filter((a) => typeof c.scores?.[a.key] !== "number");
-  if (missingAxes.length) {
-    problems.push(`Missing scores for: ${missingAxes.map((a) => a.shortLabel).join(", ")}.`);
-  }
-
-  if (!c.profile?.trim()) problems.push("Company profile is empty.");
-  if (!args.reviewedAt) problems.push("Not yet marked as reviewed.");
-
-  return problems;
+/**
+ * The subset the release action refuses on. Derived from the same computation
+ * as `releaseBlockers` on purpose — two independent lists would drift, and the
+ * one that drifts silently is the one that stops blocking.
+ */
+export function hardReleaseBlockers(args: {
+  content: ResearchResult | null;
+  edits?: ReportEdits;
+  reviewedAt?: string | null;
+}): string[] {
+  return computeBlockers(args)
+    .filter((b) => b.severity === "hard")
+    .map((b) => b.message);
 }
