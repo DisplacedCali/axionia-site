@@ -213,6 +213,15 @@ export default async function RequestDetail({
 
         <ReviewPanel
           canRelease={canRelease}
+          blockers={
+            draft && content
+              ? releaseBlockers({
+                  content,
+                  edits,
+                  reviewedAt: draft.reviewed_at ?? null,
+                })
+              : []
+          }
           request={{
             id: request.id,
             status: request.status,

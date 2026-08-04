@@ -152,6 +152,31 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Queue lifecycle made legible.** Graduating a report was unintuitive for a
+  structural reason: **two status machines**, and the button that looked like
+  the finish line wasn't. `report_requests.status` ran
+  `new → in_review → ready → sent → archived` while `reports.status` ran its own
+  `pending → in_review → ready`. The picker offered `ready` — meaning "ready
+  *to be* released" — sitting next to a **Release** button that did the actual
+  graduating, and the real terminal state `sent` was **not in the picker at
+  all** because only `releaseReport()` can set it.
+  Now: `ready` is gone from the picker (readiness is computed by
+  `releaseBlockers()`, and a button asserting a derivable state is a button
+  that can lie); Release is the single graduation control with its **blockers
+  listed inline** — they were computed on that page and never shown, so a held
+  release gave no reason; and release names its destination, linking the
+  company hub, because the hand-off out of the queue was real and completely
+  invisible.
+  Three states you set — New · In review · Archived — and two the system sets:
+  Researching (derived) and Released. `sent` renders as "Released" throughout.
+  **Archive is a row action** on the queue (`ArchiveControl`), two-step because
+  it sits on a row you might be clicking to open. **No delete**, deliberately:
+  archive already clears every working view, and a "really gone" lifecycle
+  would be a third state machine for the sake of rows nobody looks at.
+  Released and Archived filters exist but sit outside the default open view —
+  and **an explicit terminal status now overrides that view**, or selecting
+  Archived would return nothing and read as broken rather than empty. The
+  `Ready` filter only renders while legacy rows still hold it.
 - **Identity confirmation gate** (migrations 016 **and 017** — two files
   because `alter type ... add value` can't be used in the transaction that adds
   it, and the Supabase editor wraps a submission in one transaction; 016 adds

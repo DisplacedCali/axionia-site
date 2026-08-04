@@ -3,14 +3,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
 import AssignControl from "@/components/admin/AssignControl";
+import ArchiveControl from "@/components/admin/ArchiveControl";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Three states you set — New, In review, Archived — and two the system sets.
+ *
+ * `sent` reads as "Released" because that's what the action is called and what
+ * it means: the report left the building and now lives on the company. `ready`
+ * is legacy and no longer settable; it meant "ready to be released" and sat
+ * next to a Release button, which is exactly the ambiguity that made
+ * graduating a file unintuitive. Kept here so old rows still render.
+ */
 const STATUS_STYLES: Record<string, { dot: string; text: string; label: string }> = {
   new: { dot: "bg-blue", text: "text-blue", label: "New" },
   in_review: { dot: "bg-caution", text: "text-caution", label: "In review" },
   ready: { dot: "bg-teal", text: "text-teal", label: "Ready to send" },
-  sent: { dot: "bg-pos", text: "text-pos", label: "Sent" },
+  sent: { dot: "bg-pos", text: "text-pos", label: "Released" },
   archived: { dot: "bg-gray-cool", text: "text-gray-warm", label: "Archived" },
 };
 
@@ -63,9 +73,19 @@ export default async function AdminQueue({
     filter strip made "unassigned and new" — the thing you actually open this
     page to find — unreachable.
   */
+  /*
+    Asking for a terminal status overrides the open view.
+
+    Otherwise selecting Released or Archived while the default view is "open"
+    returns nothing — the view filter strips exactly the rows the status filter
+    just asked for, and the strip looks broken rather than empty. An explicit
+    status is a more specific request than an inherited default, so it wins.
+  */
+  const terminalFilter = filter === "sent" || filter === "archived";
+
   if (view === "unassigned") rows = rows.filter((r) => !r.assigned_to && isOpen(r));
   else if (view === "mine") rows = rows.filter((r) => r.assigned_to === user.id);
-  else if (view === "open") rows = rows.filter(isOpen);
+  else if (view === "open" && !terminalFilter) rows = rows.filter(isOpen);
 
   const { data: allForCounts } = await admin
     .from("report_requests")
@@ -101,12 +121,21 @@ export default async function AdminQueue({
     { id: "all", label: "All", n: all.length },
   ];
 
+  /*
+    Released and Archived are both out of the default open view but findable
+    here — archiving is now a one-click row action, so a row you archive by
+    mistake has to be reachable without knowing the URL.
+
+    'Ready' only appears while legacy rows still hold it. A filter that always
+    returns nothing is a filter that teaches you to ignore the strip.
+  */
   const filters = [
     { id: "all", label: "Any status", n: all.length },
     { id: "new", label: "New", n: counts.new ?? 0 },
     { id: "in_review", label: "In review", n: counts.in_review ?? 0 },
-    { id: "ready", label: "Ready", n: counts.ready ?? 0 },
-    { id: "sent", label: "Sent", n: counts.sent ?? 0 },
+    ...(counts.ready ? [{ id: "ready", label: "Ready", n: counts.ready }] : []),
+    { id: "sent", label: "Released", n: counts.sent ?? 0 },
+    { id: "archived", label: "Archived", n: counts.archived ?? 0 },
   ];
 
   const qs = (next: Record<string, string | undefined>) => {
@@ -290,12 +319,15 @@ export default async function AdminQueue({
                     staff={staffOptions}
                   />
                 </span>
-                <span
-                  className={`relative z-10 pointer-events-none self-center md:text-right font-mono text-[11px] ${
-                    overdue ? "text-risk" : "text-gray-cool"
-                  }`}
-                >
-                  {since(r.created_at)}
+                <span className="relative z-10 self-center md:text-right flex md:justify-end items-center gap-3">
+                  <span
+                    className={`pointer-events-none font-mono text-[11px] ${
+                      overdue ? "text-risk" : "text-gray-cool"
+                    }`}
+                  >
+                    {since(r.created_at)}
+                  </span>
+                  <ArchiveControl requestId={r.id} status={r.status} />
                 </span>
               </div>
             );

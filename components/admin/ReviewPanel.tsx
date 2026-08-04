@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   upsertDraftReport,
@@ -38,6 +39,8 @@ type Props = {
    * bounce them, which is worse than not offering it.
    */
   canRelease: boolean;
+  /** From releaseBlockers(). Shown inline so a held release explains itself. */
+  blockers?: string[];
 };
 
 const labelCls = "font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm";
@@ -54,6 +57,7 @@ export default function ReviewPanel({
   draft,
   files,
   canRelease,
+  blockers = [],
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -155,8 +159,22 @@ export default function ReviewPanel({
             {draft ? ` · draft v${draft.version}` : ""}
           </span>
         </div>
+        {/*
+          'ready' is deliberately NOT offered.
+
+          It meant "ready to be released" and read as "finished", sitting right
+          next to a Release button that does the actual graduating — two things
+          called ready, meaning different things, and the real terminal state
+          ('sent') was never in this picker at all because only releaseReport()
+          can set it.
+
+          Readiness is computed, not asserted: releaseBlockers() already knows.
+          A button claiming a state the system derives is a button that can lie.
+          Legacy rows still sitting at 'ready' render in the header above and
+          simply can't be re-selected.
+        */}
         <div className="flex flex-wrap gap-2">
-          {(["new", "in_review", "ready", "archived"] as const).map((s) => (
+          {(["new", "in_review", "archived"] as const).map((s) => (
             <button
               key={s}
               onClick={() =>
@@ -294,17 +312,63 @@ export default function ReviewPanel({
           {released ? "Released" : "Release to client"}
         </h2>
         {released ? (
-          <p className="text-[14px] leading-[1.7] text-gray-warm">
-            This report is live. Everyone at{" "}
-            {request.companyName || "this company"} can see it, and the client has been
-            emailed.
-          </p>
+          /*
+            Name the destination. Releasing removes the row from the queue and
+            the company hub becomes the record — that was already true and
+            completely invisible, so it read as the request vanishing.
+          */
+          <>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              This report is live. Everyone at{" "}
+              {request.companyName || "this company"} can see it, and the client has been
+              emailed.
+            </p>
+            <p className="mt-3 text-[14px] leading-[1.7] text-gray-warm">
+              It has left the queue.{" "}
+              {request.companyId ? (
+                <>
+                  It&rsquo;s now filed under{" "}
+                  <Link
+                    href={`/admin/companies/${request.companyId}`}
+                    className="text-blue hover:underline"
+                  >
+                    {request.companyName || "the company"}
+                  </Link>
+                  .
+                </>
+              ) : (
+                "Find it under the company once one is linked."
+              )}
+            </p>
+          </>
         ) : canRelease ? (
           <>
             <p className="text-[14px] leading-[1.7] text-gray-warm mb-5">
-              Releasing makes the report visible to every contact at this company and
-              emails the requester. Drafts stay invisible until you do.
+              Releasing makes the report visible to every contact at this company,
+              emails the requester, and files it under the company. It leaves the
+              queue at that point. Drafts stay invisible until you do.
             </p>
+
+            {/*
+              Blockers, inline and specific. They were computed on this page and
+              never shown here — so a disabled Release button gave no reason,
+              and the only way to find out was to click it.
+            */}
+            {blockers.length > 0 && (
+              <div className="mb-5 border-l-2 border-caution pl-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-caution mb-2">
+                  Not ready yet
+                </p>
+                <ul className="space-y-1.5">
+                  {blockers.map((b) => (
+                    <li key={b} className="text-[14px] leading-[1.6] text-gray-warm">
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button
               onClick={() => startTransition(release)}
               disabled={pending || !draft}
@@ -315,6 +379,12 @@ export default function ReviewPanel({
                 {pending ? "Releasing…" : "Release & notify client"}
               </span>
             </button>
+            {/*
+              Not disabled on soft blockers. The action refuses on the hard ones
+              server-side; disabling here on everything would make an advisory
+              warning behave like a hard gate, which is the opposite of the
+              split. See hardReleaseBlockers.
+            */}
           </>
         ) : (
           <p className="text-[14px] leading-[1.7] text-gray-warm">
