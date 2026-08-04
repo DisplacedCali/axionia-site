@@ -37,6 +37,41 @@ type Props = {
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm";
 
+/**
+ * Copy for sections the client's view withholds.
+ *
+ * Two rules, both about not being sleazy with a free deliverable.
+ *
+ * The blurb describes what the section CONTAINS, never what the client is
+ * missing out on. "Segment-level replacement cost" is information; "see what
+ * you're losing" is a trailer, and a report that reads as a trailer undermines
+ * the part that was free and real.
+ *
+ * `brief` is deliberately absent. The Pre-Meeting Brief is Axionia's internal
+ * preparation — it isn't a paid upgrade, it's not for sale, and advertising it
+ * to the client as a locked feature would be advertising something that will
+ * never be delivered.
+ */
+const WITHHELD_COPY: Record<
+  string,
+  { label: string; blurb: string; interest: string; cta: string }
+> = {
+  workforce: {
+    label: "Workforce Intelligence",
+    blurb:
+      "Your covered population broken into segments, with the retention and replacement economics that decide which benefits actually pay back for each one. This is what turns a portfolio score into a specific answer about your workforce rather than your industry's.",
+    interest: "workforce",
+    cta: "Ask about the full analysis",
+  },
+  benefitDesign: {
+    label: "Benefit Design",
+    blurb:
+      "A prioritised prescription per segment — what to add, what to renegotiate, what already overlaps something you pay for elsewhere — with the gap analysis behind each call and the assumptions left visible.",
+    interest: "benefit-design",
+    cta: "Ask about the full analysis",
+  },
+};
+
 /** Score band colour, per brand tokens §5. */
 function bandColor(score: number | null): string {
   if (score === null) return SEMANTIC.noSignal;
@@ -144,6 +179,14 @@ export default function ReportRender({
   editScores,
 }: Props) {
   const visible = new Set(report.visibleSections);
+
+  // Only sections with client-facing copy are advertised. Anything withheld
+  // that isn't in the table — today that's the internal brief — is simply not
+  // shown, rather than surfaced as a locked row the client can't ever unlock.
+  const clientWithheld = report.withheldSections.flatMap((id) => {
+    const copy = WITHHELD_COPY[id];
+    return copy ? [{ id, ...copy }] : [];
+  });
 
   const radarAxes: RadarAxis[] = report.axes.map((a) => ({
     label: a.shortLabel,
@@ -582,19 +625,38 @@ export default function ReportRender({
       )}
 
       {/* ── Withheld ─────────────────────────────────────────────── */}
-      {showWithheld && report.withheldSections.length > 0 && (
-        <section className="border-t border-border pt-8 mt-10 print:hidden">
-          <h3 className={`${eyebrow} mb-4`}>Not included in this report</h3>
-          <ul className="space-y-2">
-            {report.withheldSections.map((s) => (
-              <li key={s} className="text-[14px] text-gray-cool">
-                {s === "workforce" && "Workforce Intelligence — segment-level retention and replacement economics"}
-                {s === "benefitDesign" && "Benefit Design — prioritised prescription per segment, with gap analysis"}
-                {s === "brief" && "Pre-Meeting Brief — internal"}
-                {!["workforce", "benefitDesign", "brief"].includes(s) && s}
-              </li>
+      {showWithheld && clientWithheld.length > 0 && (
+        <section className="border-t border-border pt-8 mt-10 print:break-inside-avoid">
+          <h3 className={`${eyebrow} mb-2`}>Analysed, not included</h3>
+          <p className="text-[14px] leading-[1.7] text-gray-warm max-w-measure mb-6">
+            These ran against your intake in the same pass as everything above.
+            They sit outside the free report because they carry the prescriptive
+            work — what to do, in what order, for which segment.
+          </p>
+
+          <div className="grid gap-px bg-border border border-border">
+            {clientWithheld.map((s) => (
+              <div key={s.id} className="bg-base-2 p-6 md:p-7">
+                <div className="flex items-baseline justify-between gap-4 flex-wrap">
+                  <h4 className="font-serif text-xl leading-snug text-navy">
+                    {s.label}
+                  </h4>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-gray-cool shrink-0">
+                    Not in this report
+                  </span>
+                </div>
+                <p className="mt-2 text-[14px] leading-[1.7] text-gray-warm max-w-measure">
+                  {s.blurb}
+                </p>
+                <a
+                  href={`/contact?interest=${s.interest}`}
+                  className="inline-block mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-blue border-b border-blue/40 hover:border-blue pb-0.5"
+                >
+                  {s.cta}
+                </a>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
 

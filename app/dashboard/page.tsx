@@ -141,8 +141,17 @@ export default async function Dashboard() {
         </div>
       ) : (
         <div className="grid gap-4 max-w-3xl">
+          {/*
+            The whole card is the target, not a "read more" link in a corner.
+            The summary is the thing a client scans, so the thing they scan
+            should be the thing they can click.
+          */}
           {(reports ?? []).map((r) => (
-            <div key={r.id} className="border border-border p-7">
+            <Link
+              key={r.id}
+              href={`/reports/${r.id}`}
+              className="group border border-border p-7 hover:border-navy transition-colors"
+            >
               <div className="flex items-baseline justify-between gap-4 mb-2">
                 <h3 className="font-serif text-2xl">{r.title || "Axionia Insight"}</h3>
                 <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool shrink-0">
@@ -161,7 +170,10 @@ export default async function Dashboard() {
                   {r.summary}
                 </p>
               )}
-            </div>
+              <span className="inline-block mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-blue">
+                Read the report →
+              </span>
+            </Link>
           ))}
 
           {/* The bridge: the best founding-member prospect is someone who has

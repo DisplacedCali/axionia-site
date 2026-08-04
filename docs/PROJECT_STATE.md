@@ -129,6 +129,29 @@ costs one wave and the job survives a closed tab.
   Uses `pos-dark` / `caution-dark` / `risk-dark`, added to `tailwind.config.ts`
   from the semantic scale's dark-text variants — the base semantic hues are
   calibrated as marks on the warm base, not as small type on it.
+- **Client report page** — `/reports/[id]`. Reads through the **anon client
+  carrying the user's session**, so `reports_select_company_ready` does the
+  authorisation in the database: released only, requester or same company.
+  Using the service role and checking status in TypeScript would move that
+  guarantee into whichever branch someone edits next. Signed out redirects to
+  login with `redirectTo`; anything else is `notFound()`, identical for ids
+  that don't exist. Renders through the same `ReportRender` as the admin
+  preview — that's what the optional `slots` prop is for. `noindex`.
+- **Withheld sections** now render as locked cards with a CTA each, replacing a
+  grey text list. Copy lives in `WITHHELD_COPY` in `ReportRender.tsx` and
+  describes what a section *contains*, never what the client is missing — a
+  free report that reads as a trailer undermines the part that was real.
+  **`brief` is deliberately absent from that table**: the Pre-Meeting Brief is
+  internal preparation, not a paid upgrade, and advertising it as locked would
+  advertise something that will never be delivered. Anything withheld without
+  copy is simply not shown.
+- **Report view/print logging** — `report_events` (migration 015). Same shape
+  and same no-IP decision as `deck_events`, separate table because every row
+  here is an authenticated session against a specific report. The server action
+  **re-checks RLS before writing**: it selects the report through the anon
+  client first, so a signed-in user can't enumerate ids and mint log rows
+  against reports they can't read. `company_id` is denormalised point-in-time.
+  Prints get a partial index — a print is the buying signal, a view isn't.
 - **Objective weighting** — `lib/objectives.ts`, rendered on `/platform` and in
   the deck. Axionia scores the evidence, never the objective; weights reorder
   recommendations and must never be allowed to put a dollar figure on a soft
@@ -136,11 +159,14 @@ costs one wave and the job survives a closed tab.
 
 ### Not built
 
-- **Client-facing report page.** `reports.content` is populated and the renderer
-  exists, but the dashboard still only lists reports and links to uploaded
-  files. A released free report has nothing for the client to open. **This is
-  the next piece.**
-- Release email for a rendered (non-file) report.
+- **Release email for a rendered (non-file) report.** `/reports/[id]` now
+  exists, so there is finally something to link to. **This is the next piece** —
+  a released report is currently only discoverable by the client logging in and
+  looking.
+- Client-side signed download for legacy file-only reports. `/reports/[id]`
+  detects `content: null` and says the report was delivered as a document
+  rather than rendering an empty one. Few enough of those exist that replying
+  beats building the path.
 - Paid tier: artifact ingestion, entitlement checks, module registry.
 
 ### Open, deliberately
@@ -228,7 +254,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`014`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`015`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.
