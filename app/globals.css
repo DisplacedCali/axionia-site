@@ -86,9 +86,24 @@ body {
   animation: ax-pulse 2.6s ease-in-out infinite;
 }
 
+/* PipelineOrbit: the running dots circling the track.
+   Slow on purpose — 9s a revolution reads as "working", where anything near
+   1s reads as "spinner", and a spinner is the visual language of waiting
+   rather than of something happening. */
+@keyframes ax-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ax-orbit {
+  animation: ax-orbit-spin 9s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ax-edge,
-  .ax-node-halo {
+  .ax-node-halo,
+  .ax-orbit {
     animation: none;
   }
 }
