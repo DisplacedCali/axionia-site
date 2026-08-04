@@ -54,6 +54,18 @@ export interface JobInput {
    */
   programs?: string | null;
 
+  /**
+   * "Your largest role groups" — free text from the intake, e.g. "hygienists,
+   * dental assistants, front office".
+   *
+   * Industry alone only ever yields a DEFAULT segment mix. Two professional
+   * services firms of the same size can be 90% consultants or 60% back office,
+   * and the benefit economics diverge completely. This is the client telling
+   * us which one they are, in their own words — which is the form
+   * `matchSegmentToLibrary` already reads, so it needs no translation.
+   */
+  roleGroups?: string | null;
+
   /** The intake's free-text "additional context" field. */
   context?: string | null;
 

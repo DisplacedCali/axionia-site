@@ -9,13 +9,60 @@ import { submitReportRequest } from "./actions";
 
 type Stage = "details" | "code" | "done";
 
-const INDUSTRIES = [
-  "Light Manufacturing",
-  "Professional Services",
-  "Healthcare Services",
-  "Retail & Hospitality",
-  "Other",
+/**
+ * Grouped to stay scannable past eight options, and worded to match the
+ * branches in `getSegmentsForIndustry` — the old five-option list could only
+ * ever reach four of its nine branches, so dental, home care, hospital, tech,
+ * logistics and education were unreachable from the free form. The data spine
+ * was already richer than the question being asked.
+ *
+ * Labels are what the employer would call themselves, not our taxonomy. The
+ * matcher reads them by word, so "Dental / DSO" and "Hospital / Health System"
+ * both land correctly without the visitor learning our vocabulary.
+ */
+const INDUSTRY_GROUPS: { label: string; options: string[] }[] = [
+  {
+    label: "Healthcare",
+    options: [
+      "Dental / DSO",
+      "Physician / Surgical Practice",
+      "Hospital / Health System",
+      "Behavioral Health / Therapy",
+      "Home Care / Hospice",
+      "Pharmacy / Other Healthcare",
+    ],
+  },
+  {
+    label: "Professional",
+    options: [
+      "Professional Services / Consulting",
+      "Financial Services / Insurance",
+      "Legal / Accounting",
+      "Software / Technology",
+    ],
+  },
+  {
+    label: "Industrial",
+    options: [
+      "Light Manufacturing",
+      "Heavy Manufacturing / Industrial",
+      "Logistics & Distribution",
+      "Construction / Skilled Trades",
+      "Utilities",
+    ],
+  },
+  {
+    label: "Consumer",
+    options: ["Retail", "Hospitality / Restaurants", "Grocery / Food Service"],
+  },
+  {
+    label: "Public & Social",
+    options: ["Education", "Nonprofit / Social Services", "Government / Municipal"],
+  },
+  { label: "Other", options: ["Other"] },
 ];
+
+const DEFAULT_INDUSTRY = "Professional Services / Consulting";
 
 const inputCls =
   "border border-border bg-white/50 px-4 py-3 font-sans text-[15px] focus:outline-none focus:border-navy transition-colors";
@@ -29,7 +76,15 @@ export default function RequestReportPage() {
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [employees, setEmployees] = useState("");
-  const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [industry, setIndustry] = useState(DEFAULT_INDUSTRY);
+  /*
+    Role groups, not a workforce taxonomy. `matchSegmentToLibrary` already maps
+    13 role types to segments with dimension inference, so the useful question
+    is the one whose answer it can already read. Asking the employer to place
+    themselves in our segment model instead would make them do the work the
+    library exists to do.
+  */
+  const [roleGroups, setRoleGroups] = useState("");
   const [programs, setPrograms] = useState("");
   const [context, setContext] = useState("");
 
@@ -107,7 +162,13 @@ export default function RequestReportPage() {
       return setError(readableAuthError(otpErr).message);
     }
 
-    const res = await submitReportRequest({ employees, industry, programs, context });
+    const res = await submitReportRequest({
+      employees,
+      industry,
+      roleGroups,
+      programs,
+      context,
+    });
     setLoading(false);
 
     if (!res.ok) return setError(res.error);
@@ -360,17 +421,47 @@ export default function RequestReportPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className={labelCls}>Workforce profile</label>
+                <label className={labelCls}>Industry</label>
                 <select
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
                   className={inputCls}
                 >
-                  {INDUSTRIES.map((i) => (
-                    <option key={i}>{i}</option>
+                  {INDUSTRY_GROUPS.map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.options.map((i) => (
+                        <option key={i}>{i}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/*
+              The one workforce question on the free form. Industry gives a
+              default segment mix; this gives THIS employer's. Two professional
+              services firms of the same size can be 90% consultants or 60%
+              back office, and the benefit economics diverge completely.
+
+              Optional on purpose — it's the field most likely to make someone
+              abandon a form they're filling in to get something free.
+            */}
+            <div className="flex flex-col gap-2">
+              <label className={labelCls}>
+                Your largest role groups{" "}
+                <span className="text-gray-cool">(optional)</span>
+              </label>
+              <input
+                value={roleGroups}
+                onChange={(e) => setRoleGroups(e.target.value)}
+                placeholder="e.g. hygienists, dental assistants, front office"
+                className={inputCls}
+              />
+              <p className="text-[12px] leading-[1.6] text-gray-warm">
+                Two or three is plenty. This is what lets us model your actual
+                workforce rather than your industry&rsquo;s average.
+              </p>
             </div>
 
             <div className="flex flex-col gap-2">

@@ -44,10 +44,19 @@ export function clientAskBlock(input: {
   programs?: string | null;
   context?: string | null;
   analystContext?: string | null;
+  roleGroups?: string | null;
 }): string {
   const parts: string[] = [];
   if (input.programs?.trim()) {
     parts.push(`Programs or vendors the client specifically asked to have examined: ${input.programs.trim()}`);
+  }
+  if (input.roleGroups?.trim()) {
+    // First-party and specific — it outranks anything inferred from the
+    // industry label, which only ever yields a default mix. Said plainly so
+    // the model doesn't average it back toward the sector.
+    parts.push(
+      `The client's own description of their largest role groups (treat as authoritative, and in preference to any assumption drawn from the industry label): ${input.roleGroups.trim()}`,
+    );
   }
   if (input.context?.trim()) {
     parts.push(`Context the client provided: ${input.context.trim()}`);

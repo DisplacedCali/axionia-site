@@ -65,6 +65,7 @@ function ask(ctx: StepContext): string {
     programs: ctx.input.programs,
     context: ctx.input.context,
     analystContext: ctx.input.analystContext,
+    roleGroups: ctx.input.roleGroups,
   });
 }
 

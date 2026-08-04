@@ -85,48 +85,105 @@ export function getVendorsForBenefit(benefitId: string): BenefitVendorWithVendor
  *
  * Ordering matters downstream: the Benefit Design tab takes the first three and
  * assigns Critical / High / Medium priority in that order.
+ *
+ * MATCHING IS ON WORD BOUNDARIES, not raw substrings. The original `includes()`
+ * meant **"Retail & Hospitality" matched "hospital"** — one of only five intake
+ * options — and a restaurant group was analysed with the full clinical mix,
+ * led by Senior Clinical / Licensed Professionals. That is precisely the
+ * "analysed one workforce and prescribed for another" failure the PDF review
+ * caught, reintroduced by a substring.
+ *
+ * Terms ending in `*` match a prefix deliberately (`manufact*` for
+ * manufacturing / manufacturer). Everything else must match a whole word.
  */
-export function getSegmentsForIndustry(industry: string | null | undefined): string[] {
-  const ind = (industry ?? "").toLowerCase();
-  const has = (...terms: string[]) => terms.some((t) => ind.includes(t));
+function industryMatcher(industry: string | null | undefined) {
+  const words = (industry ?? "")
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter(Boolean);
+  const joined = words.join(" ");
 
+  return (...terms: string[]) =>
+    terms.some((t) => {
+      if (t.endsWith("*")) {
+        const stem = t.slice(0, -1);
+        return words.some((w) => w.startsWith(stem));
+      }
+      // Multi-word terms ("health system") match as a phrase; single words
+      // must be whole words, so "hospitality" no longer matches "hospital".
+      return t.includes(" ") ? joined.includes(t) : words.includes(t);
+    });
+}
+
+export function getSegmentsForIndustry(industry: string | null | undefined): string[] {
+  const has = industryMatcher(industry);
+
+  /*
+    Consumer-facing FIRST, ahead of the clinical branches. "Retail &
+    Hospitality" is now safe on word boundaries, but ordering is the belt to
+    that braces: any future term that collides with a clinical keyword fails
+    toward frontline rather than toward surgeons, and a retail employer
+    misread as retail-adjacent is a far cheaper error than one misread as a
+    hospital.
+  */
+  if (has("retail", "hospitality", "restaurant", "food", "grocery", "hotel", "leisure")) {
+    return ["SEG003", "SEG004", "SEG005"];
+  }
   // Clinical / physician-heavy employers.
-  if (has("dental", "dso", "physician", "surgery")) {
+  if (has("dental", "dso", "physician", "surgery", "surgical", "veterinary")) {
     return ["SEG001", "SEG002", "SEG003", "SEG004", "SEG005"];
   }
   // Home care / community health / direct care — frontline-heavy, no physician segment.
-  if (has("home care", "home health", "personal care", "community health", "direct care", "caregiver")) {
+  if (has("home care", "home health", "personal care", "community health", "direct care", "caregiver", "hospice")) {
     return ["SEG003", "SEG002", "SEG004", "SEG005"];
   }
   // Hospital / health system — full clinical mix.
-  if (has("hospital", "health system", "medical center")) {
+  if (has("hospital", "health system", "medical center", "medical centre")) {
     return ["SEG001", "SEG002", "SEG003", "SEG004", "SEG005"];
   }
   // General healthcare / clinic / behavioral health.
-  if (has("health", "clinic", "therapy", "rehab")) {
+  if (has("health", "healthcare", "clinic", "therapy", "rehab", "behavioral", "pharmacy")) {
     return ["SEG002", "SEG003", "SEG004", "SEG005"];
   }
   // Tech / software / knowledge workers.
-  if (has("tech", "software", "saas", "data")) {
-    return ["SEG005", "SEG004", "SEG002"];
+  if (has("tech", "technology", "software", "saas", "data", "engineering")) {
+    return ["SEG009", "SEG007", "SEG005", "SEG004"];
   }
-  // Manufacturing / warehouse / industrial.
-  if (has("manufact", "warehouse", "logistics", "distribution")) {
-    return ["SEG003", "SEG004", "SEG005"];
+  // Manufacturing / warehouse / industrial — skilled trades belong here.
+  if (has("manufact*", "warehouse", "logistics", "distribution", "industrial", "construction", "utilities")) {
+    return ["SEG003", "SEG008", "SEG004", "SEG005"];
   }
-  // Retail / hospitality / food service — frontline-heavy.
-  if (has("retail", "hospitality", "restaurant", "food")) {
-    return ["SEG003", "SEG004", "SEG005"];
-  }
-  // Financial / professional services.
-  if (has("financial", "insurance", "consulting", "legal")) {
-    return ["SEG005", "SEG004", "SEG002"];
+  /*
+    Financial / professional services.
+
+    "Professional Services" used to match nothing here and fall through to the
+    default — byte-identical to "Other" — while "Consulting", which the intake
+    could not produce, matched correctly. One of five options was inert.
+  */
+  if (has("financial", "finance", "insurance", "consulting", "legal", "law", "accounting", "professional", "architecture")) {
+    return ["SEG006", "SEG005", "SEG004", "SEG002"];
   }
   // Education.
-  if (has("education", "school", "university")) {
+  if (has("education", "school", "university", "college", "childcare")) {
     return ["SEG002", "SEG004", "SEG005"];
   }
-  // Default — admin + frontline + operations.
+  /*
+    Government / municipal. Distinct from the default only because a
+    municipality runs public works — streets, water, fleet — so skilled trades
+    are a real segment here in a way they aren't for a nonprofit.
+  */
+  if (has("government", "municipal", "municipality", "county", "city"))  {
+    return ["SEG004", "SEG003", "SEG008", "SEG005"];
+  }
+
+  /*
+    Default — admin + frontline + operations.
+
+    Nonprofit and social services deliberately have NO branch: theirs really is
+    this mix, and a branch returning the same array as the default is dead code
+    that reads as coverage. If that changes, add the branch and change the
+    array in the same commit.
+  */
   return ["SEG004", "SEG003", "SEG005"];
 }
 

@@ -34,6 +34,8 @@ export type SubmitResult =
 export async function submitReportRequest(formData: {
   employees?: string;
   industry?: string;
+  /** Free text, e.g. "hygienists, dental assistants, front office". */
+  roleGroups?: string;
   programs?: string;
   context?: string;
 }): Promise<SubmitResult> {
@@ -126,6 +128,7 @@ export async function submitReportRequest(formData: {
       payload: {
         employees: formData.employees ?? null,
         industry: formData.industry ?? null,
+        role_groups: formData.roleGroups?.trim() || null,
         programs: formData.programs ?? null,
         context: formData.context ?? null,
         email_domain: domain,

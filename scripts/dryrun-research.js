@@ -381,6 +381,63 @@ async function runChecks(D, { createMockClient }, R) {
   ok(withRevision.findings[0].edited === true, "revised finding marked as edited");
   ok(content.scores.cfoEngagement === 55, "content still untouched after revision");
 
+  // ── Industry → segment matching ──────────────────────────────────────────
+  /*
+    "Retail & Hospitality" used to match "hospital" on a raw substring and
+    return the full clinical mix, led by Senior Clinical / Licensed
+    Professionals — a restaurant group analysed as though it employed surgeons.
+    These checks exist so that cannot come back quietly.
+  */
+  console.log("\n── Industry → segments ──");
+  const seg = (s) => D2.getSegmentsForIndustry(s);
+
+  ok(!seg("Retail & Hospitality").includes("SEG001"),
+     "hospitality does NOT match hospital", `(${seg("Retail & Hospitality").join(",")})`);
+  ok(seg("Hospitality / Restaurants")[0] === "SEG003",
+     "hospitality leads with frontline");
+  ok(seg("Hospital / Health System").includes("SEG001"),
+     "an actual hospital still gets the clinical mix");
+
+  ok(seg("Professional Services / Consulting").join() !== seg("Other").join(),
+     "professional services no longer falls through to the default",
+     `(${seg("Professional Services / Consulting").join(",")})`);
+  ok(seg("Professional Services / Consulting")[0] === "SEG006",
+     "and leads with senior non-clinical professionals");
+
+  ok(seg("Software / Technology")[0] === "SEG009",
+     "tech leads with distributed knowledge workers");
+  ok(seg("Construction / Skilled Trades").includes("SEG008"),
+     "trades reach the skilled-trades segment");
+  ok(seg("Manufacturer").join() === seg("Light Manufacturing").join(),
+     "manufact* prefix matches both manufacturer and manufacturing");
+
+  // Every option the intake can produce must resolve to something deliberate.
+  const INTAKE = [
+    "Dental / DSO", "Physician / Surgical Practice", "Hospital / Health System",
+    "Behavioral Health / Therapy", "Home Care / Hospice", "Pharmacy / Other Healthcare",
+    "Professional Services / Consulting", "Financial Services / Insurance",
+    "Legal / Accounting", "Software / Technology", "Light Manufacturing",
+    "Heavy Manufacturing / Industrial", "Logistics & Distribution",
+    "Construction / Skilled Trades", "Utilities", "Retail",
+    "Hospitality / Restaurants", "Grocery / Food Service", "Education",
+    "Nonprofit / Social Services", "Government / Municipal", "Other",
+  ];
+  // These two are SUPPOSED to be the default mix — admin, frontline,
+  // operations really is a nonprofit's shape. Listed rather than excluded by a
+  // pattern so that adding a third silently is not possible.
+  const INTENTIONAL_DEFAULT = ["Other", "Nonprofit / Social Services"];
+  const dflt = seg("zzzz").join();
+  const fellThrough = INTAKE.filter(
+    (i) => !INTENTIONAL_DEFAULT.includes(i) && seg(i).join() === dflt,
+  );
+  ok(fellThrough.length === 0,
+     `all ${INTAKE.length} intake options map deliberately`,
+     fellThrough.length ? `(fell through: ${fellThrough.join(", ")})` : "");
+  ok(INTENTIONAL_DEFAULT.every((i) => seg(i).join() === dflt),
+     "and the two intentional defaults really are the default");
+  ok(INTAKE.every((i) => seg(i).every((s) => D2.SEGMENTS_BY_ID.has(s))),
+     "every returned segment id exists in the library");
+
   // ── Regulatory focus ─────────────────────────────────────────────────────
   /*
     The regulatory step is stubbed in MOCK_RESPONSES, so nothing above exercises
