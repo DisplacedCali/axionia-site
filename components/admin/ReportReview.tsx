@@ -6,6 +6,7 @@ import ReportRender from "@/components/ReportRender";
 import {
   markReportReviewed,
   regenerateSection,
+  revertRevision,
   saveReportEdits,
   setClientView,
 } from "@/app/admin/research-actions";
@@ -26,20 +27,37 @@ type Props = {
   requestId: string | null;
   report: AssembledReport;
   clientView: ReportView;
-  reviewedAt: string | null;
-  blockers: string[];
-  /** Previous comment + the model's note, per section. */
-  revisions: Record<string, { comment?: string; note?: string; at?: string }>;
+  /** Kept in the type for the request page's use; the flow strip renders them. */
+  reviewedAt?: string | null;
+  blockers?: string[];
+  /** Prior comment, the model's note, and the text it replaced — per target. */
+  revisions: Record<
+    string,
+    { comment?: string; note?: string; at?: string; previous?: string }
+  >;
   /** Existing per-axis justifications, so a re-open doesn't look unexplained. */
   scoreNotes?: Record<string, { rationale?: string }>;
 };
 
-const REVISABLE: Record<string, RevisableSection> = {
-  findings: "findings",
-  profile: "profile",
-  regulatory: "regulatory",
-  brief: "brief",
-};
+/**
+ * Revision targets, and which report section each lives in.
+ *
+ * Keyed by target rather than by section: the findings section renders three
+ * separately editable things, and one shared box at its foot meant a comment
+ * written under "Where to start" rewrote the findings list several paragraphs
+ * above. The revision worked and looked like it hadn't.
+ *
+ * `in` is the section that must be visible for the target to render — a
+ * withheld section shouldn't sprout a comment box.
+ */
+const TARGETS: { target: RevisableSection; in: SectionId; label: string }[] = [
+  { target: "summary", in: "findings", label: "Opening summary" },
+  { target: "findings", in: "findings", label: "Key findings" },
+  { target: "topOpportunity", in: "findings", label: "Where to start" },
+  { target: "profile", in: "profile", label: "Company profile" },
+  { target: "regulatory", in: "regulatory", label: "Regulatory exposure" },
+  { target: "brief", in: "brief", label: "Pre-meeting brief" },
+];
 
 const eyebrow = "font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm";
 const btn =
@@ -64,35 +82,71 @@ const btn =
 function CommentBox({
   section,
   prior,
-  note,
-  value,
+  current,
   busy,
   pending,
+  value,
   onChange,
   onRegenerate,
+  onRevert,
 }: {
   section: RevisableSection;
-  prior?: { comment?: string; note?: string; at?: string };
-  note?: string;
+  prior?: { comment?: string; note?: string; at?: string; previous?: string };
+  /** What the section says now, for the diff. */
+  current?: string;
   value: string;
   busy: boolean;
   pending: boolean;
   onChange: (value: string) => void;
   onRegenerate: () => void;
+  onRevert: () => void;
 }) {
+  /*
+    Show the change, don't describe it.
+
+    The prose note was the only record of a revision, and a note can be
+    perfectly accurate while pointing you at the wrong paragraph — "replaced X
+    with plain language" reads as false if the X you happen to be looking at is
+    in a different field that the box can't edit. Before-and-after cannot
+    mislead that way.
+
+    The note was also rendered twice: once from the overlay as "Last revision"
+    and once from the fresh response in green. One record, once.
+  */
+  const changed = prior?.previous && current && prior.previous.trim() !== current.trim();
+
   return (
     <div className="border border-blue/25 bg-blue-light/30 p-4">
-      {prior?.note && (
-        <p className="mb-3 font-mono text-[10px] leading-[1.6] text-gray-warm">
-          Last revision: {prior.note}
-          {prior.comment && (
-            <span className="block mt-1 text-gray-cool">
-              Your note was: &ldquo;{prior.comment}&rdquo;
-            </span>
+      {changed && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <span className={eyebrow}>What changed</span>
+            <button
+              onClick={onRevert}
+              disabled={busy || pending}
+              className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm hover:text-navy disabled:opacity-40"
+            >
+              Revert
+            </button>
+          </div>
+          <p className="border-l-2 border-risk/50 pl-3 py-1 text-[13px] leading-[1.6] text-gray-cool line-through decoration-risk/40">
+            {prior!.previous}
+          </p>
+          <p className="mt-2 border-l-2 border-pos pl-3 py-1 text-[13px] leading-[1.6] text-navy">
+            {current}
+          </p>
+          {prior?.comment && (
+            <p className="mt-2 font-mono text-[10px] leading-[1.6] text-gray-cool">
+              You asked: &ldquo;{prior.comment}&rdquo;
+            </p>
           )}
-        </p>
+          {prior?.note && (
+            <p className="mt-1 font-mono text-[10px] leading-[1.6] text-gray-warm">
+              {prior.note}
+            </p>
+          )}
+        </div>
       )}
-      {note && <p className="mb-3 font-mono text-[10px] text-pos">{note}</p>}
 
       <label className={eyebrow}>What needs to change here?</label>
       <textarea
@@ -118,8 +172,6 @@ export default function ReportReview({
   requestId,
   report,
   clientView,
-  reviewedAt,
-  blockers,
   revisions,
   scoreNotes: initialScoreNotes,
 }: Props) {
@@ -127,7 +179,8 @@ export default function ReportReview({
   const [pending, startTransition] = useTransition();
   const [comments, setComments] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  // The transient "here's what I did" note is gone — the diff replaces it, and
+  // keeping both meant the same sentence rendered twice after every revision.
   const [err, setErr] = useState<string | null>(null);
   const [view, setView] = useState<ReportView>(clientView);
 
@@ -202,26 +255,61 @@ export default function ReportReview({
     setBusy(null);
     if (!res.ok) return setErr(res.error);
 
-    setNotes((p) => ({ ...p, [section]: res.note }));
     setComments((p) => ({ ...p, [section]: "" }));
     router.refresh();
   }
 
-  const slots: Partial<Record<SectionId, React.ReactNode>> = {};
-  for (const id of report.visibleSections) {
-    const section = REVISABLE[id];
-    if (!section) continue;
-    slots[id] = (
+  /** Undo one revision. The prior text is kept on the overlay — see revertRevision. */
+  async function revert(section: RevisableSection) {
+    setBusy(section);
+    setErr(null);
+    const res = await revertRevision({
+      reportId,
+      requestId: requestId ?? "",
+      section,
+    });
+    setBusy(null);
+    if (!res.ok) return setErr(res.error);
+    router.refresh();
+  }
+
+  /** What each target currently says, so the diff has an "after". */
+  const currentText = (t: RevisableSection): string => {
+    switch (t) {
+      case "summary":
+        return report.summary;
+      case "findings":
+        return report.findings.map((f) => f.text).join("\n");
+      case "topOpportunity":
+        return report.callToAction?.headline ?? "";
+      case "profile":
+        return report.profile;
+      case "regulatory":
+        return report.regulatory;
+      case "brief":
+        return report.brief;
+    }
+  };
+
+  const visible = new Set(report.visibleSections);
+  const slots: Partial<
+    Record<SectionId | "summary" | "topOpportunity", React.ReactNode>
+  > = {};
+
+  for (const t of TARGETS) {
+    if (!visible.has(t.in)) continue;
+    slots[t.target as keyof typeof slots] = (
       <CommentBox
-        key={section}
-        section={section}
-        prior={revisions[section]}
-        note={notes[section]}
-        value={comments[section] ?? ""}
-        busy={busy === section}
+        key={t.target}
+        section={t.target}
+        prior={revisions[t.target]}
+        current={currentText(t.target)}
+        value={comments[t.target] ?? ""}
+        busy={busy === t.target}
         pending={pending}
-        onChange={(v) => setComments((p) => ({ ...p, [section]: v }))}
-        onRegenerate={() => regenerate(section)}
+        onChange={(v) => setComments((p) => ({ ...p, [t.target]: v }))}
+        onRegenerate={() => regenerate(t.target)}
+        onRevert={() => revert(t.target)}
       />
     );
   }
@@ -265,40 +353,17 @@ export default function ReportReview({
                 Save score changes
               </button>
             )}
+            {/*
+              Mark reviewed and the blocker list both moved to DocumentFlow at
+              the top of this page — they're stages of the document's life, not
+              editing controls, and having them in two places on one screen
+              meant two sources of truth for "is this ready".
+            */}
             <button onClick={() => window.print()} className={btn}>
               Print / PDF
             </button>
-            <button
-              onClick={() =>
-                startTransition(async () => {
-                  const res = await markReportReviewed({
-                    reportId,
-                    requestId: requestId ?? undefined,
-                  });
-                  if (!res.ok) setErr(res.error);
-                  else router.refresh();
-                })
-              }
-              disabled={pending}
-              className={btn}
-            >
-              {reviewedAt ? "Reviewed ✓" : "Mark reviewed"}
-            </button>
           </div>
         </div>
-
-        {blockers.length > 0 && (
-          <div className="mt-4 border-t border-border pt-4">
-            <p className={`${eyebrow} text-caution mb-2`}>Blocking release</p>
-            <ul className="space-y-1">
-              {blockers.map((b) => (
-                <li key={b} className="text-[13px] leading-[1.6] text-navy">
-                  — {b}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         <p className="mt-4 font-mono text-[10px] leading-[1.6] text-gray-cool">
           Regenerating a section clears the review flag — the text changed since you read

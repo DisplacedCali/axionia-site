@@ -152,6 +152,34 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **One comment box per revision target, not per section.** The findings
+  section renders **three** separately editable blocks — the opening summary,
+  the findings list, and the "Where to start" recommendation — and they shared
+  a single slot at the foot of the section. So a comment written directly under
+  "Where to start" rewrote the findings list several paragraphs above: the
+  revision worked, reported itself honestly, and looked like it had silently
+  failed. `slots` is now keyed by target (`SectionId | "summary" |
+  "topOpportunity"`) and each block carries its own box. `topOpportunity` is a
+  `RevisableSection` for the first time — it was rendered prominently and had
+  no revision path at all.
+- **Revisions show a diff, not a description.** `revisions[target].previous`
+  keeps the replaced text, rendered struck above the new text. A prose note can
+  be perfectly accurate while pointing at the wrong paragraph, which is exactly
+  how the bug above stayed invisible. The note also rendered twice — once from
+  the overlay, once from the fresh response — and now renders once.
+  `revertRevision()` restores `previous` and clears the record: `content` keeps
+  the model's original, but an iterated revision's intermediate state lived
+  nowhere, so a second regeneration silently destroyed the first.
+- **`DocumentFlow`** on the report page. Researched → Reviewed → Released, with
+  blockers and the release control inline. **The report page previously had no
+  forward action at all** — release lives on the request page in another
+  component, so the flow was severed exactly where a person spends the most
+  time, and Print was the only button pointing anywhere. Mark-reviewed and the
+  blocker list moved here from `ReportReview`: they're stages of a document's
+  life, not editing controls, and two copies on one screen meant two sources of
+  truth for "is this ready". An analyst without release sees a sentence, not a
+  disabled button — a control you can never use reads as broken rather than as
+  someone else's job.
 - **Queue lifecycle made legible.** Graduating a report was unintuitive for a
   structural reason: **two status machines**, and the button that looked like
   the finish line wasn't. `report_requests.status` ran

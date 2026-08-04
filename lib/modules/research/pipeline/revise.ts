@@ -21,7 +21,13 @@ import { extractJson } from "./json";
 import type { LlmClient } from "./llm";
 import type { ResearchResult } from "./types";
 
-export type RevisableSection = "summary" | "findings" | "profile" | "regulatory" | "brief";
+export type RevisableSection =
+  | "summary"
+  | "findings"
+  | "topOpportunity"
+  | "profile"
+  | "regulatory"
+  | "brief";
 
 export const SECTION_BRIEF: Record<RevisableSection, string> = {
   summary:
@@ -30,6 +36,10 @@ export const SECTION_BRIEF: Record<RevisableSection, string> = {
   findings:
     "Three to five findings, one per line, no bullet characters. Each is a single " +
     "sentence stating something specific and defensible. No hedging.",
+  topOpportunity:
+    "The 'Where to start' recommendation. ONE paragraph naming the single action " +
+    "worth taking first and why it pays back — plain language a CFO would use, " +
+    "not benefits jargon. No preamble, no list, no hedging.",
   profile:
     "Four bullet points starting with '-': workforce composition, business model, " +
     "ownership structure, HR characteristics.",
@@ -92,6 +102,9 @@ Overall: ${scores.overallScore ?? "n/a"} (${scores.readinessLabel ?? "n/a"})`;
   switch (section) {
     case "summary":
     case "findings":
+    // The recommendation draws on the same material as the summary — it's the
+    // action the findings imply, so it needs the findings' grounding.
+    case "topOpportunity":
       return `${base}
 Top opportunity: ${scores.topOpportunity ?? ""}
 Urgency signal: ${scores.urgencySignal ?? ""}

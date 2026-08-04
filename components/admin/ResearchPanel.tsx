@@ -10,6 +10,7 @@ import {
   saveReportEdits,
   startResearchForRequest,
 } from "@/app/admin/research-actions";
+import PipelineOrbit from "@/components/PipelineOrbit";
 import type { ReportEdits, ReportView } from "@/lib/modules/research/report";
 
 /**
@@ -470,11 +471,14 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
             <span className="font-mono text-[10px] text-navy">{percent}%</span>
           </div>
 
-          <div className="h-[2px] bg-stone mb-5">
-            <div
-              className="h-full bg-axionia-gradient transition-all duration-500"
-              style={{ width: `${percent}%` }}
-            />
+          {/*
+            The ring carries the percentage and what's running; the list below
+            keeps the timings and degraded flags. Two views of one thing, not a
+            replacement — the list is what you read when something went wrong,
+            and it should still be there when it does.
+          */}
+          <div className="mb-6 flex justify-center">
+            <PipelineOrbit steps={steps} percent={percent} />
           </div>
 
           <ul className="space-y-1.5">

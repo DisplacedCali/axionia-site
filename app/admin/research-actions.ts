@@ -492,11 +492,13 @@ export async function regenerateSection(args: {
       ? assembled.findings.map((f) => f.text).join("\n")
       : args.section === "summary"
         ? assembled.summary
-        : args.section === "profile"
-          ? assembled.profile
-          : args.section === "regulatory"
-            ? assembled.regulatory
-            : assembled.brief;
+        : args.section === "topOpportunity"
+          ? (assembled.callToAction?.headline ?? "")
+          : args.section === "profile"
+            ? assembled.profile
+            : args.section === "regulatory"
+              ? assembled.regulatory
+              : assembled.brief;
 
   let llm;
   try {
@@ -530,10 +532,21 @@ export async function regenerateSection(args: {
 
   // Keep the comment and the model's note alongside the revision, so the reason
   // for a change survives past the moment it was made.
+  /*
+    `previous` is what makes a revision inspectable rather than merely
+    described. The note said what changed in prose, which sounds like the same
+    thing and isn't: a note claiming "replaced X with plain language" can be
+    perfectly accurate while the reader is looking at a different paragraph
+    that also contains X, and there's no way to tell from the note alone.
+
+    Keeping the prior text also makes revert free — `content` holds the model's
+    original, but not the intermediate state of an iterated revision.
+  */
   const revisions = { ...((edits as Record<string, unknown>).revisions as Record<string, unknown> ?? {}) };
   revisions[args.section] = {
     comment: args.comment.trim(),
     note: revised.note,
+    previous: current,
     at: new Date().toISOString(),
     by: user.id,
   };
@@ -555,6 +568,85 @@ export async function regenerateSection(args: {
   revalidatePath(`/admin/reports/${args.reportId}`);
   revalidatePath(`/admin/requests/${args.requestId}`);
   return { ok: true, text: revised.text, note: revised.note };
+}
+
+/**
+ * Undo one revision, restoring what the section said before it.
+ *
+ * Free to build because `revisions[section].previous` already holds the prior
+ * text — and necessary because nothing else could get it back. `content` keeps
+ * the model's original, but an iterated revision's intermediate state lived
+ * nowhere, so the second regeneration silently destroyed the first.
+ *
+ * Clears the revision record rather than stacking an "un-revision" on top: a
+ * revision that has been undone should stop claiming it happened.
+ */
+export async function revertRevision(args: {
+  reportId: string;
+  requestId: string;
+  section: RevisableSection;
+}): Promise<Result<{ text: string }>> {
+  const { user } = await requireAdmin();
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("reports")
+    .select("edits")
+    .eq("id", args.reportId)
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+
+  const edits = (data?.edits ?? {}) as ReportEdits;
+  const revisions = {
+    ...((edits as Record<string, unknown>).revisions as Record<
+      string,
+      { previous?: string }
+    > ?? {}),
+  };
+
+  const previous = revisions[args.section]?.previous;
+  if (typeof previous !== "string") {
+    return {
+      ok: false,
+      error: "Nothing to revert — this revision predates change tracking.",
+    };
+  }
+
+  const narrative = { ...(edits.narrative ?? {}) };
+  if (args.section === "findings") {
+    narrative.findings = previous
+      .split("\n")
+      .map((f) => f.replace(/^[-•]\s*/, "").trim())
+      .filter(Boolean);
+  } else {
+    narrative[args.section] = previous;
+  }
+
+  delete revisions[args.section];
+
+  const { error: saveErr } = await admin
+    .from("reports")
+    .update({
+      edits: {
+        ...edits,
+        narrative,
+        revisions,
+        editedAt: new Date().toISOString(),
+        editedBy: user.id,
+      },
+      // The text changed again, so a prior review is stale again.
+      reviewed_at: null,
+      reviewed_by: null,
+      ...(args.section === "summary" ? { summary: previous } : {}),
+    })
+    .eq("id", args.reportId);
+
+  if (saveErr) return { ok: false, error: saveErr.message };
+
+  revalidatePath(`/admin/reports/${args.reportId}`);
+  revalidatePath(`/admin/requests/${args.requestId}`);
+  return { ok: true, text: previous };
 }
 
 /** Mark a report read by a human. Required before release. */

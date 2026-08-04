@@ -19,7 +19,16 @@ import type { AssembledReport, SectionId } from "@/lib/modules/research/report";
 type Props = {
   report: AssembledReport;
   /** Per-section admin controls. Absent on the client route. */
-  slots?: Partial<Record<SectionId, React.ReactNode>>;
+  /**
+   * Per-target admin controls. Absent on the client route.
+   *
+   * Keyed by REVISION TARGET, not by section. The findings section renders
+   * three separately editable things — the summary paragraph, the findings
+   * list, and the "Where to start" recommendation — and giving them one shared
+   * slot at the foot of the section made every revision look like it had
+   * failed: the box sat under the recommendation and edited the list.
+   */
+  slots?: Partial<Record<SectionId | "summary" | "topOpportunity", React.ReactNode>>;
   /** Show locked placeholders for withheld sections. */
   showWithheld?: boolean;
   /**
@@ -371,14 +380,17 @@ export default function ReportRender({
         </Section>
       )}
 
-      {/* ── Findings ─────────────────────────────────────────────── */}
+      {/* ── Findings ───────────────────────────────────────────────
+          No section-level slot here: this section renders three separately
+          editable blocks, and each carries its own below. */}
       {visible.has("findings") && (
-        <Section id="findings" title="Key Findings" slot={slots?.findings}>
+        <Section id="findings" title="Key Findings">
           {report.summary?.trim() && (
             <p className="font-serif text-[21px] font-light leading-[1.5] text-navy mb-7 max-w-measure">
               {report.summary}
             </p>
           )}
+          {slots?.summary && <div className="mb-7 print:hidden">{slots.summary}</div>}
           <ol className="space-y-4">
             {report.findings.map((f, i) => (
               <li key={i} className="flex gap-4">
@@ -389,6 +401,7 @@ export default function ReportRender({
               </li>
             ))}
           </ol>
+          {slots?.findings && <div className="mt-6 print:hidden">{slots.findings}</div>}
           {report.urgencySignal?.trim() && (
             <div className="mt-8 border-l-2 border-caution pl-5">
               <p className={`${eyebrow} text-caution mb-1`}>Time sensitivity</p>
@@ -417,6 +430,9 @@ export default function ReportRender({
                 </p>
               )}
             </div>
+          )}
+          {slots?.topOpportunity && (
+            <div className="mt-4 print:hidden">{slots.topOpportunity}</div>
           )}
         </Section>
       )}

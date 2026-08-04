@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff, RELEASE_ROLES } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Section } from "@/components/ui";
 import ReportReview from "@/components/admin/ReportReview";
+import DocumentFlow from "@/components/admin/DocumentFlow";
 import {
   assembleReport,
   releaseBlockers,
@@ -22,13 +23,14 @@ export const dynamic = "force-dynamic";
  * page keeps queue and status work and links here.
  */
 export default async function ReportPreview({ params }: { params: { id: string } }) {
-  await requireAdmin();
+  const { profile } = await requireStaff();
+  const canRelease = RELEASE_ROLES.includes(profile.role);
   const admin = createAdminClient();
 
   const { data: report } = await admin
     .from("reports")
     .select(
-      "id, title, summary, status, version, content, edits, client_view, reviewed_at, request_id, company_id, research_run_id, created_at",
+      "id, title, summary, status, version, content, edits, client_view, reviewed_at, request_id, company_id, research_run_id, created_at, companies(name)",
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -42,6 +44,13 @@ export default async function ReportPreview({ params }: { params: { id: string }
   // Admin always previews at the client's chosen view — reviewing the full
   // report while the client gets the summary would be reviewing the wrong thing.
   const assembled = content ? assembleReport({ content, edits, view: clientView }) : null;
+
+  // Supabase types an embedded relation as object-or-array depending on the
+  // inferred cardinality; normalise rather than casting at the use site.
+  const companyRel = report.companies as { name?: string } | { name?: string }[] | null;
+  const companyName = Array.isArray(companyRel)
+    ? (companyRel[0]?.name ?? null)
+    : (companyRel?.name ?? null);
 
   const revisions =
     ((edits as Record<string, unknown>).revisions as Record<
@@ -91,6 +100,27 @@ export default async function ReportPreview({ params }: { params: { id: string }
         </div>
       ) : (
         <div className="mt-8">
+          {/*
+            Where the document is and what happens next. Above the report
+            rather than below it: it's the first question on arriving, and a
+            long document would bury the answer.
+          */}
+          <div className="mb-8">
+            <DocumentFlow
+              reportId={report.id}
+              requestId={report.request_id ?? null}
+              companyId={report.company_id ?? null}
+              companyName={companyName}
+              reviewedAt={report.reviewed_at ?? null}
+              released={report.status === "ready"}
+              blockers={releaseBlockers({
+                content,
+                edits,
+                reviewedAt: report.reviewed_at ?? null,
+              })}
+              canRelease={canRelease}
+            />
+          </div>
           <ReportReview
             reportId={report.id}
             requestId={report.request_id ?? null}
