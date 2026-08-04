@@ -103,6 +103,7 @@ export default async function ReportPreview({ params }: { params: { id: string }
               reviewedAt: report.reviewed_at ?? null,
             })}
             revisions={revisions}
+            scoreNotes={edits.scoreNotes ?? {}}
           />
         </div>
       )}

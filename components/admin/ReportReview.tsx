@@ -30,6 +30,8 @@ type Props = {
   blockers: string[];
   /** Previous comment + the model's note, per section. */
   revisions: Record<string, { comment?: string; note?: string; at?: string }>;
+  /** Existing per-axis justifications, so a re-open doesn't look unexplained. */
+  scoreNotes?: Record<string, { rationale?: string }>;
 };
 
 const REVISABLE: Record<string, RevisableSection> = {
@@ -51,6 +53,7 @@ export default function ReportReview({
   reviewedAt,
   blockers,
   revisions,
+  scoreNotes: initialScoreNotes,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -74,6 +77,15 @@ export default function ReportReview({
   });
   const [scoresDirty, setScoresDirty] = useState(false);
 
+  /** Per-axis justification. Required by the action for any changed score. */
+  const [scoreNotes, setScoreNotes] = useState<Record<string, string>>(() => {
+    const seed: Record<string, string> = {};
+    for (const [k, v] of Object.entries(initialScoreNotes ?? {})) {
+      if (v?.rationale) seed[k] = v.rationale;
+    }
+    return seed;
+  });
+
   async function saveScores() {
     const scoreEdits: Record<string, number> = {};
     for (const a of report.axes) {
@@ -82,12 +94,30 @@ export default function ReportReview({
       const v = Number(raw);
       if (Number.isFinite(v) && v !== a.modelScore) scoreEdits[a.key] = v;
     }
+
+    // Checked again server-side — this is only so the message arrives before a
+    // round trip, not instead of one.
+    const missing = Object.keys(scoreEdits).filter((k) => !scoreNotes[k]?.trim());
+    if (missing.length) {
+      return setErr(
+        `Say why you changed ${missing.join(", ")} before saving. An unexplained override is a hidden assumption.`,
+      );
+    }
+
+    const notes: Record<string, { rationale: string; by: string; at: string }> = {};
+    for (const k of Object.keys(scoreEdits)) {
+      // `by` and `at` are stamped from the session in the action; these are
+      // placeholders that get overwritten and never trusted.
+      notes[k] = { rationale: scoreNotes[k].trim(), by: "", at: "" };
+    }
+
     const res = await saveReportEdits({
       reportId,
       requestId: requestId ?? "",
-      edits: { scores: scoreEdits },
+      edits: { scores: scoreEdits, scoreNotes: notes },
     });
     if (!res.ok) return setErr(res.error);
+    setErr(null);
     setScoresDirty(false);
     router.refresh();
   }
@@ -251,6 +281,11 @@ export default function ReportReview({
           values: scores,
           onChange: (key, value) => {
             setScores((p) => ({ ...p, [key]: value }));
+            setScoresDirty(true);
+          },
+          notes: scoreNotes,
+          onNoteChange: (key, value) => {
+            setScoreNotes((p) => ({ ...p, [key]: value }));
             setScoresDirty(true);
           },
         }}

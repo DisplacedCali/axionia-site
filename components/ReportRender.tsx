@@ -32,6 +32,15 @@ type Props = {
   editScores?: {
     values: Record<string, string>;
     onChange: (key: string, value: string) => void;
+    /**
+     * Per-axis justification, required by saveReportEdits for any changed
+     * score. Rendered inline under the axis rather than in a separate form:
+     * you write the reason while looking at the rationale you're disagreeing
+     * with, which is the same argument that put score editing on the scorecard
+     * in the first place.
+     */
+    notes: Record<string, string>;
+    onNoteChange: (key: string, value: string) => void;
   };
 };
 
@@ -313,6 +322,37 @@ export default function ReportRender({
                       {a.rationale}
                     </p>
                   )}
+
+                  {/*
+                    Only when the score actually differs from the model's. An
+                    always-visible box on eight axes reads as eight chores; one
+                    that appears the moment you disagree reads as the natural
+                    next step.
+                  */}
+                  {editScores &&
+                    editScores.values[a.key] !== "" &&
+                    editScores.values[a.key] !== undefined &&
+                    Number(editScores.values[a.key]) !== a.modelScore && (
+                      <div className="mt-3 print:hidden">
+                        <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-blue">
+                          Why you changed it
+                          {!editScores.notes[a.key]?.trim() && (
+                            <span className="text-risk"> · required</span>
+                          )}
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={editScores.notes[a.key] ?? ""}
+                          onChange={(e) => editScores.onNoteChange(a.key, e.target.value)}
+                          placeholder={`Model said ${a.modelScore ?? "—"}. What does it not know?`}
+                          className={`mt-1 w-full border px-2 py-1.5 text-[13px] leading-[1.6] focus:outline-none ${
+                            editScores.notes[a.key]?.trim()
+                              ? "border-border text-navy"
+                              : "border-risk text-navy"
+                          }`}
+                        />
+                      </div>
+                    )}
                 </div>
               );
             })}

@@ -48,8 +48,35 @@ export const SECTIONS: ReadonlyArray<{
 ] as const;
 
 /** Admin overrides. Every field optional — absent means "use the model's". */
+/**
+ * Why a score was overridden, and by whom.
+ *
+ * Required on any score that differs from the model — enforced in
+ * `saveReportEdits`, not just the form. An unexplained override is exactly the
+ * hidden assumption this product exists to oppose, and it is worse than the
+ * model's original number because at least that one was reproducible.
+ *
+ * Scoped to scores deliberately. A prose edit is self-documenting: you can read
+ * what changed. A score moving 55 → 80 is opaque without a reason, and it is
+ * the number that drives the headline.
+ *
+ * Per-axis rather than per-save: `editedBy` at the top of the overlay records
+ * only the last writer, which stops being true the moment more than one person
+ * touches a report. See docs/PAID_REVIEW_DESIGN.md.
+ */
+export interface ScoreNote {
+  rationale: string;
+  /** auth.users id of whoever set it. */
+  by: string;
+  at: string;
+  /** Reviewer discipline, once contracted reviewers exist. Unused today. */
+  discipline?: string;
+}
+
 export interface ReportEdits {
   scores?: Partial<Record<AxisKey, number>>;
+  /** Keyed by axis. See ScoreNote. */
+  scoreNotes?: Partial<Record<AxisKey, ScoreNote>>;
   narrative?: {
     summary?: string;
     findings?: string[];

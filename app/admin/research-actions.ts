@@ -242,8 +242,55 @@ export async function saveReportEdits(args: {
   const { user } = await requireAdmin();
   const admin = createAdminClient();
 
+  /*
+    Every score override needs a stated reason, checked here rather than only in
+    the form. Two reasons it lives server-side: a form validation is bypassed by
+    any other call path, and this is the discipline the paid tier is built on —
+    see docs/PAID_REVIEW_DESIGN.md. Turning it on now means free reports
+    accumulate the same ledger, so the practice is established before a client
+    is waiting on it.
+
+    Prose edits are exempt: you can read what changed in a paragraph. You cannot
+    read why a number moved.
+  */
+  const scores = args.edits.scores ?? {};
+  const notes = { ...(args.edits.scoreNotes ?? {}) };
+  const now = new Date().toISOString();
+  const unexplained: string[] = [];
+
+  for (const key of Object.keys(scores) as (keyof typeof scores)[]) {
+    if (typeof scores[key] !== "number") continue;
+    const rationale = notes[key]?.rationale?.trim();
+    if (!rationale) {
+      unexplained.push(String(key));
+      continue;
+    }
+    // Stamp attribution server-side. A client-supplied `by` is a claim, not a
+    // fact — the session is the only thing that can't be lied about.
+    notes[key] = { ...notes[key]!, rationale, by: user.id, at: notes[key]?.at ?? now };
+  }
+
+  // Drop notes for scores that are no longer overridden, or the overlay
+  // accumulates orphaned justifications for numbers that went back to the
+  // model's.
+  for (const key of Object.keys(notes) as (keyof typeof notes)[]) {
+    if (typeof scores[key] !== "number") delete notes[key];
+  }
+
+  if (unexplained.length) {
+    return {
+      ok: false,
+      error: `A reason is required for every score you change. Missing: ${unexplained.join(", ")}.`,
+    };
+  }
+
   const patch: Record<string, unknown> = {
-    edits: { ...args.edits, editedAt: new Date().toISOString(), editedBy: user.id },
+    edits: {
+      ...args.edits,
+      scoreNotes: notes,
+      editedAt: now,
+      editedBy: user.id,
+    },
   };
   if (args.clientView) patch.client_view = args.clientView;
   if (typeof args.title === "string" && args.title.trim()) patch.title = args.title.trim();

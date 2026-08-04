@@ -152,6 +152,17 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Score overrides carry a reason** (`edits.scoreNotes`, keyed by axis).
+  `saveReportEdits` refuses any changed score without one — server-side, since
+  a form check is bypassed by any other call path. `by` and `at` are stamped
+  from the session; a client-supplied `by` is a claim, not a fact. Notes for
+  scores that revert to the model's are dropped rather than left orphaned.
+  **Scores only, not prose** — you can read what changed in a paragraph, but
+  not why a number moved, and it's the number that drives the headline. The
+  box appears only once a score actually differs: always-visible on eight axes
+  reads as eight chores. This is v1 of `docs/PAID_REVIEW_DESIGN.md`, turned on
+  for free reports deliberately, so the ledger accumulates and the habit forms
+  before a paying client is waiting.
 - **Objective weighting** — `lib/objectives.ts`, rendered on `/platform` and in
   the deck. Axionia scores the evidence, never the objective; weights reorder
   recommendations and must never be allowed to put a dollar figure on a soft
@@ -164,6 +175,13 @@ costs one wave and the job survives a closed tab.
   `email_log` with `status = 'skipped'`. The workflow works; no mail leaves the
   building. **This is the next piece**, and it's config rather than code. See
   `docs/EMAIL-SETUP.md`.
+- **Paid-engagement human review, v2 and v3.** See
+  `docs/PAID_REVIEW_DESIGN.md`. v1 is built (below). v2 — the four adjustments
+  as ratifiable parameters — **waits for engagement one**: the framework is
+  right but the granularity (per claim? per vendor? per program?) is decided by
+  what a real renewal packet contains. Keep a running note during that
+  engagement of every judgment call and which factor it mapped to; that note is
+  the spec. v3 — scoped reviewers — waits on v1 and v2 being in use.
 - Client-side signed download for legacy file-only reports. `/reports/[id]`
   detects `content: null` and says the report was delivered as a document
   rather than rendering an empty one. Few enough of those exist that replying
