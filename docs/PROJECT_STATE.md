@@ -178,10 +178,15 @@ costs one wave and the job survives a closed tab.
   *every* detected state — that produced five pages for one company. Now that
   the curated mandate table carries the load, that prompt could ask for
   commentary on the two or three highest-exposure states only.
-- **Mandate library covers 5 states** (CA IL MA MN NY). Runs detect more; states
-  outside the library are labelled model-generated and unverified in the report.
-- **`BEN029` doesn't exist.** `BENEFIT_VENDORS` maps a BetterUp offering to it.
-  Either add the benefit (leadership/executive coaching) or drop the mapping.
+- **Mandate library covers 5 states** (CA IL MA MN NY, 13 mandates). Runs detect
+  more; states outside the library are labelled model-generated and unverified.
+  **Reviewed 2026-08-03 and deliberately left.** Expanding means per-state
+  statutory research where `erisa` reach is the load-bearing field, and done
+  quickly that's exactly how a plausible-looking fabricated row gets in.
+  Suppressing uncovered states loses real signal — "you have staff in WA, there
+  is a paid-leave program" is useful when labelled. The actual defect is the
+  regulatory prompt enumerating everything for every detected state, which is
+  the verbosity item above. Fixing coverage would not fix that.
 - **Privacy policy.** There isn't one, and two tables now depend on that gap
   staying acknowledged: `deck_events` and `site_events` both deliberately omit
   an IP column for this reason. Get a policy up before anyone adds one, and

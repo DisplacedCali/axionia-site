@@ -181,6 +181,7 @@ export const SEGMENTS: readonly Segment[] = [
     "mediumValueBenefits": [
       "BEN026",
       "BEN027",
+      "BEN029",
       "BEN031",
       "BEN048"
     ],
@@ -188,7 +189,7 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN007",
       "BEN059"
     ],
-    "notes": "Bridge between frontline and leadership. Retention through career development, flexibility, and financial security.",
+    "notes": "Bridge between frontline and leadership. Retention through career development, flexibility, and financial security. BEN029 (leadership coaching) sits here because this is the only supervisory segment in the library — without it the benefit is unreachable and can never surface in a report.",
     "dimensions": {
       "comp": "high",
       "work": [

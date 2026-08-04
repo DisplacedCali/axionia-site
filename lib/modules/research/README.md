@@ -111,15 +111,29 @@ how its headline number is produced.
 
 ## Open data questions
 
-Two findings from the port. Both are product-data decisions, not code bugs, so
-they're recorded rather than silently fixed.
+Two findings from the port. Both were product-data decisions, not code bugs, so
+they were recorded rather than silently fixed. Both are now closed.
 
-### 1. `BEN029` does not exist
+### 1. RESOLVED — `BEN029` did not exist
 
-`BENEFIT_VENDORS` maps a BetterUp offering to benefit `BEN029`, but `BENEFITS`
-runs `BEN028` → `BEN030`. The mapping is unreachable, so it's dead data rather
-than a crash. Either add the missing benefit (leadership / executive coaching,
-Career Development) or drop the mapping.
+`BENEFIT_VENDORS` mapped a BetterUp offering to benefit `BEN029`, but `BENEFITS`
+ran `BEN028` → `BEN030`. The mapping was unreachable, so it was dead data rather
+than a crash.
+
+Resolved by **adding** the benefit — leadership / executive coaching, Career
+Development, `Customized` — rather than dropping the mapping. Dropping it would
+have left BetterUp with no benefit mapping at all, which trades a dangling-ref
+warning for an unmapped-vendor one and makes the vendor unsurfaceable.
+
+The row is the library's only entry not extracted from `App.js`, so its scores
+carry their derivation inline. The one worth knowing: **`financial` is 2**, the
+lowest in its family, because coaching's value flows through retention and
+productivity — the outcomes `/methodology` publicly commits to not putting a
+number on. A benefit whose financial case cannot be evidenced to Axionia's own
+standard should score as such rather than be flattered.
+
+Attached to `SEG005`, the only segment with `supervisory: true`. Without a
+segment reference the benefit would be unreachable and could never surface.
 
 ### 2. RESOLVED — ten of thirty benefits were unreachable
 

@@ -27,18 +27,17 @@ export interface DataIssue {
  * Known, accepted issues. Listed explicitly so they stay visible instead of
  * being suppressed by a blanket filter.
  *
- * BEN029: BENEFIT_VENDORS maps a BetterUp offering ("Leadership coaching and
- * mental fitness") to benefit BEN029, which is absent from BENEFITS — the table
- * runs BEN028 → BEN030. The mapping is therefore unreachable: nothing looks up
- * BEN029, so the row is dead rather than dangerous. Two valid fixes, both a
- * product-data decision rather than a code one:
- *   1. Add the missing benefit (leadership/executive coaching, Career
- *      Development) to BENEFITS, or
- *   2. Drop the BetterUp mapping.
- * Left as a warning until that's decided — inventing the benefit row would be
- * fabricating library content.
+ * Empty, deliberately. BEN029 lived here: BENEFIT_VENDORS mapped a BetterUp
+ * offering to a benefit absent from BENEFITS, and it stayed a warning rather
+ * than being quietly invented. It was resolved by adding the benefit with
+ * ratified scores (see the provenance note in benefits.ts) and attaching it to
+ * SEG005, the library's only supervisory segment.
+ *
+ * Keep the set rather than deleting the mechanism. The reason it existed —
+ * that a known gap should be loud and documented rather than suppressed — is
+ * the rule, not the one entry.
  */
-const ACCEPTED_WARNINGS = new Set(["dangling-benefit-ref:BEN029"]);
+const ACCEPTED_WARNINGS = new Set<string>();
 
 export function validateResearchData(): DataIssue[] {
   const issues: DataIssue[] = [];

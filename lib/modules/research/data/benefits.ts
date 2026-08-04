@@ -1,5 +1,5 @@
 /**
- * Benefit library — 30 curated benefit programs.
+ * Benefit library — 31 curated benefit programs.
  *
  * Each row carries four independent value scores (perceived, financial,
  * retention, clinical) plus Axionia's point of view. The scores are what let
@@ -8,6 +8,12 @@
  *
  * Extracted programmatically from axionia-app src/App.js — values are
  * identical to the source. Do not hand-edit for formatting.
+ *
+ * ONE EXCEPTION, and it matters for provenance: **BEN029 was added later** and
+ * is NOT from App.js. Its scores were derived from its Career Development
+ * neighbours and ratified by Tom, with the reasoning recorded inline on the
+ * row. Everything else in this file can be diffed against the source; that row
+ * cannot. Any future addition should be marked the same way.
  */
 
 import type { Benefit } from "./types";
@@ -228,6 +234,38 @@ export const BENEFITS: readonly Benefit[] = [
     "retention": 4,
     "clinical": 2,
     "axioniaPOV": "Low dollar, high signal of professional support."
+  },
+  {
+    /*
+      Added after the extraction, to close the dangling BENEFIT_VENDORS
+      reference from BetterUp (VEN049). Scores are calibrated against the
+      Career Development neighbours rather than sourced from App.js:
+
+      perceived 4 — high for the selected cohort, but reach is narrow, and the
+        people not chosen can read it as an executive perk. Below BEN027 (5),
+        which is near-universal for licensed staff.
+      financial 2 — the honest number. Value flows through retention and
+        productivity, which /methodology publicly commits to not monetising, so
+        the financial case cannot be evidenced to Axionia's own standard.
+        BetterUp's own red flag is "impact measurement".
+      retention 4 — where the value actually is. Manager quality is among the
+        better-evidenced drivers of team retention. Not 5: the effect lands on
+        the coached leader's team rather than the leader, and attribution is
+        contested.
+      clinical 1 — deliberately below its neighbours. Coaching is adjacent to
+        mental health and is not therapy. Vendors blur that line; scoring it as
+        clinical would endorse the blur.
+    */
+    "id": "BEN029",
+    "name": "Leadership / executive coaching",
+    "category": "Career Development",
+    "type": "Customized",
+    "segments": "Managers, emerging leaders, executives, high-potential talent",
+    "perceived": 4,
+    "financial": 2,
+    "retention": 4,
+    "clinical": 1,
+    "axioniaPOV": "Real retention lever through manager quality; the ROI case rests on outcomes we decline to monetise."
   },
   {
     "id": "BEN030",
