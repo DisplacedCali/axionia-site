@@ -152,6 +152,26 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Send a report to anyone** (migration 018, `report_recipients`). A report
+  could only reach whoever submitted the request, and admin-initiated research
+  had nobody to notify at all — it sat in the company folder waiting for
+  someone from that company to happen to sign up. Two modes, chosen per send:
+  **invite** creates the auth user and links the company, so RLS does the
+  authorisation and views are attributable; **link** mints an HMAC-signed
+  expiring URL, zero friction, readable by anyone holding it.
+  `lib/reportLinks.ts` is separate from `deckLinks.ts` on purpose — rotating
+  the deck secret because a deck leaked must not lock every client out of their
+  report. **The report id is inside the signature**, which `deckLinks` had no
+  need for: there is one deck, but a report link that didn't bind the id would
+  open every other employer's analysis by editing the URL.
+  On the link path `/reports/[id]` asserts `status = 'ready'` in the query,
+  because with no session there is no RLS doing it — omitting that would make
+  every draft readable to anyone with any valid link. `sendReportTo` is gated
+  by `requireRelease()`, not `requireStaff()`: it puts a named employer's
+  analysis in front of an outsider, which is releasing with extra steps.
+  `company_id` is nullable — a broker has no company record and shouldn't need
+  a junk one invented to receive a report. **Deleting a recipient row revokes
+  nothing**; revoking a link means rotating `REPORT_LINK_SECRET`.
 - **One comment box per revision target, not per section.** The findings
   section renders **three** separately editable blocks — the opening summary,
   the findings list, and the "Where to start" recommendation — and they shared
@@ -414,6 +434,7 @@ Server-side only, set in Vercel (Production) and `.env.local`:
 | `ANTHROPIC_API_KEY` | |
 | `SUPABASE_SERVICE_ROLE_KEY` | Must be `service_role` or `sb_secret_…`, never `sb_publishable_…` |
 | `DECK_LINK_SECRET` | Signs founders-deck share links. 24+ chars or it's treated as unset. Rotating it revokes every outstanding link. |
+| `REPORT_LINK_SECRET` | Signs report share links. Falls back to `DECK_LINK_SECRET` if unset, but **set it separately** — otherwise rotating one to kill a leaked deck also locks every client out of their report. |
 | `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | |
 
 Supabase project ref: `vzybdifqwvrlheuyzcui`

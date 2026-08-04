@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markReportReviewed } from "@/app/admin/research-actions";
 import { releaseReport } from "@/app/admin/actions";
+import SendReport from "./SendReport";
 
 /**
  * Where this document is, and what happens to it next.
@@ -32,6 +33,7 @@ export default function DocumentFlow({
   released,
   blockers,
   canRelease,
+  linksEnabled,
 }: {
   reportId: string;
   requestId: string | null;
@@ -42,6 +44,8 @@ export default function DocumentFlow({
   /** From releaseBlockers(). Soft ones warn; the action refuses on hard ones. */
   blockers: string[];
   canRelease: boolean;
+  /** Whether REPORT_LINK_SECRET (or the deck fallback) is usable. */
+  linksEnabled: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -119,23 +123,38 @@ export default function DocumentFlow({
 
       {/* What to do about it */}
       {stage === "released" ? (
-        <p className="text-[14px] leading-[1.7] text-gray-warm">
-          Out of the queue.{" "}
-          {companyId ? (
-            <>
-              Filed under{" "}
-              <Link
-                href={`/admin/companies/${companyId}`}
-                className="text-blue hover:underline"
-              >
-                {companyName || "the company"}
-              </Link>
-              .
-            </>
-          ) : (
-            "It will file under the company once one is linked."
+        <div className="flex flex-col gap-4">
+          <p className="text-[14px] leading-[1.7] text-gray-warm">
+            Out of the queue.{" "}
+            {companyId ? (
+              <>
+                Filed under{" "}
+                <Link
+                  href={`/admin/companies/${companyId}`}
+                  className="text-blue hover:underline"
+                >
+                  {companyName || "the company"}
+                </Link>
+                .
+              </>
+            ) : (
+              "It will file under the company once one is linked."
+            )}
+          </p>
+          {/* Released is exactly where "send it to someone else" belongs — the
+              document is finished, and this is the one thing still left to do
+              with it. */}
+          {canRelease && (
+            <SendReport
+              reportId={reportId}
+              requestId={requestId}
+              companyId={companyId}
+              companyName={companyName}
+              released
+              linksEnabled={linksEnabled}
+            />
           )}
-        </p>
+        </div>
       ) : (
         <>
           {blockers.length > 0 && (

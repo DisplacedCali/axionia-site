@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { Section } from "@/components/ui";
 import ReportReview from "@/components/admin/ReportReview";
 import DocumentFlow from "@/components/admin/DocumentFlow";
+import { reportLinksEnabled } from "@/lib/reportLinks";
 import {
   assembleReport,
   releaseBlockers,
@@ -119,6 +120,7 @@ export default async function ReportPreview({ params }: { params: { id: string }
                 reviewedAt: report.reviewed_at ?? null,
               })}
               canRelease={canRelease}
+              linksEnabled={reportLinksEnabled()}
             />
           </div>
           <ReportReview
