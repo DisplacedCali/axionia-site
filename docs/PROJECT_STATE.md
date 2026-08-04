@@ -152,6 +152,28 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Intake industry list rebuilt, and a workforce question added.** Two live
+  bugs in `getSegmentsForIndustry`, both from raw-substring matching against a
+  five-option list. **"Retail & Hospitality" matched `"hospital"`** and returned
+  the full clinical mix led by Senior Clinical / Licensed Professionals — a
+  restaurant group analysed as though it employed surgeons, which is the
+  "analysed one workforce and prescribed for another" failure the PDF review
+  already caught once. And **"Professional Services" matched nothing** and fell
+  through to the default, byte-identical to "Other", while "Consulting" — which
+  the form couldn't produce — matched correctly.
+  Matching is now on word boundaries (`manufact*` for an explicit prefix), the
+  consumer branch is ordered ahead of the clinical ones so any future collision
+  fails toward frontline rather than toward surgeons, and the intake offers 22
+  grouped options covering all the branches. The old list could reach four of
+  nine — the data spine was already far richer than the question being asked.
+  A `role_groups` free-text field now feeds `clientAskBlock` marked
+  authoritative over the industry label: industry only ever yields a *default*
+  segment mix, and two professional services firms of the same size can be 90%
+  consultants or 60% back office. Optional, because it's the field most likely
+  to make someone abandon a form they're filling in to get something free.
+  Nonprofit has no branch on purpose — its mix really is the default, and a
+  branch returning the default array is dead code that reads as coverage. The
+  dry run asserts that, and that every intake option resolves deliberately.
 - **Score overrides carry a reason** (`edits.scoreNotes`, keyed by axis).
   `saveReportEdits` refuses any changed score without one — server-side, since
   a form check is bypassed by any other call path. `by` and `at` are stamped
@@ -324,6 +346,15 @@ version behind. It's now in `supabase/`.
 about plausibility — blaming a missing grant, then the service-role key, then
 the PostgREST cache. One diagnostic endpoint settled it. With three roles and
 two same-named `companies` tables in play, read the code path.
+
+**Never declare a component inside another component's body.** `CommentBox`
+lived inside `ReportReview`, so it got a new function identity on every render.
+React saw a different component *type* each time, unmounted the subtree and
+mounted a fresh one — which meant the textarea was destroyed and recreated on
+every keystroke. You could type exactly one character before losing focus,
+because the element you were typing into no longer existed. It looked like an
+input bug and was a component-identity bug. Hoist to module scope and pass
+state as props; closing over parent state is what makes nesting tempting.
 
 **Exported PDFs found real bugs.** The summary was findings[0] verbatim; Benefit
 Design repeated one template string; the report analysed one workforce and

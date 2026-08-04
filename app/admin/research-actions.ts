@@ -76,6 +76,7 @@ export async function startResearchForRequest(args: {
     industry: payload.industry ?? null,
     employees: payload.employees ?? null,
     programs: payload.programs ?? null,
+    roleGroups: payload.role_groups ?? null,
     context: payload.context ?? null,
     analystContext: args.analystContext?.trim() || null,
   };

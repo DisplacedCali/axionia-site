@@ -45,6 +45,74 @@ const eyebrow = "font-mono text-[10px] uppercase tracking-[0.14em] text-gray-war
 const btn =
   "px-4 py-2 border border-navy text-navy font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-navy hover:text-base transition-colors disabled:opacity-40";
 
+/**
+ * Comment box for one section. The summary is edited through the findings
+ * section, since the two read as one block to a client.
+ *
+ * MODULE SCOPE, NOT NESTED — and it has to stay that way.
+ *
+ * This was declared inside ReportReview's body. A function declared during
+ * render gets a new identity on every render, so React saw a different
+ * component type each time, unmounted the whole subtree and mounted a fresh
+ * one. The textarea was therefore destroyed and recreated on every keystroke:
+ * you could type exactly one character before focus was lost, because the
+ * element you were typing into no longer existed.
+ *
+ * Everything it needs comes in as props for the same reason — closing over
+ * parent state is what makes nesting tempting.
+ */
+function CommentBox({
+  section,
+  prior,
+  note,
+  value,
+  busy,
+  pending,
+  onChange,
+  onRegenerate,
+}: {
+  section: RevisableSection;
+  prior?: { comment?: string; note?: string; at?: string };
+  note?: string;
+  value: string;
+  busy: boolean;
+  pending: boolean;
+  onChange: (value: string) => void;
+  onRegenerate: () => void;
+}) {
+  return (
+    <div className="border border-blue/25 bg-blue-light/30 p-4">
+      {prior?.note && (
+        <p className="mb-3 font-mono text-[10px] leading-[1.6] text-gray-warm">
+          Last revision: {prior.note}
+          {prior.comment && (
+            <span className="block mt-1 text-gray-cool">
+              Your note was: &ldquo;{prior.comment}&rdquo;
+            </span>
+          )}
+        </p>
+      )}
+      {note && <p className="mb-3 font-mono text-[10px] text-pos">{note}</p>}
+
+      <label className={eyebrow}>What needs to change here?</label>
+      <textarea
+        rows={2}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="e.g. Too generous on CFO engagement — they have never seen a claims file. Drop the vendor name."
+        className="mt-2 w-full border border-border bg-white/70 px-3 py-2.5 font-sans text-[14px] focus:outline-none focus:border-navy"
+        disabled={busy}
+      />
+      <div className="mt-2 flex items-center gap-3">
+        <button onClick={onRegenerate} disabled={busy || pending} className={btn}>
+          {busy ? "Rewriting…" : "Regenerate section"}
+        </button>
+        <span className="font-mono text-[10px] text-gray-cool">1 model call</span>
+      </div>
+    </div>
+  );
+}
+
 export default function ReportReview({
   reportId,
   requestId,
@@ -139,55 +207,23 @@ export default function ReportReview({
     router.refresh();
   }
 
-  /**
-   * Comment box for one section. The summary is edited through the findings
-   * section, since the two read as one block to a client.
-   */
-  function CommentBox({ id }: { id: SectionId }) {
-    const section = REVISABLE[id];
-    if (!section) return null;
-
-    const prior = revisions[section];
-    const isBusy = busy === section;
-
-    return (
-      <div className="border border-blue/25 bg-blue-light/30 p-4">
-        {prior?.note && (
-          <p className="mb-3 font-mono text-[10px] leading-[1.6] text-gray-warm">
-            Last revision: {prior.note}
-            {prior.comment && (
-              <span className="block mt-1 text-gray-cool">
-                Your note was: &ldquo;{prior.comment}&rdquo;
-              </span>
-            )}
-          </p>
-        )}
-        {notes[section] && (
-          <p className="mb-3 font-mono text-[10px] text-pos">{notes[section]}</p>
-        )}
-
-        <label className={eyebrow}>What needs to change here?</label>
-        <textarea
-          rows={2}
-          value={comments[section] ?? ""}
-          onChange={(e) => setComments((p) => ({ ...p, [section]: e.target.value }))}
-          placeholder="e.g. Too generous on CFO engagement — they have never seen a claims file. Drop the vendor name."
-          className="mt-2 w-full border border-border bg-white/70 px-3 py-2.5 font-sans text-[14px] focus:outline-none focus:border-navy"
-          disabled={isBusy}
-        />
-        <div className="mt-2 flex items-center gap-3">
-          <button onClick={() => regenerate(section)} disabled={isBusy || pending} className={btn}>
-            {isBusy ? "Rewriting…" : "Regenerate section"}
-          </button>
-          <span className="font-mono text-[10px] text-gray-cool">1 model call</span>
-        </div>
-      </div>
-    );
-  }
-
   const slots: Partial<Record<SectionId, React.ReactNode>> = {};
   for (const id of report.visibleSections) {
-    if (REVISABLE[id]) slots[id] = <CommentBox id={id} />;
+    const section = REVISABLE[id];
+    if (!section) continue;
+    slots[id] = (
+      <CommentBox
+        key={section}
+        section={section}
+        prior={revisions[section]}
+        note={notes[section]}
+        value={comments[section] ?? ""}
+        busy={busy === section}
+        pending={pending}
+        onChange={(v) => setComments((p) => ({ ...p, [section]: v }))}
+        onRegenerate={() => regenerate(section)}
+      />
+    );
   }
 
   return (
