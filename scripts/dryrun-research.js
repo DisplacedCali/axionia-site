@@ -381,6 +381,67 @@ async function runChecks(D, { createMockClient }, R) {
   ok(withRevision.findings[0].edited === true, "revised finding marked as edited");
   ok(content.scores.cfoEngagement === 55, "content still untouched after revision");
 
+  // ── Regulatory focus ─────────────────────────────────────────────────────
+  /*
+    The regulatory step is stubbed in MOCK_RESPONSES, so nothing above exercises
+    the state ranking that decides how long the section gets. These checks cover
+    it directly — it's pure and deterministic, which is the whole reason the
+    prompt was made to depend on it rather than on detection order.
+  */
+  console.log("\n── Regulatory focus ──");
+  const P = require(path.join(OUT, "pipeline", "prompts.js"));
+
+  const many = D2.rankStatesByExposure(["CA", "TX", "MN", "NY", "FL", "IL"], "CA");
+  ok(many.focus.length === 3, "at most three states get a paragraph",
+     `(${many.focus.join(",")})`);
+  ok(many.other.length === 3, "the rest get a line", `(${many.other.join(",")})`);
+  ok(many.focus.includes("CA"),
+     "CA leads — self-insured reach plus primary state");
+  ok(many.focus.every(s => D2.coveredStates().includes(s)),
+     "curated states outrank uncovered ones", `(${many.focus.join(",")})`);
+
+  // Order-independence is the point of ranking rather than slicing.
+  const a = D2.rankStatesByExposure(["IL", "NY", "MN", "CA"], "MN");
+  const b = D2.rankStatesByExposure(["CA", "MN", "NY", "IL"], "MN");
+  ok(a.focus.join() === b.focus.join(),
+     "detection order does not change the focus set", `(${a.focus.join(",")})`);
+
+  const one = D2.rankStatesByExposure(["MN"], "MN");
+  ok(one.focus.length === 1 && one.other.length === 0, "single state, no remainder");
+
+  ok(D2.rankStatesByExposure([], null).focus.length === 0,
+     "empty input does not throw or invent a state");
+
+  const promptMany = P.regulatorySystem(many.focus.join(", "), many.other.join(", "));
+  const promptOne = P.regulatorySystem("MN", "");
+  ok(!promptOne.includes("Other states"),
+     "no empty 'Other states' heading when every state is in focus");
+  ok(promptMany.includes("Other states"), "remainder section appears when there is a remainder");
+  ok((promptMany.match(/Federal overlay/g) || []).length === 1,
+     "federal overlay asked ONCE, not per state — the original repetition bug");
+  ok(/already renders a curated table/i.test(promptMany),
+     "prompt is told not to restate what the mandate table carries");
+
+  // ── Release guard severity ───────────────────────────────────────────────
+  /*
+    releaseBlockers feeds the admin UI; hardReleaseBlockers is what
+    releaseReport() actually refuses on. The split is only worth anything if
+    the soft ones really do fall out of the hard list.
+  */
+  console.log("\n── Release guard severity ──");
+  ok(R.hardReleaseBlockers({ content, reviewedAt: null }).length === 0,
+     "unreviewed report does NOT hard-block — it is visibly incomplete, not wrong");
+  ok(R.releaseBlockers({ content, reviewedAt: null }).some(x => /reviewed/i.test(x)),
+     "but it still warns in the admin");
+  ok(R.hardReleaseBlockers({ content: fb, reviewedAt: "x" }).some(x => /fallback/i.test(x)),
+     "fallback scores DO hard-block");
+  ok(R.hardReleaseBlockers({ content: missing, reviewedAt: "x" }).some(x => /CFO Engagement/.test(x)),
+     "a missing axis hard-blocks and names it");
+  ok(R.hardReleaseBlockers({ content: null }).length === 1,
+     "no research output at all hard-blocks");
+  ok(R.hardReleaseBlockers({ content, reviewedAt: "x" }).length === 0,
+     "a clean report releases");
+
   fs.rmSync(OUT, { recursive: true, force: true });
   console.log("\n" + (fail === 0 ? "ALL CHECKS PASSED" : `${fail} CHECK(S) FAILED`));
   process.exit(fail ? 1 : 0);

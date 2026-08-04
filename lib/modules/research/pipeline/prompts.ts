@@ -130,17 +130,53 @@ export function statesUser(
   return `Company: ${companyLine(co)}\nProfile: ${profile}\nLinkedIn: ${linkedinData ?? ""}`;
 }
 
-export function regulatorySystem(stateList: string): string {
-  return `You are a healthcare employment law and benefits compliance expert. Analyze the regulatory environment for this employer.
-Return plain bullet points starting with -.
+/**
+ * The regulatory section.
+ *
+ * Two structural fixes over the original, which produced five pages for one
+ * company.
+ *
+ * FEDERAL OVERLAY WAS ASKED FOR PER STATE. ACA employer-mandate status, ERISA,
+ * FMLA and MHPAEA parity are federal by definition — requesting them "for each
+ * state" made the model write the same paragraph once per state. It's now one
+ * section, asked once.
+ *
+ * STATES ARE NO LONGER EQUAL. Only the two or three with real exposure get a
+ * paragraph; the rest get a line. See `rankStatesByExposure` for how that's
+ * decided and why uncovered states aren't promoted.
+ *
+ * The prompt is also told the curated mandate table renders alongside it, and
+ * not to restate what a table carries better. That instruction is doing as
+ * much work as the state limit — the model was spending its budget
+ * transcribing statute numbers and effective dates the report already shows.
+ */
+export function regulatorySystem(focusStates: string, otherStates: string): string {
+  return `You are a healthcare employment law and benefits compliance expert advising an employer on its benefit program.
 
-For each state in ${stateList}, flag:
-1. BENEFIT MANDATES — state-mandated coverage requirements that differ from federal baseline. For each: benefit type, law name, effective date, and critically: does it apply to self-insured ERISA plans or only fully insured plans? Flag any mandates that apply to self-insured plans prominently.
-2. PAID LEAVE — state paid family/medical leave, sick leave, or PFML requirements. Effective dates and key operational requirements.
-3. FEDERAL OVERLAY — ACA employer mandate status, ERISA obligations, FMLA, MHPAEA/mental health parity compliance requirements for this employer size and structure.
-4. WATCH SIGNALS — pending legislation or regulatory changes in these states creating near-term compliance urgency.
+IMPORTANT CONTEXT: the report this text appears in ALREADY renders a curated table of state mandates, with statute names, effective dates and ERISA self-insured reach for each. Do not restate those. A table carries them better than prose does. Your job is the employer-specific read the table cannot give: what this actually means for them, what to do, and what to watch.
 
-Use ## headers for each state. Bold mandate names. Flag self-insured applicability explicitly.`;
+Return plain bullet points starting with -. No preamble, no closing summary.
+
+Structure exactly as follows.
+
+## Federal overlay
+ONE section, not repeated per state. ACA employer mandate status, ERISA obligations, FMLA and MHPAEA parity — only as they bear on THIS employer's size and funding structure. 4 bullets maximum. Skip anything that is merely true of all employers.
+
+${
+  focusStates
+    ? `## Priority states — ${focusStates}
+A short section per state, in that order. These carry the highest exposure. For each, 3-4 bullets covering: where state law reaches a self-insured plan despite ERISA preemption, paid leave obligations with real operational consequences, and any pending change creating near-term urgency. Lead with the exposure, not the citation.`
+    : ""
+}
+
+${
+  otherStates
+    ? `## Other states — ${otherStates}
+ONE bullet per state. Name the single most consequential obligation and nothing else. If there is nothing materially different from the federal baseline, say exactly that in one clause.`
+    : ""
+}
+
+Be specific to this employer. Bold anything that reaches a self-insured plan — that is the fact most likely to be missed, because employers assume preemption covers them and for most mandates it does.`;
 }
 
 export function regulatoryUser(

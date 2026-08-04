@@ -195,6 +195,52 @@ export function coveredStates(): string[] {
   return [...new Set(MANDATES.map((m) => m.state))].sort();
 }
 
+/**
+ * Split detected states into the few worth a paragraph and the rest.
+ *
+ * The regulatory prompt used to ask for four categories of analysis for every
+ * detected state, which produced five pages for one company. Length was only
+ * half the problem: the curated mandate table renders alongside that text and
+ * already carries the statute names, effective dates and ERISA reach, so most
+ * of the prose was restating a table.
+ *
+ * Exposure is not evenly spread. A state whose mandates stop at fully insured
+ * plans is one an ERISA employer can mostly set aside; a state that reaches
+ * self-insured plans is one where preemption does not save them. That
+ * distinction, not the number of statutes, is what earns commentary.
+ *
+ * Uncovered states get NO bonus on purpose. They're already surfaced as
+ * `uncoveredStates` and labelled unverified in the report, and promoting the
+ * model's least verifiable output to top billing would invert the point of
+ * having a curated library at all.
+ *
+ * Deterministic: ties break on the state code, so the same input always yields
+ * the same focus set and the dry run can assert on it.
+ */
+export function rankStatesByExposure(
+  states: readonly string[] = [],
+  primaryState?: string | null,
+  limit = 3,
+): { focus: string[]; other: string[] } {
+  const seen = [...new Set(states.map((s) => s.toUpperCase().trim()).filter(Boolean))];
+  const primary = primaryState?.toUpperCase().trim() ?? null;
+
+  const score = (state: string): number => {
+    const mandates = getMandatesForStates([state]);
+    let n = 0;
+    if (mandates.some((m) => m.selfInsured === true)) n += 100;
+    if (mandates.some((m) => m.selfInsured === "partial")) n += 50;
+    if (mandates.some((m) => m.urgency === "High")) n += 20;
+    if (state === primary) n += 30;
+    if (mandates.length) n += 10;
+    return n;
+  };
+
+  const ranked = [...seen].sort((a, b) => score(b) - score(a) || a.localeCompare(b));
+
+  return { focus: ranked.slice(0, limit), other: ranked.slice(limit) };
+}
+
 // ── Model segment → library segment matching ────────────────────────────────
 
 /**

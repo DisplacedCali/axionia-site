@@ -172,12 +172,21 @@ costs one wave and the job survives a closed tab.
 
 ### Open, deliberately
 
-- **Output is long-winded.** Tabled. When you return to it, the single biggest
-  contributor is the regulatory prompt in `pipeline/prompts.ts`, which asks the
-  model to enumerate mandates, paid leave, federal overlay and watch signals for
-  *every* detected state — that produced five pages for one company. Now that
-  the curated mandate table carries the load, that prompt could ask for
-  commentary on the two or three highest-exposure states only.
+- **Output is long-winded — regulatory section FIXED, rest unmeasured.** Two
+  bugs, not one. The prompt asked for **federal overlay per state**, and ACA,
+  ERISA, FMLA and MHPAEA are federal by definition, so the model wrote the same
+  paragraph once per detected state. And every state got the full four-category
+  treatment regardless of exposure. Now: one federal section asked once, a
+  paragraph for the top states from `rankStatesByExposure()`, a line each for
+  the rest, and the prompt is told a curated mandate table renders alongside it
+  and not to restate statute names and dates a table carries better. `maxTokens`
+  2500 → 1400; a ceiling that can't be reached isn't a limit, it's permission.
+  **Ranked, not sliced** — taking the first three as detected would make section
+  depth depend on the order the model happened to list states in. Uncovered
+  states get no ranking bonus: promoting the least verifiable output would
+  invert the point of having a curated library.
+  Other sections have not been measured — check an exported PDF before assuming
+  this closed the whole problem.
 - **Mandate library covers 5 states** (CA IL MA MN NY, 13 mandates). Runs detect
   more; states outside the library are labelled model-generated and unverified.
   **Reviewed 2026-08-03 and deliberately left.** Expanding means per-state

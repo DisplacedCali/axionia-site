@@ -22,6 +22,7 @@ import {
   matchSegmentToLibrary,
   computeOverallScore,
   bandForScore,
+  rankStatesByExposure,
 } from "../data";
 import type { AxisKey } from "../data/types";
 import { extractArrayProperty, extractJson } from "./json";
@@ -158,13 +159,24 @@ export async function runRegulatory(ctx: StepContext): Promise<RegulatoryOutput>
       rationale: "Assumed from HQ — state detection did not return usable data.",
     };
 
-  const stateList = (statesData.states?.length ? statesData.states : ["MN"]).join(", ");
+  const detected = statesData.states?.length ? statesData.states : ["MN"];
+  const stateList = detected.join(", ");
+
+  /*
+    Only the highest-exposure states get a paragraph; the rest get a line.
+    Ranked rather than truncated — taking the first three as detected would
+    make the depth of the regulatory section depend on the order the model
+    happened to list states in.
+  */
+  const { focus, other } = rankStatesByExposure(detected, statesData.primaryState);
 
   const regRes = await ctx.llm.complete({
-    system: P.regulatorySystem(stateList),
+    system: P.regulatorySystem(focus.join(", "), other.join(", ")),
     user: P.regulatoryUser(company, stateList, profile, ctx.outputs.financial ?? ""),
     label: "regulatory",
-    maxTokens: 2500,
+    // Was 2500. The prompt no longer asks for four categories per state, and a
+    // ceiling that can't be reached isn't a limit — it's permission.
+    maxTokens: 1400,
   });
 
   return { regulatory: regRes.text, statesData };
