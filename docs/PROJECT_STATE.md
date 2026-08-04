@@ -6,7 +6,7 @@ durable record.
 
 **To resume: connect both folders below, then say "read docs/PROJECT_STATE.md".**
 
-Last updated: 2026-07-29
+Last updated: 2026-08-03
 
 ---
 
@@ -19,6 +19,27 @@ Last updated: 2026-07-29
 
 Both need connecting — the site for all work, the app only if comparing old
 output. Almost all work is in the site.
+
+### Project knowledge is a stale snapshot — the repo wins
+
+The Claude.ai project knowledge for Axionia.com still carries the pre-port
+artifacts. They read as current and they aren't. Treat this repo as ground
+truth for everything except brand tokens.
+
+| In project knowledge | Superseded by |
+|---|---|
+| `axionia_research_agent.jsx` | `lib/modules/research/` — different architecture, not a newer copy |
+| `axionia_buyer_deck.html` | `/deck` → `components/deck/slides.tsx` |
+| `axionia_investor_deck.html` | `/deck/founders` — ten seats at $250K as **prepaid service, not a raise** |
+| `axionia_free_scorer.html` | `/pricing` (Portfolio Scorer, free) + `/request-report` |
+| `axionia_supabase_schema.md` | `supabase/schema.sql` + migrations 002–014 |
+| `axionia_optimizer_spec.html` | No fixed monthly tiers. Custom quote + performance pricing |
+| Library "5 segments" | 9 segments, 13 state mandates |
+
+**The one exception: `axionia_brand_tokens.md` is still canonical** and exists
+only in project knowledge. `tailwind.config.ts` and
+`lib/modules/research/data/tokens.ts` both track it; if they disagree with it,
+they're the bug.
 
 ---
 
@@ -92,6 +113,19 @@ costs one wave and the job survives a closed tab.
   doesn't. `VEN_WIN` (WIN) is kept in the library with a disclosure rather than
   removed — knowing a vendor well is why the profile is richer, and the honest
   answer is to say so. It must render wherever the vendor is named.
+- **Who it's for** — `/who-its-for`. The site had no page answering "would I
+  buy this, and when." Organised by **decision moment** (renewal, point-solution
+  evaluation, RFP, broker change, stop-loss attachment, CFO question) rather
+  than by product — a product list invites price comparison and anchors the work
+  in the "report" category `/pricing` deliberately avoids. Buyer role is a
+  filter over the moments, not the primary axis: CFO/owner is the wedge,
+  benefits leader the early adopter, broker/health plan the channel. Carries the
+  low-data-requirement differentiator (end to end on documents you already own,
+  works on top of an existing warehouse rather than replacing it) and an
+  explicit not-a-fit list. In nav under Platform, in the footer, in the sitemap.
+  Uses `pos-dark` / `caution-dark` / `risk-dark`, added to `tailwind.config.ts`
+  from the semantic scale's dark-text variants — the base semantic hues are
+  calibrated as marks on the warm base, not as small type on it.
 - **Objective weighting** — `lib/objectives.ts`, rendered on `/platform` and in
   the deck. Axionia scores the evidence, never the objective; weights reorder
   recommendations and must never be allowed to put a dollar figure on a soft

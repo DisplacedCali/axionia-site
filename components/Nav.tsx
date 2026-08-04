@@ -31,6 +31,11 @@ const groups: NavGroup[] = [
         note: "The methodology in one page",
       },
       {
+        href: "/who-its-for",
+        label: "Who it's for",
+        note: "The decisions we're built for",
+      },
+      {
         href: "/platform#report",
         label: "Interactive report",
         note: "Turn the dials on a live report",

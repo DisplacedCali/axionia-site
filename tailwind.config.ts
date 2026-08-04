@@ -22,8 +22,13 @@ const config: Config = {
         "amber-light": "#FBF3E6",
         "red-light": "#FCECEA",
         pos: "#3CBF6C",
+        // Dark text variants from the semantic scale. The base semantic hues
+        // are calibrated as marks on the warm base, not as small type on it.
+        "pos-dark": "#1E5B38",
         caution: "#9C6B1A",
+        "caution-dark": "#5C3F10",
         risk: "#B03A2E",
+        "risk-dark": "#7A1F18",
         indigo: "#3D4E8F",
         ocean: "#2E8C9E",
         slate: "#5B7095",
