@@ -152,6 +152,27 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Account review** — `/admin/users` gains People / Needs review / Hidden
+  (migration 021). Signup abuse filled the list with random names and
+  harvested-looking free-mail addresses. **Nothing is deleted** — hiding is
+  reversible and deleting destroys the evidence of the abuse, with no
+  operational upside.
+  Suspicion is **derived at read time, never stored** (`lib/accountReview.ts`):
+  freezing a guess into a column means it goes stale and starts being treated
+  as fact. The strongest signal is `auth.users.email_confirmed_at is null` past
+  24h — Supabase creates the auth user when the code is *requested*, not
+  entered, so an unconfirmed account is one nobody wanted, often including the
+  person whose address was used. Name/company entropy and free-mail domain are
+  secondary and only count together; anyone who requested a report or is linked
+  to a company is never flagged. `legitimate` is sticky, so a real client who
+  trips the heuristic is confirmed once. Bulk sweep refuses to touch staff or
+  anything already marked legitimate, and takes ids from the rendered list so a
+  row that arrived a second ago can't be swept unseen.
+  Reasons render on the row: a flag you can't interrogate gets obeyed blindly
+  or ignored entirely, and both are worse than a sentence.
+  021 also narrows the `leads` UPDATE grant from table-wide to the three triage
+  columns — sound today because the policy requires `is_staff()`, but the same
+  shape as the 020 hole and one policy edit from mattering.
 - **Admin inbox** — `/admin/inbox`, migration 019. **Contact-form and
   founders-deck submissions reached nobody.** Three compounding failures, found
   when a friend's test submission never surfaced: no admin email was ever
@@ -417,6 +438,17 @@ costs one wave and the job survives a closed tab.
 ---
 
 ## Invariants — don't break these
+
+**RLS restricts rows. GRANTs restrict columns. You need both.** Found 2026-08-06
+and fixed in migration 020. `schema.sql` granted table-wide UPDATE on
+`profiles` to `authenticated` alongside a `using (auth.uid() = id)` policy —
+which correctly scoped the *row* and not the *columns*, because RLS has no
+column clause. Any signed-in user could set their own `role` to `'owner'` with
+the public anon key and take the whole admin surface, or set their own
+`company_id` to another employer's and read that employer's released reports
+with no role change at all. Nothing in the app ever used the grant; every
+profile write goes through the service role. **Before granting write on any
+table, name the columns.**
 
 **`reports.content` is immutable.** Corrections go in `reports.edits` and are
 applied at render by `assembleReport()`. This is what makes "we expose the

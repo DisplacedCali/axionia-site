@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setUserRole, assignUserCompany } from "@/app/admin/actions";
+import { setAccountReview } from "@/app/admin/users/review-actions";
 import type { Role } from "@/lib/auth";
 
 /**
@@ -22,6 +23,7 @@ export default function UserRow({
   companies,
   isSelf,
   canEditRoles,
+  canReview = false,
 }: {
   profile: {
     id: string;
@@ -30,10 +32,14 @@ export default function UserRow({
     companyName: string | null;
     role: string;
     companyId: string | null;
+    reviewState?: string;
+    /** Why the heuristic flagged this account, if it did. */
+    reasons?: string[];
   };
   companies: { id: string; label: string }[];
   isSelf: boolean;
   canEditRoles: boolean;
+  canReview?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -55,10 +61,80 @@ export default function UserRow({
         <span className="block text-[12px] text-gray-cool truncate">
           {profile.email}
         </span>
+        {/*
+          Why the heuristic flagged it, in plain words. A flag you can't
+          interrogate is a flag you either obey blindly or ignore entirely,
+          and both are worse than a sentence.
+        */}
+        {profile.reasons && profile.reasons.length > 0 && profile.reviewState === "unreviewed" && (
+          <span className="block mt-1 font-mono text-[9px] leading-[1.5] text-caution-dark">
+            {profile.reasons.join(" · ")}
+          </span>
+        )}
+        {profile.reviewState === "spam" && (
+          <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool">
+            Hidden
+          </span>
+        )}
+        {profile.reviewState === "legitimate" && (
+          <span className="block mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-pos-dark">
+            Confirmed real
+          </span>
+        )}
       </span>
 
       <span className="text-[14px] text-gray-warm truncate">
         {profile.companyName || "—"}
+        {canReview && !isSelf && (
+          <span className="block mt-1.5 flex gap-2">
+            {profile.reviewState !== "spam" ? (
+              <>
+                {profile.reviewState !== "legitimate" && (
+                  <button
+                    onClick={() =>
+                      startTransition(async () => {
+                        const res = await setAccountReview({ userId: profile.id, state: "legitimate" });
+                        if (!res.ok) setErr(res.error);
+                        else router.refresh();
+                      })
+                    }
+                    disabled={pending}
+                    className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool hover:text-pos-dark disabled:opacity-40"
+                  >
+                    Real
+                  </button>
+                )}
+                <button
+                  onClick={() =>
+                    startTransition(async () => {
+                      const res = await setAccountReview({ userId: profile.id, state: "spam" });
+                      if (!res.ok) setErr(res.error);
+                      else router.refresh();
+                    })
+                  }
+                  disabled={pending}
+                  className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool hover:text-risk disabled:opacity-40"
+                >
+                  Hide
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() =>
+                  startTransition(async () => {
+                    const res = await setAccountReview({ userId: profile.id, state: "legitimate" });
+                    if (!res.ok) setErr(res.error);
+                    else router.refresh();
+                  })
+                }
+                disabled={pending}
+                className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool hover:text-navy disabled:opacity-40"
+              >
+                Restore
+              </button>
+            )}
+          </span>
+        )}
       </span>
 
       <span>
