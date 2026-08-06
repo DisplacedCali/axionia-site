@@ -64,6 +64,51 @@ const INDUSTRY_GROUPS: { label: string; options: string[] }[] = [
 
 const DEFAULT_INDUSTRY = "Professional Services / Consulting";
 
+/**
+ * The optional detail step.
+ *
+ * Two things are being balanced and they pull opposite ways: a benchmark needs
+ * structured records, and a free report needs to stay cheap to ask for. So this
+ * is collapsed by default and never blocks submission — the ask is framed as
+ * what it buys THEM, because that framing is also the true one. A portfolio we
+ * can see is a portfolio we can score specifically instead of directionally.
+ *
+ * Program categories are checkboxes rather than free text on purpose. One click
+ * each, and the result is comparable across employers — a paragraph describing
+ * the same programs is worth far less to a benchmark and no more to the
+ * analysis.
+ *
+ * Census is deliberately NOT here. Naming it invites a file containing names
+ * and dates of birth, which is exactly the data the intake is designed never to
+ * receive — see the PHI firewall note on /privacy. Counts by tier give the
+ * analytical value without the liability.
+ */
+const PROGRAM_CATEGORIES = [
+  "Medical / health plan",
+  "Pharmacy / PBM",
+  "Dental & vision",
+  "Mental health / EAP",
+  "MSK",
+  "Diabetes / metabolic",
+  "GLP-1 / weight management",
+  "Fertility & family building",
+  "Menopause / women's health",
+  "Childcare / backup care",
+  "Navigation / advocacy",
+  "Primary care / DPC",
+  "Telehealth",
+  "Financial wellness",
+  "Disability & leave",
+  "Wellness / lifestyle account",
+];
+
+const FUNDING = [
+  "Self-funded",
+  "Level-funded",
+  "Fully insured",
+  "Not sure",
+];
+
 const inputCls =
   "border border-border bg-white/50 px-4 py-3 font-sans text-[15px] focus:outline-none focus:border-navy transition-colors";
 const labelCls =
@@ -85,6 +130,16 @@ export default function RequestReportPage() {
     library exists to do.
   */
   const [roleGroups, setRoleGroups] = useState("");
+
+  /* Optional detail — see PROGRAM_CATEGORIES. None of this gates submission. */
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [funding, setFunding] = useState("");
+  const [states, setStates] = useState("");
+  const [tiers, setTiers] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [vendors, setVendors] = useState("");
+  const [carriers, setCarriers] = useState("");
+
   const [programs, setPrograms] = useState("");
   const [context, setContext] = useState("");
 
@@ -168,6 +223,14 @@ export default function RequestReportPage() {
       roleGroups,
       programs,
       context,
+      portfolio: {
+        funding,
+        states,
+        tiers,
+        categories,
+        vendors,
+        carriers,
+      },
     });
     setLoading(false);
 
@@ -462,6 +525,134 @@ export default function RequestReportPage() {
                 Two or three is plenty. This is what lets us model your actual
                 workforce rather than your industry&rsquo;s average.
               </p>
+            </div>
+
+            {/* ── Optional detail ─────────────────────────────────── */}
+            <div className="border border-border bg-white/40">
+              <button
+                type="button"
+                onClick={() => setDetailOpen((o) => !o)}
+                className="w-full text-left px-5 py-4 flex items-start justify-between gap-4"
+              >
+                <span>
+                  <span className="block text-[15px] leading-[1.5] text-navy">
+                    Make this specific to you{" "}
+                    <span className="text-gray-cool">(optional)</span>
+                  </span>
+                  <span className="block mt-1 text-[13px] leading-[1.6] text-gray-warm max-w-measure">
+                    Tell us a little more about your benefit mix and we&rsquo;ll
+                    score your actual portfolio rather than your industry&rsquo;s
+                    average. Two minutes, and it changes the report from
+                    directional to specific.
+                  </span>
+                </span>
+                <span className="font-mono text-[18px] leading-none text-gray-cool shrink-0 mt-1">
+                  {detailOpen ? "−" : "+"}
+                </span>
+              </button>
+
+              {detailOpen && (
+                <div className="px-5 pb-5 pt-1 flex flex-col gap-5 border-t border-border">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label className={labelCls}>How the plan is funded</label>
+                      <select
+                        value={funding}
+                        onChange={(e) => setFunding(e.target.value)}
+                        className={inputCls}
+                      >
+                        <option value="">Select</option>
+                        {FUNDING.map((f) => (
+                          <option key={f}>{f}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className={labelCls}>States of operation</label>
+                      <input
+                        value={states}
+                        onChange={(e) => setStates(e.target.value)}
+                        placeholder="MN, WI, IL"
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className={labelCls}>
+                      Covered lives by tier{" "}
+                      <span className="text-gray-cool">(roughly is fine)</span>
+                    </label>
+                    <input
+                      value={tiers}
+                      onChange={(e) => setTiers(e.target.value)}
+                      placeholder="e.g. 480 employee-only, 210 employee + family"
+                      className={inputCls}
+                    />
+                    <p className="text-[12px] leading-[1.6] text-gray-warm">
+                      Counts only. Please don&rsquo;t send a census file —
+                      we&rsquo;re built not to hold member-level data, and
+                      we&rsquo;d have to delete it.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className={labelCls}>What you run today</label>
+                    <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 mt-1">
+                      {PROGRAM_CATEGORIES.map((c) => (
+                        <label
+                          key={c}
+                          className="flex items-center gap-2.5 text-[14px] text-gray-warm cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={categories.includes(c)}
+                            onChange={(e) =>
+                              setCategories((p) =>
+                                e.target.checked
+                                  ? [...p, c]
+                                  : p.filter((x) => x !== c),
+                              )
+                            }
+                          />
+                          {c}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label className={labelCls}>Vendors, if you know them</label>
+                      <input
+                        value={vendors}
+                        onChange={(e) => setVendors(e.target.value)}
+                        placeholder="Hinge, Lyra, Progyny…"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className={labelCls}>Carrier or TPA</label>
+                      <input
+                        value={carriers}
+                        onChange={(e) => setCarriers(e.target.value)}
+                        placeholder="Optional"
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[12px] leading-[1.65] text-gray-warm max-w-measure">
+                    None of this is ever disclosed or referenced in material that
+                    isn&rsquo;t for you. We use it in aggregate for benchmarking
+                    — patterns across many employers, never a name.{" "}
+                    <a href="/privacy" className="text-blue hover:underline">
+                      How we handle your data
+                    </a>
+                    .
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">

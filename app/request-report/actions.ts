@@ -38,6 +38,21 @@ export async function submitReportRequest(formData: {
   roleGroups?: string;
   programs?: string;
   context?: string;
+  /**
+   * The optional detail step. Structured on purpose — program categories as a
+   * list rather than prose is what makes a record comparable across employers,
+   * which is the entire point of collecting it.
+   *
+   * Deliberately contains NO census and no member-level anything. See /privacy.
+   */
+  portfolio?: {
+    funding?: string;
+    states?: string;
+    tiers?: string;
+    categories?: string[];
+    vendors?: string;
+    carriers?: string;
+  };
 }): Promise<SubmitResult> {
   const supabase = createClient();
 
@@ -129,6 +144,21 @@ export async function submitReportRequest(formData: {
         employees: formData.employees ?? null,
         industry: formData.industry ?? null,
         role_groups: formData.roleGroups?.trim() || null,
+        portfolio: (() => {
+          const p = formData.portfolio;
+          if (!p) return null;
+          const clean = {
+            funding: p.funding?.trim() || null,
+            states: p.states?.trim() || null,
+            tiers: p.tiers?.trim() || null,
+            categories: p.categories?.length ? p.categories : null,
+            vendors: p.vendors?.trim() || null,
+            carriers: p.carriers?.trim() || null,
+          };
+          // All-empty means they opened the panel and closed it again. Storing
+          // an object of nulls would make "did they answer" unanswerable.
+          return Object.values(clean).some(Boolean) ? clean : null;
+        })(),
         programs: formData.programs ?? null,
         context: formData.context ?? null,
         email_domain: domain,

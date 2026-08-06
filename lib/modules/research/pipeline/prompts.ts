@@ -45,6 +45,14 @@ export function clientAskBlock(input: {
   context?: string | null;
   analystContext?: string | null;
   roleGroups?: string | null;
+  portfolio?: {
+    funding?: string | null;
+    states?: string | null;
+    tiers?: string | null;
+    categories?: string[] | null;
+    vendors?: string | null;
+    carriers?: string | null;
+  } | null;
 }): string {
   const parts: string[] = [];
   if (input.programs?.trim()) {
@@ -57,6 +65,26 @@ export function clientAskBlock(input: {
     parts.push(
       `The client's own description of their largest role groups (treat as authoritative, and in preference to any assumption drawn from the industry label): ${input.roleGroups.trim()}`,
     );
+  }
+  const pf = input.portfolio;
+  if (pf) {
+    // First-party facts. Stated as such so the model stops inferring what it
+    // has been told, which is where a sector average silently replaces an
+    // employer's actual portfolio.
+    const lines = [
+      pf.funding && `Funding: ${pf.funding}`,
+      pf.states && `States of operation: ${pf.states}`,
+      pf.tiers && `Covered lives by tier: ${pf.tiers}`,
+      pf.categories?.length && `Programs they run today: ${pf.categories.join(", ")}`,
+      pf.vendors && `Vendors named: ${pf.vendors}`,
+      pf.carriers && `Carrier / TPA: ${pf.carriers}`,
+    ].filter(Boolean);
+    if (lines.length) {
+      parts.push(
+        "The client's own description of their benefit portfolio (treat as authoritative — do not infer or average over anything stated here):\n" +
+          lines.join("\n"),
+      );
+    }
   }
   if (input.context?.trim()) {
     parts.push(`Context the client provided: ${input.context.trim()}`);

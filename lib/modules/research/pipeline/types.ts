@@ -79,6 +79,24 @@ export interface JobInput {
    */
   roleGroups?: string | null;
 
+  /**
+   * The optional detail step from the intake — funding, states, covered lives
+   * by tier, program categories, vendors, carrier.
+   *
+   * First-party and specific, so it outranks anything the model infers. The
+   * program list in particular replaces guesswork: knowing an employer runs
+   * Hinge and Lyra is the difference between scoring their portfolio and
+   * scoring their sector's.
+   */
+  portfolio?: {
+    funding?: string | null;
+    states?: string | null;
+    tiers?: string | null;
+    categories?: string[] | null;
+    vendors?: string | null;
+    carriers?: string | null;
+  } | null;
+
   /** The intake's free-text "additional context" field. */
   context?: string | null;
 

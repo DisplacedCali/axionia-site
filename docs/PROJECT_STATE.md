@@ -152,6 +152,29 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Privacy policy** — `/privacy`, and the **three tables shipped without IP
+  columns are no longer waiting on it**. Written against what the system
+  actually does rather than a template: every "we don't collect" is enforced in
+  the schema, so if `deck_events` / `site_events` / `report_events` ever gain an
+  IP column, this page changes in the same commit. **Not counsel-reviewed** —
+  it's an accurate description of behaviour, which is what a lawyer needs in
+  order to make it binding, not a substitute for that.
+  The load-bearing commitment: no specific company's data is disclosed, named
+  or referenced in external material that isn't for that company; aggregate
+  research and benchmarking is explicitly permitted.
+- **Optional portfolio detail on the intake.** Funding, states, covered lives
+  by tier, program categories (checkboxes, so records are comparable), vendors
+  and carrier — collapsed, never blocking, framed as what it buys *them*: a
+  score of their actual portfolio rather than their sector's average. Feeds
+  `clientAskBlock` marked authoritative.
+  **Census is deliberately absent, and should stay absent.** Naming it on a
+  form invites a file containing names and dates of birth — precisely the data
+  the intake exists never to receive, with no BAA and no obligation to have
+  one. Counts by tier give the analytical value without the liability, and the
+  form says so where someone might otherwise attach one.
+  Gating the free report on any of this was considered and rejected: a
+  benchmark needs density before a record is worth much, and four required
+  fields buys depth you can't yet use at the cost of volume you need now.
 - **Send a report to anyone** (migration 018, `report_recipients`). A report
   could only reach whoever submitted the request, and admin-initiated research
   had nobody to notify at all — it sat in the company folder waiting for
@@ -360,10 +383,16 @@ costs one wave and the job survives a closed tab.
   is a paid-leave program" is useful when labelled. The actual defect is the
   regulatory prompt enumerating everything for every detected state, which is
   the verbosity item above. Fixing coverage would not fix that.
-- **Privacy policy.** There isn't one, and two tables now depend on that gap
-  staying acknowledged: `deck_events` and `site_events` both deliberately omit
-  an IP column for this reason. Get a policy up before anyone adds one, and
-  before wiring reverse-IP company lookup (Clearbit Reveal, RB2B and similar).
+- **Privacy policy exists but has not been through counsel.** `/privacy` is an
+  honest description of current behaviour; it is not a lawyer's document. Get
+  it reviewed before it's load-bearing in a contract conversation. The IP
+  columns on `deck_events`, `site_events` and `report_events` are still absent
+  by choice — the page now commits to that publicly, so adding one is a
+  policy change, not just a migration. Same for reverse-IP company lookup
+  (Clearbit Reveal, RB2B and similar).
+- **`privacy@axionia.com` must exist.** `/privacy` publishes it as the address
+  for access and deletion requests, and an unrouted mailbox on a privacy page
+  is worse than no address.
 
 ---
 
