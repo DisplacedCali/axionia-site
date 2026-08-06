@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
-import { logDeckView, logDeckPrint } from "@/app/deck/actions";
+import { logDeckView, logDeckPrint, requestDeckDownload } from "@/app/deck/actions";
 
 /**
  * Presentation shell.
@@ -28,6 +28,16 @@ type Props = {
    * gate doesn't ask them to type a name we'd trust less than the one we have.
    */
   linkLabel?: string | null;
+  /**
+   * Verified on the server from a signed download grant. Non-null means this
+   * viewer's address was proven by clicking a link we emailed, so printing is
+   * allowed and every page carries their name.
+   *
+   * A string, not an identity object, on purpose — the client renders it and
+   * never composes one, so there is no path where a query parameter becomes a
+   * watermark.
+   */
+  watermark?: string | null;
 };
 
 export default function DeckShell({
@@ -35,6 +45,7 @@ export default function DeckShell({
   signedIn,
   deck = "buyer",
   linkLabel = null,
+  watermark = null,
 }: Props) {
   const [i, setI] = useState(0);
   const [gate, setGate] = useState(false);
@@ -60,13 +71,15 @@ export default function DeckShell({
   }, []);
 
   const onPrintClick = useCallback(() => {
-    if (signedIn || linkLabel) {
+    // A verified download grant is as good as a session here — the address was
+    // proven by clicking a link we sent to it.
+    if (signedIn || linkLabel || watermark) {
       logDeckPrint(undefined, deck, linkLabel);
       print();
       return;
     }
     setGate(true);
-  }, [signedIn, linkLabel, deck, print]);
+  }, [signedIn, linkLabel, deck, print, watermark]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -178,16 +191,20 @@ export default function DeckShell({
         </button>
       </nav>
 
-      {gate && (
-        <PrintGate
-          deck={deck}
-          onClose={() => setGate(false)}
-          onDone={() => {
-            setGate(false);
-            print();
-          }}
-        />
-      )}
+      {/*
+        The stamp. print-only, on every page, because the screen copy isn't the
+        one that travels — the PDF is.
+
+        Phrased as "prepared for" rather than a legal notice. It reads as
+        ordinary personalisation and is exactly as traceable, and a document
+        that visibly distrusts its reader is a worse document.
+      */}
+      {watermark && <div className="dk-watermark">{watermark}</div>}
+
+      {/* No onDone: the gate no longer hands over the file. It emails a link,
+          and printing happens on the next visit with ?dl= — which is the
+          point, since that visit is the one that proved the address. */}
+      {gate && <PrintGate deck={deck} onClose={() => setGate(false)} />}
     </div>
   );
 }
@@ -195,37 +212,82 @@ export default function DeckShell({
 function PrintGate({
   deck,
   onClose,
-  onDone,
 }: {
   deck: "buyer" | "founders";
   onClose: () => void;
-  onDone: () => void;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [org, setOrg] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState<"yes" | "held" | null>(null);
 
+  /*
+    Emails a signed link instead of believing what was typed.
+
+    The old gate took a name on trust and handed over the PDF, so the copy left
+    with no proof of who took it and the resulting lead was self-reported.
+    Clicking a link we sent proves control of the address — the same proof an
+    OTP gives, without the ceremony — and it's what makes the watermark on
+    every page worth anything.
+  */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const res = await logDeckPrint({ name, email, org }, deck);
+    const res = await requestDeckDownload({ deck, name, email, org });
     setBusy(false);
     if (!res.ok) return setErr(res.error);
-    onDone();
+    // `sent: false` means the mailer is unconfigured. Say so rather than
+    // claiming to have sent something — a gate that swallows the request looks
+    // identical to a broken site.
+    setSent(res.sent ? "yes" : "held");
+  }
+
+  if (sent) {
+    return (
+      <div className="dk-modal" role="dialog" aria-modal="true" aria-label="Check your email">
+        <div className="dk-modal-box">
+          <div className="dk-eyebrow">
+            {sent === "yes" ? "On its way" : "We have your request"}
+          </div>
+          <h2 className="dk-modal-h">
+            {sent === "yes" ? "Check your email." : "We'll send it by hand."}
+          </h2>
+          <p className="dk-modal-p">
+            {sent === "yes" ? (
+              <>
+                We&rsquo;ve sent a link to <strong>{email}</strong>. It opens the
+                deck and lets you save the PDF, and it works for seven days.
+              </>
+            ) : (
+              <>
+                Our automated mail isn&rsquo;t switched on yet, so this
+                won&rsquo;t arrive automatically — but your request is recorded
+                and we&rsquo;ll email the deck to <strong>{email}</strong>{" "}
+                ourselves.
+              </>
+            )}
+          </p>
+          <button type="button" className="dk-btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="dk-modal" role="dialog" aria-modal="true" aria-label="Download the deck">
       <div className="dk-modal-box">
         <div className="dk-eyebrow">Download the PDF</div>
-        <h2 className="dk-modal-h">Who should we say has it?</h2>
+        <h2 className="dk-modal-h">Where should we send it?</h2>
         <p className="dk-modal-p">
-          We don&rsquo;t verify this and there&rsquo;s no follow-up sequence
-          attached to it. We ask because a deck that travels is worth knowing
-          about, and because we&rsquo;d rather ask than track you.
+          We&rsquo;ll email you a link rather than hand the file over here.
+          There&rsquo;s no follow-up sequence attached — the deck is a document,
+          not a funnel. Your copy carries your name on each page, so if it
+          travels we know which one it was.
         </p>
 
         <form onSubmit={submit}>

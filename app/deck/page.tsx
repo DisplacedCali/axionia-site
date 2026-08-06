@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { verifyDownloadGrant, watermarkLine } from "@/lib/deckDownload";
 import DeckShell from "@/components/deck/DeckShell";
 import { SLIDES } from "@/components/deck/slides";
 import "./deck.css";
@@ -20,15 +21,37 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Axionia — Buyer Deck",
   description:
-    "Independent analysis of employee benefit programs: the problem, the method, and what an engagement produces.",
+    "Independent analysis of employee benefit programs: the problem, the method, and what the relationship produces.",
   robots: { index: false, follow: false },
 };
 
-export default async function DeckPage() {
+export default async function DeckPage({
+  searchParams,
+}: {
+  searchParams: { dl?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return <DeckShell slides={SLIDES} signedIn={Boolean(user)} />;
+  /*
+    A download grant proves the address, because it arrived by email. The
+    identity is inside the signature, so a recipient can't edit the URL to put
+    someone else's name on a copy they're about to forward — which is the whole
+    reason the watermark is worth anything.
+
+    Verified on the SERVER. The watermark is passed down as a string the client
+    only renders; it never composes one from a query parameter.
+  */
+  const grant = searchParams.dl ? verifyDownloadGrant("buyer", searchParams.dl) : null;
+  const watermark = grant?.ok ? watermarkLine(grant.identity) : null;
+
+  return (
+    <DeckShell
+      slides={SLIDES}
+      signedIn={Boolean(user)}
+      watermark={watermark}
+    />
+  );
 }

@@ -152,6 +152,29 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Deck downloads are verified and watermarked.** The old print gate asked for
+  a name and believed it, so the PDF left with no proof of who took it and the
+  resulting lead was self-reported — which is why "opened the deck" had to be
+  treated as a soft signal in the inbox ranking.
+  Now: **view stays public** (the ideas are on the marketing site in more
+  detail; what travels is the file), the download emails a signed link, and
+  clicking it proves control of the address — the same proof an OTP gives with
+  none of the ceremony. **The identity is inside the signature**, so a
+  recipient can't edit the URL to put someone else's name on a copy they're
+  about to forward; that's what makes the watermark worth anything.
+  Every printed page carries `Prepared for … · email · date · Confidential`
+  via a `position: fixed` print rule, which repeats per page — a single in-flow
+  element would appear once and prove nothing about pages 2–14. Phrased as
+  personalisation rather than a legal notice: equally traceable, and a document
+  that visibly distrusts its reader is a worse document.
+  **The lead is recorded on request, not on verification** — someone who asks
+  and never clicks still wanted the deck. `DECK_DOWNLOAD_SECRET` falls back to
+  the deck/report secrets; set it separately so revoking one class of link
+  doesn't revoke the others.
+  **Ships dark until Resend works.** `sendEmail` reports `skipped` with no API
+  key and the modal says so plainly rather than claiming to have sent
+  something — a gate that swallows the request looks identical to a broken
+  site.
 - **Leads are ranked by signal, and can become clients.** Two gaps found once
   real people started arriving. **`leads` and `auth.users` are separate tables**
   — Paul submitted the contact form, Dave printed the buyer deck, and neither

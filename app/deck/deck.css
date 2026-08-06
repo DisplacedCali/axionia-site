@@ -244,3 +244,30 @@
   .dk-navy { margin: -28px -20px -36px; padding: 32px 20px; }
   .dk-mer-c { border-right: none; border-bottom: 1px solid var(--dk-border); }
 }
+
+
+/* ── Download watermark ───────────────────────────────────────────────────
+   Screen-hidden, printed on every page. `position: fixed` inside a print
+   context repeats per page in every engine that matters, which is the whole
+   trick — a single in-flow element would appear once and prove nothing about
+   pages 2 through 14.
+*/
+.dk-watermark {
+  display: none;
+}
+
+@media print {
+  .dk-watermark {
+    display: block;
+    position: fixed;
+    bottom: 6mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'DM Mono', ui-monospace, monospace;
+    font-size: 7pt;
+    letter-spacing: 0.08em;
+    color: #AEB4BC;
+    z-index: 9999;
+  }
+}

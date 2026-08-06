@@ -210,6 +210,27 @@ export function adminNewLead(args: {
   };
 }
 
+/**
+ * The deck download link.
+ *
+ * Short on purpose. It is a receipt for an action someone just took, not a
+ * nurture email, and the deck itself does the persuading.
+ */
+export function deckDownloadLink(name: string, url: string, deck: string) {
+  const label = deck === "founders" ? "founders deck" : "buyer deck";
+  return {
+    subject: `Your Axionia ${label}`,
+    html: shell(
+      h("Here's the deck.") +
+        p(`${name ? `${name}, t` : "T"}his link opens the ${label} and lets you save it as a PDF.`) +
+        `<a href="${url}" style="display:inline-block;padding:14px 26px;background:#1C2431;color:#F8F6F1;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;margin:8px 0 20px;">Open the deck</a>` +
+        p(
+          "The link works for seven days. Your copy carries your name on each page — not to make a point, just so we know which copy is which if it travels.",
+        ),
+    ),
+  };
+}
+
 /** Sent to you when a new request lands. */
 export function adminNewRequest(args: {
   contactName?: string | null;

@@ -3,6 +3,8 @@
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail, deckDownloadLink } from "@/lib/email";
+import { mintDownloadGrant, downloadGrantsEnabled } from "@/lib/deckDownload";
 
 /**
  * Deck view and print logging.
@@ -121,4 +123,87 @@ export async function logDeckPrint(
   }
 
   return { ok: true };
+}
+
+/**
+ * Request a download link for a deck.
+ *
+ * Replaces "type a name and we'll believe you" with one round trip through
+ * email. Clicking the link proves control of the address, which is the same
+ * proof an OTP gives without the ceremony — and it makes the watermark mean
+ * something, because the name stamped on every page is the name that was
+ * signed rather than the name someone typed.
+ *
+ * The lead is recorded on REQUEST, not on verification. Someone who asks and
+ * never clicks is still someone who wanted the deck, and losing that would be
+ * throwing away the signal this whole path exists to improve. `verified` on
+ * the deck_event distinguishes the two.
+ *
+ * Honest about email being down: `sendEmail` reports `skipped` while
+ * RESEND_API_KEY is unset, and this passes that through rather than claiming
+ * to have sent something. A gate that silently swallows the request looks
+ * identical to a broken site.
+ */
+export async function requestDeckDownload(args: {
+  deck: DeckSlug;
+  name: string;
+  email: string;
+  org?: string;
+}): Promise<{ ok: true; sent: boolean } | { ok: false; error: string }> {
+  const name = clean(args.name, 120);
+  const email = clean(args.email, 200)?.toLowerCase();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    return { ok: false, error: "A work email — we'll send the link there." };
+  }
+  if (!name) return { ok: false, error: "A name, please." };
+
+  if (!downloadGrantsEnabled()) {
+    return {
+      ok: false,
+      error:
+        "Downloads aren't available right now. Email tom@axionia.com and we'll send it directly.",
+    };
+  }
+
+  const token = mintDownloadGrant(args.deck, {
+    name,
+    email,
+    org: clean(args.org, 160) ?? "",
+  });
+  if (!token) return { ok: false, error: "Could not create a download link." };
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
+  const path = args.deck === "founders" ? "/deck/founders" : "/deck";
+  const url = `${site}${path}?dl=${token}`;
+
+  // Recorded before the send, so a mail failure doesn't lose the lead.
+  try {
+    const admin = createAdminClient();
+    await admin.from("leads").insert({
+      email,
+      full_name: name,
+      company_name: clean(args.org, 160),
+      interest: `${args.deck}-deck`,
+    });
+    await admin.from("deck_events").insert({
+      deck: args.deck,
+      event: "print",
+      contact_name: name,
+      contact_email: email,
+      contact_org: clean(args.org, 160),
+    });
+  } catch {
+    /* a lead we failed to record must not block the download */
+  }
+
+  const mail = deckDownloadLink(name, url, args.deck);
+  const res = await sendEmail({
+    to: email,
+    subject: mail.subject,
+    html: mail.html,
+    template: `deck_download_${args.deck}`,
+  });
+
+  return { ok: true, sent: res.ok };
 }
