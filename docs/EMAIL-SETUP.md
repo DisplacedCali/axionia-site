@@ -137,17 +137,27 @@ key, so the client sends no token — and if Supabase is enforcing captcha at
 that moment, every signup fails with an unhelpful error. Enabling Supabase's
 setting before deploying the key is the way to take signup down.
 
-### Cloudflare, in front of everything
+### The outer layer: Vercel Firewall, NOT Cloudflare
 
-Free tier, and worth having regardless:
+DNS and the registrar are **GoDaddy**. Cloudflare's Bot Fight Mode and WAF only
+work if traffic proxies through Cloudflare, which would mean moving
+nameservers — and it buys nothing here, because Vercel already terminates every
+request and has the same controls.
 
-- **Security → Bots → Bot Fight Mode: on.** Challenges obvious automation
-  before it reaches Vercel.
-- **Security → WAF → Rate limiting rules.** One rule covers the abuse:
-  `/signup`, `/request-report`, `/contact` and `/api/track` — 10 requests per
-  minute per IP, action Managed Challenge.
+**Cloudflare is used for exactly one thing: minting the Turnstile widget.** A
+free account, no domain relationship, no DNS change.
 
-Cloudflare rate limits by IP and Turnstile by browser, so they fail
+In the Vercel project → **Firewall**:
+
+- **Attack Challenge Mode** — free on every plan. A toggle, for when something
+  is actively hammering the site. Not something to leave on.
+- **One custom rule.** Hobby allows three, so spend them carefully. Path
+  matches `/signup`, `/request-report`, `/contact`, `/api/track`; action
+  `rate_limit` at ~10 requests/minute per IP; mitigation Challenge.
+
+Traffic the firewall mitigates doesn't count toward usage.
+
+Vercel limits by IP and Turnstile challenges the browser, so they fail
 differently. That's the reason to run both.
 
 ### Then verify it worked

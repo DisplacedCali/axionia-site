@@ -14,7 +14,7 @@ Last updated: 2026-08-03
 
 | Folder | What it is |
 |---|---|
-| `~/Desktop/axionia-site` | **The live product.** Next.js 14 on Vercel at axionia.com. Marketing site, client portal, admin, and the research pipeline. `git@github.com:DisplacedCali/axionia-site.git` |
+| `~/Desktop/axionia-site` | **The live product.** Next.js 14 on Vercel at axionia.com. **DNS and registrar are GoDaddy, not Cloudflare** — an earlier version of this file said Cloudflare and it was wrong. Resend's DNS records go in GoDaddy. Marketing site, client portal, admin, and the research pipeline. `git@github.com:DisplacedCali/axionia-site.git` |
 | `~/Desktop/axionia-app` | **Superseded.** The original CRA research agent. Kept as reference; its `/research/save` is disabled. `git@github.com:DisplacedCali/axionia-app.git` |
 
 Both need connecting — the site for all work, the app only if comparing old
