@@ -7,8 +7,17 @@ import { setLeadHandled } from "@/app/admin/inbox/actions";
  * One inquiry, and the one action worth taking on it.
  *
  * The reply happens in email — there's no value in rebuilding a mail client
- * here — so the button that matters is "I dealt with this", and the mailto is
- * the fastest route to actually doing it.
+ * here — so the button that matters is "I dealt with this", and the compose
+ * link is the fastest route to actually doing it.
+ *
+ * WHY NOT A PLAIN mailto: the mailto scheme has no From parameter. It hands
+ * the address to whichever client is registered for the protocol, and that
+ * client picks the sending identity — which for a machine signed into several
+ * accounts is reliably the wrong one. Setting NEXT_PUBLIC_REPLY_FROM builds a
+ * Gmail compose URL targeted at that identity by address (authuser=, not
+ * /u/N/, because the index depends on sign-in order and silently drifts).
+ *
+ * Unset, it falls back to mailto and behaves exactly as before.
  *
  * The note is optional and one line. It exists so that the same person in
  * three weeks knows what was said, not to become a CRM: `companies.stage`
@@ -51,6 +60,14 @@ export default function LeadRow({
   const btn =
     "px-3 py-1.5 border font-mono text-[10px] uppercase tracking-[0.12em] transition-colors disabled:opacity-40";
 
+  const replyFrom = process.env.NEXT_PUBLIC_REPLY_FROM;
+  const subject = `Following up — Axionia`;
+  const composeHref = replyFrom
+    ? `https://mail.google.com/mail/?authuser=${encodeURIComponent(replyFrom)}` +
+      `&view=cm&fs=1&to=${encodeURIComponent(lead.email)}` +
+      `&su=${encodeURIComponent(subject)}`
+    : `mailto:${lead.email}?subject=${encodeURIComponent(subject)}`;
+
   return (
     <div className={`p-5 ${handled ? "bg-base-2/60" : "bg-base"}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -77,7 +94,9 @@ export default function LeadRow({
 
         <div className="flex items-center gap-2 shrink-0">
           <a
-            href={`mailto:${lead.email}?subject=${encodeURIComponent("Following up — Axionia")}`}
+            href={composeHref}
+            target={replyFrom ? "_blank" : undefined}
+            rel={replyFrom ? "noopener noreferrer" : undefined}
             className={`${btn} border-border text-gray-warm hover:border-navy hover:text-navy`}
           >
             Reply
