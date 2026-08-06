@@ -152,6 +152,26 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Admin inbox** — `/admin/inbox`, migration 019. **Contact-form and
+  founders-deck submissions reached nobody.** Three compounding failures, found
+  when a friend's test submission never surfaced: no admin email was ever
+  written for either path (only `submitReportRequest` had one); that email
+  wouldn't have sent anyway because `RESEND_API_KEY` is unset and every send is
+  logged as `skipped`; and **no admin screen displayed `leads` at all** — zero
+  references in `app/admin`, because `schema.sql` gave the table an insert-only
+  policy and nobody wrote the service-role read path. A real inquiry sat in
+  Postgres with no route to a human and nothing failing loudly.
+  The fix is **in-app first, email second**: a count on every admin page load
+  and a badge on the Inbox tab. **Deliberately not realtime** — one person
+  checking a few times a day learns about an inquiry the moment they open any
+  admin screen, and a socket is a failure surface to maintain for the privilege
+  of knowing eleven seconds sooner. Requests are counted once, never twice, or
+  the badge trains you to distrust it.
+  019 adds `handled_at` / `handled_by` / `handled_note` — **one timestamp, not
+  a status enum**: the only question worth asking of a lead is whether someone
+  answered it, and `companies.stage` already exists for anything that becomes
+  real. It also adds the staff select/update policies that were the actual
+  reason no admin view existed. anon stays insert-only.
 - **Privacy policy** — `/privacy`, and the **three tables shipped without IP
   columns are no longer waiting on it**. Written against what the system
   actually does rather than a template: every "we don't collect" is enforced in

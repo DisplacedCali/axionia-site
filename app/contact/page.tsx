@@ -49,7 +49,13 @@ function ContactForm() {
 
     // Fire-and-forget: the lead is already saved, so a failure here must not
     // change what the visitor sees.
-    if (!error) void noteContactSubmitted(email);
+    if (!error)
+      void noteContactSubmitted(email, {
+        fullName,
+        companyName,
+        interest,
+        message,
+      });
   }
 
   if (status === "sent") {

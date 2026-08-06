@@ -179,6 +179,37 @@ export function reportReleased(
   };
 }
 
+/**
+ * Sent to you when an inquiry lands — contact form or a deck print.
+ *
+ * These previously notified nobody. A submission wrote a `leads` row and that
+ * was the end of it: no email was ever wired, and no admin screen displayed
+ * the table, so a real inquiry from a real person had no path to a human at
+ * all. `/admin/inbox` is the primary fix; this is the second channel.
+ */
+export function adminNewLead(args: {
+  fullName: string;
+  email: string;
+  companyName?: string | null;
+  interest: string;
+  message?: string | null;
+  url: string;
+}) {
+  return {
+    subject: `[Axionia] Inquiry — ${args.companyName || args.fullName} (${args.interest})`,
+    html: shell(
+      h("Someone's asking.") +
+        p(
+          `<strong>${args.fullName}</strong><br/>${args.email}<br/>${
+            args.companyName || "—"
+          }<br/><span style="font-family:ui-monospace,monospace;font-size:12px;">${args.interest}</span>`,
+        ) +
+        (args.message?.trim() ? p(`&ldquo;${args.message.trim()}&rdquo;`) : "") +
+        `<a href="${args.url}" style="display:inline-block;padding:14px 26px;background:#1C2431;color:#F8F6F1;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;margin:8px 0 0;">Open the inbox</a>`,
+    ),
+  };
+}
+
 /** Sent to you when a new request lands. */
 export function adminNewRequest(args: {
   contactName?: string | null;
