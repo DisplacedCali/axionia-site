@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Turnstile, { turnstileEnabled } from "@/components/Turnstile";
 import { Eyebrow, Section } from "@/components/ui";
 
 export default function SignupPage() {
@@ -15,6 +16,13 @@ export default function SignupPage() {
   const [stage, setStage] = useState<"details" | "code">("details");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  /*
+    Turnstile token. Required only when a site key is configured — see the
+    component. Supabase verifies it server-side; sending it from the client is
+    not the check, it is what allows the check to happen.
+  */
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
 
   async function requestCode(e: FormEvent) {
     e.preventDefault();
@@ -24,6 +32,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
+        captchaToken: captchaToken ?? undefined,
         shouldCreateUser: true,
         data: { full_name: fullName, company_name: companyName },
       },
@@ -93,10 +102,11 @@ export default function SignupPage() {
             className="border border-border bg-white/40 px-4 py-3 font-sans"
             placeholder="you@company.com"
           />
+          <Turnstile onToken={setCaptchaToken} action="signup" />
           {error && <p className="text-risk text-sm">{error}</p>}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (turnstileEnabled() && !captchaToken)}
             className="mt-2 px-6 py-3 bg-navy text-base font-mono text-[11px] uppercase tracking-[0.14em] hover:opacity-85 transition-opacity disabled:opacity-50"
           >
             {loading ? "Sending code…" : "Send signup code"}

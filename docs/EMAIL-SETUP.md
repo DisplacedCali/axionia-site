@@ -109,3 +109,55 @@ Then submit a real request through `/request-report` and confirm two things:
 a confirmation email to the requester, and an admin notification to
 `ADMIN_NOTIFY_EMAIL`. Every attempt is recorded in the `email_log` table with
 status `sent`, `skipped`, or `failed` — check there first when mail goes quiet.
+
+---
+
+## Before configuring Resend: stop the signup abuse
+
+Do not point a fresh sending domain at this traffic. Signup abuse was creating
+accounts with harvested-looking addresses, and because Supabase creates the
+auth user when a code is **requested** rather than entered, every one of those
+sent an OTP to a real person who never asked. A new domain doing that is a new
+domain on a blocklist.
+
+Order: Turnstile → verify it's stopped → then Resend.
+
+### Turnstile
+
+1. Cloudflare dashboard → **Turnstile** → Add widget. Domain `axionia.com`,
+   widget mode **Managed**.
+2. Copy the **site key** → Vercel env `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+   (and `.env.local`). It is public by design; it ships in the page.
+3. Copy the **secret key** → Supabase → Authentication → Settings →
+   **Bot and Abuse Protection** → enable, provider **Turnstile**, paste it.
+4. Redeploy. Env vars only take effect on a new build.
+
+**Set both together or neither.** The component renders nothing without a site
+key, so the client sends no token — and if Supabase is enforcing captcha at
+that moment, every signup fails with an unhelpful error. Enabling Supabase's
+setting before deploying the key is the way to take signup down.
+
+### Cloudflare, in front of everything
+
+Free tier, and worth having regardless:
+
+- **Security → Bots → Bot Fight Mode: on.** Challenges obvious automation
+  before it reaches Vercel.
+- **Security → WAF → Rate limiting rules.** One rule covers the abuse:
+  `/signup`, `/request-report`, `/contact` and `/api/track` — 10 requests per
+  minute per IP, action Managed Challenge.
+
+Cloudflare rate limits by IP and Turnstile by browser, so they fail
+differently. That's the reason to run both.
+
+### Then verify it worked
+
+```sql
+select date_trunc('day', created_at) as day,
+       count(*) as signups,
+       count(*) filter (where email_confirmed_at is null) as never_verified
+from auth.users
+group by 1 order by 1 desc limit 14;
+```
+
+`never_verified` should collapse toward zero. Once it has, configure Resend.

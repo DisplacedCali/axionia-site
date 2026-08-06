@@ -2,6 +2,7 @@
 
 import { useState, useRef, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Turnstile, { turnstileEnabled } from "@/components/Turnstile";
 import { readableAuthError } from "@/lib/authError";
 import { Eyebrow, Section, GradientRule, GhostButton } from "@/components/ui";
 import { Reveal } from "@/components/Reveal";
@@ -146,6 +147,13 @@ export default function RequestReportPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  /*
+    Turnstile token. Required only when a site key is configured — see the
+    component. Supabase verifies it server-side; sending it from the client is
+    not the check, it is what allows the check to happen.
+  */
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
   const [result, setResult] = useState<{
     kind: "new" | "refresh";
     companyName: string | null;
@@ -187,6 +195,7 @@ export default function RequestReportPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
+        captchaToken: captchaToken ?? undefined,
         shouldCreateUser: true,
         data: { full_name: fullName, company_name: companyName },
       },
@@ -680,11 +689,13 @@ export default function RequestReportPage() {
               />
             </div>
 
+            <Turnstile onToken={setCaptchaToken} action="request-report" />
+
             {error && <p className="text-risk text-sm">{error}</p>}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (turnstileEnabled() && !captchaToken)}
               className="mt-2 justify-self-start relative overflow-hidden group px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.14em] text-base disabled:opacity-50"
             >
               <span className="absolute inset-0 bg-axionia-gradient transition-transform duration-500 ease-out group-hover:scale-110" />

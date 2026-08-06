@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import LogoutButton from "./LogoutButton";
 
 /**
  * Auth state in the nav, read on the client.
@@ -89,6 +90,9 @@ export default function NavAuth({ mobile = false }: { mobile?: boolean }) {
             <p className="text-center font-mono text-[9px] uppercase tracking-[0.12em] text-gray-cool">
               Signed in as {state.email}
             </p>
+            <div className="text-center pt-1">
+              <LogoutButton />
+            </div>
           </>
         ) : (
           <>
@@ -129,6 +133,13 @@ export default function NavAuth({ mobile = false }: { mobile?: boolean }) {
           >
             Dashboard
           </Link>
+          {/*
+            Log out lived only on /dashboard, so from anywhere else — the admin
+            especially — there was no way to end a session without knowing to
+            navigate there first. It belongs wherever the signed-in state is
+            shown, which is here.
+          */}
+          <LogoutButton />
         </>
       ) : (
         <>

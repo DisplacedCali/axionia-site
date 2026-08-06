@@ -515,6 +515,8 @@ Server-side only, set in Vercel (Production) and `.env.local`:
 | `ANTHROPIC_API_KEY` | |
 | `SUPABASE_SERVICE_ROLE_KEY` | Must be `service_role` or `sb_secret_…`, never `sb_publishable_…` |
 | `DECK_LINK_SECRET` | Signs founders-deck share links. 24+ chars or it's treated as unset. Rotating it revokes every outstanding link. |
+| `NEXT_PUBLIC_REPLY_FROM` | `tom@axionia.com`. Makes the inbox Reply button open Gmail compose as that identity. Unset, it falls back to `mailto:`, which has no From parameter and so uses whatever the OS default account is. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Public by design — ships in the page. **Set this in the same deploy as Supabase's captcha setting.** The widget renders nothing without it, so enabling Supabase first takes signup down. |
 | `REPORT_LINK_SECRET` | Signs report share links. Falls back to `DECK_LINK_SECRET` if unset, but **set it separately** — otherwise rotating one to kill a leaked deck also locks every client out of their report. |
 | `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | |
 
