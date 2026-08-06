@@ -52,10 +52,15 @@ export default async function Inbox({
 
   let q = admin
     .from("leads")
-    .select("id, created_at, full_name, email, company_name, interest, message, handled_at, handled_note")
+    .select("id, created_at, full_name, email, company_name, interest, message, handled_at, handled_note, ignored_at")
     .order("created_at", { ascending: false })
     .limit(200);
-  if (!showAll) q = q.is("handled_at", null);
+  /*
+    "Open" means neither answered nor dismissed. Ignored rows are a decision,
+    not an omission — leaving them in the working list would make Ignore a
+    button that changes a colour and nothing else.
+  */
+  if (!showAll) q = q.is("handled_at", null).is("ignored_at", null);
 
   const [{ data: leads }, { data: requests }, { data: deckRows }, { data: reqRows }] =
     await Promise.all([
@@ -111,7 +116,9 @@ export default async function Inbox({
     );
 
   const rows = scored;
-  const hot = scored.filter((x) => x.signal.heat === "high" && !x.l.handled_at);
+  const hot = scored.filter(
+    (x) => x.signal.heat === "high" && !x.l.handled_at && !x.l.ignored_at,
+  );
   const open = (requests ?? []).filter((r) => r.status === "new" || !r.assigned_to);
 
   return (
@@ -218,6 +225,7 @@ export default async function Inbox({
                 interest: INTEREST_LABEL[l.interest] ?? l.interest,
                 message: l.message,
                 handledAt: l.handled_at,
+                ignoredAt: l.ignored_at,
                 handledNote: l.handled_note,
                 when: since(l.created_at),
               }}

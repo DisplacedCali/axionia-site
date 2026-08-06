@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
-import { STAGE_TONE } from "@/components/admin/CrmPanel";
+import { STAGE_TONE } from "@/lib/crm";
 
 export const dynamic = "force-dynamic";
 

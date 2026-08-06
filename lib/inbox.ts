@@ -34,7 +34,10 @@ export async function inboxCounts(): Promise<InboxCounts> {
       admin
         .from("leads")
         .select("id", { count: "exact", head: true })
-        .is("handled_at", null),
+        .is("handled_at", null)
+        // Ignored is a decision, not an omission — it must not keep the badge
+        // lit, or the badge stops meaning "something needs you".
+        .is("ignored_at", null),
       admin
         .from("report_requests")
         .select("id, status, assigned_to")

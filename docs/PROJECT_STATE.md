@@ -482,6 +482,15 @@ costs one wave and the job survives a closed tab.
 
 ## Invariants — don't break these
 
+**A Server Component cannot read a plain export from a `"use client"` module.**
+`/admin/companies` imported `STAGE_TONE` from `CrmPanel.tsx`. Next turns every
+export of a client module into a client *reference*, so reading a property off
+it during a server render throws and the page 500s. It hid for weeks because
+the failure needs data — the empty-state branch never touched the map, so the
+page worked until the first company existed. Moved to `lib/crm.ts`. **A value
+shared across the boundary belongs in a plain module**; if both sides import
+it, neither side gets to own it.
+
 **RLS restricts rows. GRANTs restrict columns. You need both.** Found 2026-08-06
 and fixed in migration 020. `schema.sql` granted table-wide UPDATE on
 `profiles` to `authenticated` alongside a `using (auth.uid() = id)` policy —

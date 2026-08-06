@@ -12,25 +12,17 @@ import { updateCrm } from "@/app/admin/companies/actions";
  * data is worse than none — it gets trusted.
  */
 
-export const STAGES = [
-  { id: "lead", label: "Lead", note: "Known to us, nothing in motion" },
-  { id: "engaged", label: "Engaged", note: "Two-way conversation underway" },
-  { id: "analysis", label: "Analysis", note: "We're running work for them" },
-  { id: "proposal", label: "Proposal", note: "Terms are with them" },
-  { id: "client", label: "Client", note: "Signed and running" },
-  { id: "dormant", label: "Dormant", note: "Real, but not now" },
-  { id: "declined", label: "Declined", note: "Said no, or we did" },
-] as const;
+/*
+  STAGES and STAGE_TONE moved to lib/crm.ts.
 
-export const STAGE_TONE: Record<string, string> = {
-  lead: "text-gray-warm border-border",
-  engaged: "text-blue border-blue/40",
-  analysis: "text-blue border-blue/40",
-  proposal: "text-caution border-caution/40",
-  client: "text-pos border-pos/40",
-  dormant: "text-gray-cool border-stone",
-  declined: "text-gray-cool border-stone",
-};
+  /admin/companies is a Server Component and imported STAGE_TONE from here.
+  Next turns every export of a "use client" module into a client reference, so
+  reading a property off it during a server render throws — the page 500'd as
+  soon as a company existed. A value shared across the boundary belongs in a
+  plain module.
+*/
+import { STAGES, STAGE_TONE } from "@/lib/crm";
+
 
 export default function CrmPanel({
   companyId,

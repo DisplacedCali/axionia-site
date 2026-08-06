@@ -116,6 +116,39 @@ export async function inviteLeadAsClient(args: {
   return { ok: true, created, email };
 }
 
+/**
+ * Ignore an inquiry, or bring it back.
+ *
+ * Distinct from "handled" on purpose. Junk was never answered, so filing it as
+ * handled makes the handled list a lie and destroys the only record of what
+ * was actually dealt with — which is the one thing that list is for.
+ *
+ * Never deleted. The row is evidence of what arrived, and the spam corpus is
+ * what `lib/leadSignal.ts` is tuned against.
+ */
+export async function setLeadIgnored(args: {
+  leadId: string;
+  ignored: boolean;
+}): Promise<Result> {
+  const { user } = await requireStaff();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("leads")
+    .update(
+      args.ignored
+        ? { ignored_at: new Date().toISOString(), ignored_by: user.id }
+        : { ignored_at: null, ignored_by: null },
+    )
+    .eq("id", args.leadId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/inbox");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 export async function setLeadHandled(args: {
   leadId: string;
   handled: boolean;

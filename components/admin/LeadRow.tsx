@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setLeadHandled, inviteLeadAsClient } from "@/app/admin/inbox/actions";
+import { setLeadHandled, setLeadIgnored, inviteLeadAsClient } from "@/app/admin/inbox/actions";
 
 /**
  * One inquiry, and the one action worth taking on it.
@@ -39,6 +39,7 @@ export default function LeadRow({
     interest: string;
     message: string | null;
     handledAt: string | null;
+    ignoredAt: string | null;
     handledNote: string | null;
     when: string;
   };
@@ -50,6 +51,15 @@ export default function LeadRow({
   const [invited, setInvited] = useState<string | null>(null);
 
   const handled = Boolean(lead.handledAt);
+  const ignored = Boolean(lead.ignoredAt);
+
+  const ignore = (v: boolean) => {
+    setErr(null);
+    startTransition(async () => {
+      const res = await setLeadIgnored({ leadId: lead.id, ignored: v });
+      if (!res.ok) setErr(res.error);
+    });
+  };
 
   const run = (h: boolean, n?: string) => {
     setErr(null);
@@ -82,11 +92,11 @@ export default function LeadRow({
   */
   return (
     <div
-      className={`relative p-5 ${handled ? "bg-base-2/60" : "bg-base"} ${
-        heat === "high" && !handled ? "pl-6" : ""
-      }`}
+      className={`relative p-5 ${
+        ignored ? "bg-base-2/40 opacity-60" : handled ? "bg-base-2/60" : "bg-base"
+      } ${heat === "high" && !handled && !ignored ? "pl-6" : ""}`}
     >
-      {heat === "high" && !handled && (
+      {heat === "high" && !handled && !ignored && (
         <span className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -108,7 +118,7 @@ export default function LeadRow({
               {lead.interest}
             </span>
             <span className="font-mono text-[10px] text-gray-cool">{lead.when}</span>
-            {heat === "high" && !handled && signalReasons.length > 0 && (
+            {heat === "high" && !handled && !ignored && signalReasons.length > 0 && (
               <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-navy">
                 {signalReasons.slice(0, 2).join(" · ")}
               </span>
@@ -145,6 +155,24 @@ export default function LeadRow({
           >
             {invited ? "Client ✓" : "Make client"}
           </button>
+          {/*
+            Ignore is not "handled". Nobody answered it and nobody will, so
+            filing it as handled would make the handled list a lie — and that
+            list is the only record of what actually got a reply.
+          */}
+          {!handled && (
+            <button
+              onClick={() => ignore(!ignored)}
+              disabled={pending}
+              className={`${btn} border-border ${
+                ignored
+                  ? "text-gray-cool hover:border-navy hover:text-navy"
+                  : "text-gray-cool hover:border-risk hover:text-risk"
+              }`}
+            >
+              {ignored ? "Restore" : "Ignore"}
+            </button>
+          )}
           {handled ? (
             <button
               onClick={() => run(false)}
@@ -153,7 +181,7 @@ export default function LeadRow({
             >
               Reopen
             </button>
-          ) : noting ? (
+          ) : ignored ? null : noting ? (
             <button
               onClick={() => run(true, note)}
               disabled={pending}
@@ -185,6 +213,12 @@ export default function LeadRow({
           placeholder="What did you do about it? (optional)"
           className="mt-3 w-full max-w-measure border border-border bg-white/60 px-3 py-2 font-sans text-[14px] focus:outline-none focus:border-navy"
         />
+      )}
+
+      {ignored && (
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-gray-cool">
+          Ignored — kept, not deleted
+        </p>
       )}
 
       {handled && lead.handledNote && (
