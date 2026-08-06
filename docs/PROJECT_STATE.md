@@ -152,6 +152,26 @@ costs one wave and the job survives a closed tab.
   client first, so a signed-in user can't enumerate ids and mint log rows
   against reports they can't read. `company_id` is denormalised point-in-time.
   Prints get a partial index — a print is the buying signal, a view isn't.
+- **Leads are ranked by signal, and can become clients.** Two gaps found once
+  real people started arriving. **`leads` and `auth.users` are separate tables**
+  — Paul submitted the contact form, Dave printed the buyer deck, and neither
+  went through `/signup`, so neither had an account and neither appeared under
+  Users. That separation is correct (a contact form silently creating a login
+  would be wrong), but there was no path between them: **Make client** on a
+  lead row creates the account, resolves the company by domain without creating
+  one, and marks the profile `legitimate` so sweeps leave them alone. No email
+  is sent — an unsolicited "here's your account" reads as presumptuous; you
+  reply as a person and the account is simply there.
+  The inbox now sorts by `lib/leadSignal.ts` rather than recency, which had put
+  *"This is amazing!"* from a named person at a real company below a
+  random-string submission that arrived later. Score comes from cross-reference
+  (they opened the deck, or requested a report — the strongest signal available
+  without speaking to them), high-intent interest, whether a human actually
+  wrote the message (word count, not length — a random string is long), and a
+  corporate domain. Derived, never stored, same reasoning as `accountReview`.
+  High signal gets the gradient rule and a summary banner. **One visual weight,
+  not a heat scale** — three shades of urgency is a legend to learn, and the
+  only question is whether to open it now.
 - **Account review** — `/admin/users` gains People / Needs review / Hidden
   (migration 021). Signup abuse filled the list with random names and
   harvested-looking free-mail addresses. **Nothing is deleted** — hiding is

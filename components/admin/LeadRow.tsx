@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setLeadHandled } from "@/app/admin/inbox/actions";
+import { setLeadHandled, inviteLeadAsClient } from "@/app/admin/inbox/actions";
 
 /**
  * One inquiry, and the one action worth taking on it.
@@ -25,7 +25,12 @@ import { setLeadHandled } from "@/app/admin/inbox/actions";
  */
 export default function LeadRow({
   lead,
+  heat = "cool",
+  signalReasons = [],
 }: {
+  /** From scoreLead(). Drives the gradient rule and the ordering upstream. */
+  heat?: "high" | "warm" | "cool";
+  signalReasons?: string[];
   lead: {
     id: string;
     name: string;
@@ -42,6 +47,7 @@ export default function LeadRow({
   const [noting, setNoting] = useState(false);
   const [note, setNote] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [invited, setInvited] = useState<string | null>(null);
 
   const handled = Boolean(lead.handledAt);
 
@@ -68,8 +74,21 @@ export default function LeadRow({
       `&su=${encodeURIComponent(subject)}`
     : `mailto:${lead.email}?subject=${encodeURIComponent(subject)}`;
 
+  /*
+    High signal gets the gradient rule — the same mark the site reserves for a
+    moment that matters. Deliberately one visual weight, not a heat scale:
+    three shades of urgency is a legend to learn, and the only question here is
+    whether to open it now.
+  */
   return (
-    <div className={`p-5 ${handled ? "bg-base-2/60" : "bg-base"}`}>
+    <div
+      className={`relative p-5 ${handled ? "bg-base-2/60" : "bg-base"} ${
+        heat === "high" && !handled ? "pl-6" : ""
+      }`}
+    >
+      {heat === "high" && !handled && (
+        <span className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
+      )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-baseline gap-3 flex-wrap">
@@ -89,6 +108,11 @@ export default function LeadRow({
               {lead.interest}
             </span>
             <span className="font-mono text-[10px] text-gray-cool">{lead.when}</span>
+            {heat === "high" && !handled && signalReasons.length > 0 && (
+              <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-navy">
+                {signalReasons.slice(0, 2).join(" · ")}
+              </span>
+            )}
           </div>
         </div>
 
@@ -101,6 +125,26 @@ export default function LeadRow({
           >
             Reply
           </a>
+          {/*
+            leads and auth.users are separate tables on purpose — a contact
+            form silently creating a login would be wrong. This is the
+            deliberate promotion, so a real person stops existing only as a row
+            in a queue and starts appearing under Users.
+          */}
+          <button
+            onClick={() =>
+              startTransition(async () => {
+                setErr(null);
+                const res = await inviteLeadAsClient({ leadId: lead.id });
+                if (!res.ok) return setErr(res.error);
+                setInvited(res.created ? "Account created" : "Already had an account — linked");
+              })
+            }
+            disabled={pending || Boolean(invited)}
+            className={`${btn} border-border text-gray-warm hover:border-blue hover:text-blue`}
+          >
+            {invited ? "Client ✓" : "Make client"}
+          </button>
           {handled ? (
             <button
               onClick={() => run(false)}
@@ -149,6 +193,9 @@ export default function LeadRow({
         </p>
       )}
 
+      {invited && (
+        <p className="mt-2 font-mono text-[11px] text-pos-dark">{invited}</p>
+      )}
       {err && <p className="mt-2 text-risk text-[13px]">{err}</p>}
     </div>
   );
