@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireStaff, requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { domainFromEmail, isCorporateDomain } from "@/lib/company";
+import { domainFromEmail, resolveCompanyByDomain } from "@/lib/company";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -48,15 +48,8 @@ export async function inviteLeadAsClient(args: {
   const email = lead.email.trim().toLowerCase();
   const domain = domainFromEmail(email);
 
-  let companyId: string | null = null;
-  if (domain && isCorporateDomain(domain)) {
-    const { data: co } = await admin
-      .from("companies")
-      .select("id")
-      .eq("domain", domain)
-      .maybeSingle();
-    companyId = co?.id ?? null;
-  }
+  const resolved = await resolveCompanyByDomain(admin, domain);
+  const companyId: string | null = resolved?.id ?? null;
 
   // Reuse an existing account rather than failing on the duplicate. Someone
   // who already signed up and then used the contact form is one person.

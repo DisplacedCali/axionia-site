@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
 import { STAGE_TONE } from "@/lib/crm";
+import MergeControl from "@/components/admin/MergeControl";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,23 @@ export default async function AdminCompanies() {
 
   const { data: companies } = await admin
     .from("companies")
-    .select("id, domain, name, created_at, stage, next_action, next_action_at")
+    .select("id, domain, name, created_at, stage, next_action, next_action_at, merged_into")
     .order("created_at", { ascending: false });
 
-  const list = companies ?? [];
+  const all = companies ?? [];
+
+  /*
+    Aliases are shown, not hidden.
+
+    Hiding them would make "5 tracked" quietly disagree with what someone
+    remembers merging, and there'd be no way to undo without a SQL client. They
+    render dimmed at the bottom with the company they point at.
+  */
+  const byId = new Map(all.map((c) => [c.id, c]));
+  const label = (c: { name: string | null; domain: string }) => c.name || c.domain;
+  const active = all.filter((c) => !c.merged_into);
+  const aliases = all.filter((c) => c.merged_into);
+  const list = [...active, ...aliases];
 
   // counts per company, fetched in bulk rather than per row
   const [{ data: reports }, { data: requests }, { data: people }, { data: files }] =
@@ -57,7 +71,8 @@ export default async function AdminCompanies() {
       <div className="mb-10">
         <h1 className="font-serif font-light text-4xl">Companies</h1>
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm">
-          {list.length} tracked · grouped by email domain
+          {active.length} tracked · grouped by email domain
+          {aliases.length > 0 && ` · ${aliases.length} merged`}
         </p>
       </div>
 
@@ -71,34 +86,47 @@ export default async function AdminCompanies() {
         </div>
       ) : (
         <div className="border border-border">
-          <div className="hidden md:grid grid-cols-[1.5fr_0.9fr_0.8fr_1.1fr_0.6fr_0.6fr] gap-4 px-5 py-3 bg-base-2 border-b border-border font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
+          <div className="hidden md:grid grid-cols-[1.4fr_0.85fr_0.7fr_1fr_0.5fr_0.5fr_0.9fr] gap-4 px-5 py-3 bg-base-2 border-b border-border font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
             <span>Company</span>
             <span>Domain</span>
             <span>Stage</span>
             <span>Next action</span>
             <span className="text-right">Released</span>
             <span className="text-right">Open</span>
+            <span className="text-right">Duplicate?</span>
           </div>
 
           {list.map((c) => {
             const open = openByCompany[c.id] ?? 0;
+            const alias = c.merged_into ? byId.get(c.merged_into) : null;
             return (
-              <Link
+              /*
+                A div, not a Link. The merge control is interactive and can't
+                be nested inside an anchor without the click being swallowed —
+                same pattern as the queue row.
+              */
+              <div
                 key={c.id}
-                href={`/admin/companies/${c.id}`}
-                className="grid md:grid-cols-[1.5fr_0.9fr_0.8fr_1.1fr_0.6fr_0.6fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-base-2 transition-colors"
+                className={`relative grid md:grid-cols-[1.4fr_0.85fr_0.7fr_1fr_0.5fr_0.5fr_0.9fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-base-2 transition-colors ${
+                  c.merged_into ? "opacity-55" : ""
+                }`}
               >
-                <span className="text-[15px] text-navy self-center">
+                <Link
+                  href={`/admin/companies/${c.id}`}
+                  className="absolute inset-0 z-0"
+                  aria-label={`Open ${c.name || c.domain}`}
+                />
+                <span className="relative z-10 pointer-events-none text-[15px] text-navy self-center">
                   {c.name || "—"}
                   <span className="block font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool mt-0.5">
                     {peopleByCompany[c.id] ?? 0} contacts ·{" "}
                     {filesByCompany[c.id] ?? 0} files
                   </span>
                 </span>
-                <span className="font-mono text-[12px] text-gray-warm self-center truncate">
+                <span className="relative z-10 pointer-events-none font-mono text-[12px] text-gray-warm self-center truncate">
                   {c.domain}
                 </span>
-                <span className="self-center">
+                <span className="relative z-10 pointer-events-none self-center">
                   <span
                     className={`font-mono text-[9px] uppercase tracking-[0.1em] px-2 py-1 border ${
                       STAGE_TONE[c.stage ?? "lead"] ?? STAGE_TONE.lead
@@ -107,7 +135,7 @@ export default async function AdminCompanies() {
                     {c.stage ?? "lead"}
                   </span>
                 </span>
-                <span className="self-center text-[13px] text-gray-warm truncate">
+                <span className="relative z-10 pointer-events-none self-center text-[13px] text-gray-warm truncate">
                   {c.next_action || <span className="text-gray-cool">—</span>}
                   {c.next_action_at && (
                     <span
@@ -123,17 +151,26 @@ export default async function AdminCompanies() {
                     </span>
                   )}
                 </span>
-                <span className="font-mono text-[13px] text-navy md:text-right self-center tabular-nums">
+                <span className="relative z-10 pointer-events-none font-mono text-[13px] text-navy md:text-right self-center tabular-nums">
                   {releasedByCompany[c.id] ?? 0}
                 </span>
-                <span className="md:text-right self-center">
+                <span className="relative z-10 pointer-events-none md:text-right self-center">
                   {open > 0 ? (
                     <span className="font-mono text-[11px] text-caution">{open}</span>
                   ) : (
                     <span className="font-mono text-[11px] text-gray-cool">—</span>
                   )}
                 </span>
-              </Link>
+                <span className="relative z-10 self-center md:text-right md:flex md:justify-end">
+                  <MergeControl
+                    company={{ id: c.id, label: label(c) }}
+                    mergedInto={alias ? { id: alias.id, label: label(alias) } : null}
+                    candidates={active
+                      .filter((o) => o.id !== c.id)
+                      .map((o) => ({ id: o.id, label: `${label(o)} (${o.domain})` }))}
+                  />
+                </span>
+              </div>
             );
           })}
         </div>

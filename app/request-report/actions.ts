@@ -6,6 +6,7 @@ import {
   domainFromEmail,
   isCorporateDomain,
   companyNameFromDomain,
+  resolveCompanyByDomain,
 } from "@/lib/company";
 import { checkAlignment } from "@/lib/alignment";
 import { identifySession, track } from "@/lib/analytics";
@@ -82,11 +83,9 @@ export async function submitReportRequest(formData: {
   let companyName: string | null = profile?.company_name ?? null;
 
   if (!companyId && corporate && domain) {
-    const { data: existing } = await admin
-      .from("companies")
-      .select("id, name")
-      .eq("domain", domain)
-      .maybeSingle();
+    // Follows a merge — see resolveCompanyByDomain. Reading companies by
+    // domain directly would attach this request to an alias.
+    const existing = await resolveCompanyByDomain(admin, domain);
 
     if (existing) {
       companyId = existing.id;

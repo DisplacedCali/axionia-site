@@ -482,6 +482,25 @@ costs one wave and the job survives a closed tab.
 
 ## Invariants — don't break these
 
+**Merging a duplicate means aliasing it, not deleting it.** Migration 023. One
+employer arrived as three companies — `invidiacap.com`, `invidiacapital.com`,
+`internal.invidia-capital.com` — because companies are created from an email
+domain and a real business has several. **`domain` is the key every lookup
+joins on**, so deleting the loser means the next email from that domain
+recreates it and you merge the same company again next month. `merged_into`
+turns it into an alias that keeps resolving, and
+`resolveCompanyByDomain()` follows the pointer — **every caller that resolves a
+company from an email must use it**, or work lands on a row that is no longer a
+company. Single hop, enforced by resolving the target to its own head before
+writing: a loop would hang every company lookup on the site.
+`COMPANY_REFS` in `merge-actions.ts` lists the tables to move by hand —
+**add to it when you add a `company_id` column**, because a missed table leaves
+data on a non-company and nobody notices until a report fails to appear.
+Also fixes `normaliseDomain()`: nothing stripped `www.`, so `www.x.com` and
+`x.com` became two companies for one employer. Other subdomains are **not**
+stripped — `internal.invidia-capital.com` may be a different tenant, and
+guessing merges two employers' reports.
+
 **A Server Component cannot read a plain export from a `"use client"` module.**
 `/admin/companies` imported `STAGE_TONE` from `CrmPanel.tsx`. Next turns every
 export of a client module into a client *reference*, so reading a property off

@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { domainFromEmail, isCorporateDomain } from "@/lib/company";
+import { domainFromEmail, resolveCompanyByDomain } from "@/lib/company";
 import { identifySession, track } from "@/lib/analytics";
 import { sendEmail, adminNewLead } from "@/lib/email";
 
@@ -25,14 +25,10 @@ export async function noteContactSubmitted(
     const domain = domainFromEmail(email);
     let companyId: string | null = null;
 
-    if (domain && isCorporateDomain(domain)) {
-      const { data } = await createAdminClient()
-        .from("companies")
-        .select("id")
-        .eq("domain", domain)
-        .maybeSingle();
-      companyId = data?.id ?? null;
-    }
+    // Follows a merge, so a contact from an aliased domain still lands on the
+    // real company.
+    const co = await resolveCompanyByDomain(createAdminClient(), domain);
+    companyId = co?.id ?? null;
 
     await identifySession({ companyId });
     await track({ event: "contact_submit", path: "/contact", companyId });
