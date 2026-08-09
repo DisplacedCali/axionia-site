@@ -13,6 +13,7 @@ import HeroViz from "@/components/HeroViz";
 import RadarPreview from "@/components/RadarPreview";
 import WhoItsFor from "@/components/WhoItsFor";
 import PmpmStack from "@/components/PmpmStack";
+import BenefitOverlap from "@/components/BenefitOverlap";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -214,6 +215,47 @@ export default function Home() {
           <PmpmStack />
         </Reveal>
       </Section>
+
+      {/* ─────────────── THE OVERLAP ───────────────
+          The cost side accumulates; the savings side doesn't. This is
+          REVIEW_GAPS #2 ("nobody is asked whether the fourth one overlaps
+          the first three") turned into arithmetic. Placed immediately after
+          the stack because it's the same population seen from the other
+          direction — what you're paying, then what you're actually getting.
+
+          Written so a vendor could read it without being insulted: every
+          program here is reporting its own results correctly. The overlap
+          is a property of owning all five, which is not a fact any one of
+          them is in a position to know. */}
+      <div className="bg-base-2">
+        <Section className="py-16 sm:py-24">
+          <Reveal>
+            <div className="max-w-2xl mb-12">
+              <Eyebrow>The savings nobody de-duplicates</Eyebrow>
+              <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+                Five programs. Five sets of savings.{" "}
+                <em className="italic">One population.</em>
+              </h2>
+              <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+                An avoided surgery can only be avoided once. When the MSK vendor
+                and the navigation vendor both count it, the arithmetic across
+                your portfolio quietly exceeds the spend available to save —
+                and because each program was approved in its own meeting,
+                against its own study, nobody is in a position to notice.
+              </p>
+              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
+                None of this requires a vendor to overstate anything. Each is
+                reporting what its own program did, correctly, in isolation.
+                The overlap is a property of owning all five at once.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <BenefitOverlap />
+          </Reveal>
+        </Section>
+      </div>
 
       {/* ─────────────── LIVE PRODUCT: RADAR ─────────────── */}
       <div className="bg-base-2">

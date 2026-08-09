@@ -8,6 +8,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "", priority: 1 },
     { path: "/platform", priority: 0.9 },
     { path: "/who-its-for", priority: 0.85 },
+    // Audience entrances. One spine, three doors — ranked just under
+    // /who-its-for, which remains the canonical overview.
+    { path: "/for/hr", priority: 0.8 },
+    { path: "/for/cfo", priority: 0.8 },
+    { path: "/for/brokers", priority: 0.65 },
     { path: "/platform/outputs", priority: 0.85 },
     { path: "/methodology", priority: 0.8 },
     { path: "/research", priority: 0.8 },
