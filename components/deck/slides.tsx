@@ -135,17 +135,18 @@ export function buildSlides(custom: DeckCustom = {}) {
         <h1 className="dk-h1">{custom.cover.headline}</h1>
       ) : (
         <h1 className="dk-h1">
-          Fifteen people reviewed it.
+          Every program was approved.
           <br />
-          <em>None of them checked it.</em>
+          <em>None of them was compared.</em>
         </h1>
       )}
       <p className="dk-sub dk-sub-l">
         {custom.cover?.sub ?? (
           <>
             A benefit decision passes through more hands than almost anything
-            else a company buys. Attention isn&rsquo;t the problem. Almost
-            nobody in that chain is positioned to supply scrutiny.
+            else a company buys, and every one of those reviews is reasonable on
+            its own terms. What nobody is positioned to do is look at all of
+            them together — or ask what the same money could buy instead.
           </>
         )}
       </p>
@@ -184,19 +185,19 @@ export function buildSlides(custom: DeckCustom = {}) {
     <h2 className="dk-h2">
       The decisions are big.
       <br />
-      The scrutiny is <em>surprisingly thin.</em>
+      The evidence is <em>locked in silos.</em>
     </h2>
     <p className="dk-sub">
       Brokers, carriers, consultants, internal committees, finance — a program is
       looked at by all of them before it&rsquo;s approved. Every one of those
-      reviews is reasonable on its own terms. Added together they still
-      don&rsquo;t constitute a check.
+      reviews is reasonable on its own terms. What none of them can do is weigh
+      it against everything else competing for the same money.
     </p>
     <blockquote className="dk-quote">
-      A vendor tells your team their MSK program saves $180 per member per month —
-      backed by a study they commissioned, on a population they selected, with
-      adjustments they never disclosed. Five people read it. None of them is the
-      person whose job is to test it.
+      A vendor shows you their MSK program saves $180 per member per month. It
+      may be the best evidence that exists for that program. It still
+      can&rsquo;t tell you whether the same dollar does more in behavioural
+      health, in navigation, or somewhere nobody sells you anything at all.
     </blockquote>
     <div className="dk-grid-2">
       <div className="dk-stat">
@@ -429,11 +430,122 @@ export function buildSlides(custom: DeckCustom = {}) {
     </div>
 
     <p className="dk-fine">
-      None of those adjustments was disclosed in the vendor&rsquo;s materials, and
-      none of them is a criticism of the vendor. The failure is that nothing in the
-      process was going to surface them. Illustrative example, composite employer
-      profile.
+      None of those adjustments appears in the vendor&rsquo;s materials, and none
+      of them is a criticism of the vendor — no vendor is positioned to make them,
+      because each one requires knowing what else this employer already runs.
+      Illustrative example, composite employer profile.
     </p>
+  </div>,
+
+  /* ── 06b · the portfolio ──
+     "Portfolio" appeared seven times in this deck and nothing ever rendered
+     one. A single-vendor walkthrough proves the method; it does not prove the
+     thesis, which is about what happens when you hold all of them at once.
+
+     The numbers are the same illustrative stack the site uses, so the deck and
+     axionia.com tell one story. Amber is the unadjusted claim per the brand
+     tokens — their number, not wrong, just unverified. */
+  <div key="s6b">
+    <div className="dk-eyebrow">The portfolio</div>
+    <h2 className="dk-h2">
+      One program repriced is useful.
+      <br />
+      <em>Nine on one scale is the point.</em>
+    </h2>
+    <p className="dk-sub">
+      An avoided surgery can only be avoided once. When the MSK vendor and the
+      navigation vendor both count it, the arithmetic across a portfolio quietly
+      exceeds the spend available to save — and because each program was
+      approved in its own meeting, nobody is positioned to notice.
+    </p>
+
+    <div className="dk-adj">
+      <div className="dk-adj-r">
+        <span>Claimed across the active stack</span>
+        <span className="dk-amber">58 PMPM</span>
+      </div>
+      <div className="dk-adj-r">
+        <span>Once overlapping claims are separated</span>
+        <span className="dk-green-d">47 PMPM</span>
+      </div>
+      <div className="dk-adj-r is-total">
+        <span>Counted twice — roughly a fifth of everything claimed</span>
+        <span>11 PMPM</span>
+      </div>
+    </div>
+
+    <p className="dk-fine">
+      Every vendor here is reporting its own results correctly. The overlap only
+      exists once you own all of them, which is not a fact any one of them is in
+      a position to know. Illustrative stack, composite employer profile.
+    </p>
+  </div>,
+
+  /* ── 06c · what else the money buys ──
+     The deck used to end its argument at "we check things". That undersells
+     the firm and it also implicates the buyer's past decisions, because an
+     audit frame always does. This is the other half.
+
+     Stated as RANK, never as dollar equivalence — /methodology commits
+     publicly to not pricing retention, and this slide must not quietly break
+     that. See lib/objectives.ts. */
+  <div className="dk-navy dk-pad" key="s6c">
+    <div className="dk-eyebrow dk-eyebrow-l">And then the harder half</div>
+    <h2 className="dk-h2 dk-h2-l">
+      Knowing what it&rsquo;s worth is the start.
+      <br />
+      <em>Knowing what else it could buy is the point.</em>
+    </h2>
+    <p className="dk-sub dk-sub-l">
+      Repricing a claim tells you the real size of the budget. It doesn&rsquo;t
+      tell you whether the budget is pointed at the right things. Those are two
+      different jobs, and the second is where the money is.
+    </p>
+
+    <div className="dk-grid-2 dk-tight">
+      <div className="dk-gap">
+        <div className="dk-gap-k">Options with no seller</div>
+        <div className="dk-gap-v">
+          The strongest option for a given workforce frequently carries no
+          commission and appears in no catalogue — a fitness benefit against a
+          fourth overlapping clinical program, or predictable scheduling, which
+          costs nothing at all. Nothing in a brokered process surfaces an option
+          nobody sells.
+        </div>
+      </div>
+      <div className="dk-gap">
+        <div className="dk-gap-k">We didn&rsquo;t place any of it</div>
+        <div className="dk-gap-v">
+          Your broker cannot recommend removing a program they placed without
+          indicting their own advice. Nor can the person who championed it, nor
+          the CFO who has now approved it four times. We have no past
+          recommendation to defend, which is the only reason we can say
+          &ldquo;replace this&rdquo; plainly.
+        </div>
+      </div>
+      <div className="dk-gap">
+        <div className="dk-gap-k">Balanced across your people</div>
+        <div className="dk-gap-v">
+          One mix rarely serves everyone equally. We model by workforce group,
+          so the answer meets each group on the axis that group actually
+          feels — inside the existing budget rather than by growing it.
+        </div>
+      </div>
+      <div className="dk-gap">
+        <div className="dk-gap-k">We rank. We don&rsquo;t price.</div>
+        <div className="dk-gap-v">
+          Under your stated objectives we will tell you what outranks what. We
+          will not put a dollar figure on retention or satisfaction, because
+          nobody honestly can — and a method that invents one is the thing we
+          exist to catch.
+        </div>
+      </div>
+    </div>
+
+    <blockquote className="dk-quote dk-quote-l">
+      We didn&rsquo;t choose any of it, so we have nothing to defend by leaving
+      it alone.
+    </blockquote>
   </div>,
 
   /* ── 07 · what you receive ── */
