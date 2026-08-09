@@ -13,10 +13,22 @@ import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 export const metadata = {
   title: "Pricing",
   description:
-    "Priced against value protected, not spend generated. No per-report fees, no vendor commissions, and fees at risk only against savings you can verify on an invoice.",
+    "A multi-year relationship at a rate locked when you join, priced against value protected rather than spend generated. No per-report fees and no vendor commissions.",
 };
 
+/*
+  Language note, because it will drift back otherwise.
 
+  This page describes a RELATIONSHIP, not an engagement. "Engagement" frames
+  the work as a discrete scoped project with an end — which is exactly the
+  "report" mental category the pricing model exists to escape, and it quietly
+  contradicts a rate held flat for years. An employer buying a benefits
+  advisory relationship is buying continuity.
+
+  /research is the deliberate exception and keeps the word: commissioned
+  third-party research IS a discrete piece of work, priced per piece, and that
+  page draws the distinction on purpose. Don't harmonise the two.
+*/
 const tiers = [
   {
     label: "Portfolio Scorer",
@@ -29,7 +41,7 @@ const tiers = [
   {
     label: "Standard Service",
     price: "Custom quote",
-    body: "Full scenario modeling, independent vendor research, and workforce-aligned strategy. Priced as a share of advised spend, scaled to your workforce size and complexity.",
+    body: "Full scenario modeling, independent vendor research, and workforce-aligned strategy. Priced as a share of advised spend, scaled to your workforce size and complexity — and held at the rate you start on.",
     ctaLabel: "Get a quote",
     ctaHref: "/contact",
     featured: true,
@@ -59,14 +71,17 @@ export default function Pricing() {
           <Reveal>
             <Eyebrow>Pricing</Eyebrow>
             <h1 className="font-serif font-light text-[40px] sm:text-5xl md:text-7xl leading-[1.06] sm:leading-[1.08] tracking-tight max-w-3xl">
-              Start free. <em className="italic">Scale to what you need.</em>
+              Start free.{" "}
+              <em className="italic">Then a rate that doesn&rsquo;t move.</em>
             </h1>
           </Reveal>
           <Reveal delay={0.12}>
             <p className="mt-8 max-w-measure text-[17px] leading-[1.7] text-gray-warm">
-              Axionia is priced around a share of the value we help you protect, not a
-              flat per-report fee. Every engagement starts with the free Portfolio
-              Scorer.
+              Axionia is a relationship, not a report you buy once. Pricing is a
+              share of the value we help you protect, agreed when you join and
+              held there for the term — so the year we save you the most
+              isn&rsquo;t the year our fee goes up. It starts with the free
+              Portfolio Scorer.
             </p>
           </Reveal>
           <Reveal delay={0.2}>
@@ -164,11 +179,22 @@ export default function Pricing() {
             </StaggerItem>
             <StaggerItem className="border-t border-white/15 pt-5">
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-teal mb-2">
+                Your rate is locked when you join
+              </div>
+              <p className="text-[15px] leading-[1.7] text-gray-cool">
+                Agreed at the start and held for the term — no annual uplift, and
+                no repricing because last year went well. An advisor whose fee
+                resets every renewal has a reason to keep the renewal
+                complicated.
+              </p>
+            </StaggerItem>
+            <StaggerItem className="border-t border-white/15 pt-5">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-teal mb-2">
                 Quoted, not published
               </div>
               <p className="text-[15px] leading-[1.7] text-gray-cool">
-                Engagements are scoped to workforce size and complexity, so pricing is
-                discussed directly rather than posted as a list price.
+                The relationship is scoped to workforce size and complexity, so
+                pricing is discussed directly rather than posted as a list price.
               </p>
             </StaggerItem>
           </Stagger>
@@ -277,6 +303,63 @@ export default function Pricing() {
         </Section>
       </div>
 
+      {/* ─────────────── THE RELATIONSHIP ─────────────── */}
+      <Section className="py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mb-12">
+            <Eyebrow>Over a term, not a project</Eyebrow>
+            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+              The value compounds.{" "}
+              <em className="italic">The rate doesn&rsquo;t.</em>
+            </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              An independent baseline is worth something in year one and a great
+              deal more in year three, because by then there is something to
+              measure against. That&rsquo;s why this is priced as a multi-year
+              relationship rather than a series of purchases — and why the rate
+              is fixed at the start.
+            </p>
+          </div>
+        </Reveal>
+
+        <Stagger className="grid md:grid-cols-3 gap-px bg-border border border-border">
+          {[
+            {
+              n: "Year one",
+              h: "The baseline",
+              b: "Your portfolio scored, vendor claims adjusted, and a defensible number for the decision in front of you. Everything after this is measured against it.",
+            },
+            {
+              n: "Year two",
+              h: "The comparison",
+              b: "Last year's assumptions meet this year's invoices. Where a vendor's claim held up, you know. Where it didn't, you have it in writing before the renewal conversation.",
+            },
+            {
+              n: "Year three",
+              h: "Your own evidence",
+              b: "Enough history that the benchmark is yours rather than the industry's — and a track record no incoming advisor can talk you out of.",
+            },
+          ].map((y) => (
+            <StaggerItem key={y.n} className="bg-base p-8 md:p-9">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-cool">
+                {y.n}
+              </div>
+              <h3 className="mt-2 font-serif text-2xl leading-snug">{y.h}</h3>
+              <p className="mt-4 text-[15px] leading-[1.75] text-gray-warm">{y.b}</p>
+            </StaggerItem>
+          ))}
+        </Stagger>
+
+        <Reveal delay={0.15}>
+          <div className="mt-8 border-l-2 border-blue pl-6 py-1 max-w-2xl">
+            <p className="font-serif italic text-xl md:text-2xl leading-snug text-navy">
+              A rate that resets every renewal gives your advisor a reason to keep
+              the renewal complicated. Ours doesn&rsquo;t reset.
+            </p>
+          </div>
+        </Reveal>
+      </Section>
+
       {/* ─────────────── ON-PREM ─────────────── */}
       <Section className="py-16 sm:py-24">
         <Reveal>
@@ -322,8 +405,9 @@ export default function Pricing() {
           <Reveal delay={0.12}>
             <p className="mt-7 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
               There&rsquo;s no commitment attached to the Portfolio Scorer and no sales
-              call triggered by running it. If the analysis is useful, the deeper
-              engagement is there when you want it.
+              call triggered by running it. If the analysis is useful, the ongoing
+              relationship is there when you want it — at a rate agreed on the
+              day you start, not the day you need us most.
             </p>
           </Reveal>
           <Reveal delay={0.2}>

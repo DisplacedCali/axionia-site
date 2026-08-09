@@ -23,7 +23,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 export const metadata = {
   title: "What you receive",
   description:
-    "Every deliverable in an Axionia engagement and when it lands — set up, analysis, and the monthly, quarterly and annual cycle that follows.",
+    "Every deliverable in an Axionia relationship and when it lands — set up, analysis, and the monthly, quarterly and annual cycle that follows.",
 };
 
 export default function Outputs() {
@@ -51,7 +51,7 @@ export default function Outputs() {
               Benefit decisions don&rsquo;t arrive once a year in a neat package.
               Renewals stagger, vendors change their claims, mandates move, and
               the workforce you designed for last year isn&rsquo;t the one you
-              have now. So the engagement is built as a cycle: set it up once,
+              have now. So the relationship is built as a cycle: set it up once,
               analyse it properly, then keep it current.
             </p>
           </Reveal>
@@ -103,7 +103,7 @@ export default function Outputs() {
           <Reveal>
             <PhaseHeading num="02 — ANALYSE" title="What the numbers say.">
               The score is free and comes with no sales call attached. The
-              teardown and the scenario model are the paid engagement &mdash; the
+              teardown and the scenario model are the paid service &mdash; the
               line between them is drawn below rather than buried in a pricing
               table.
             </PhaseHeading>
@@ -143,7 +143,7 @@ export default function Outputs() {
       <Section className="py-16 sm:py-20">
         <Reveal>
           <PhaseHeading num="03 — STEWARD" title="Then it keeps going.">
-            This is the half of the engagement a one-off report can&rsquo;t do.
+            This is the half of the relationship a one-off report can&rsquo;t do.
             Your portfolio is scored against a benchmark that moves, so standing
             still is a change in position &mdash; and you should hear about it
             when it happens, not at the next renewal.
@@ -175,7 +175,7 @@ export default function Outputs() {
           <Reveal delay={0.12}>
             <p className="mt-7 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
               Setup and the full analysis are available today. The stewardship
-              cadence lands across the engagement rather than on day one, which
+              cadence lands across the year rather than on day one, which
               is also how you&rsquo;d consume it &mdash; a quarterly refresh has
               nothing to refresh in month one.
             </p>
@@ -183,7 +183,7 @@ export default function Outputs() {
           <Reveal delay={0.18}>
             <p className="mt-6 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
               The order isn&rsquo;t ours alone to set either. Clients on a
-              continuing engagement tell us which of these they need first, and
+              continuing relationship tell us which of these they need first, and
               that&rsquo;s what moves it.
             </p>
           </Reveal>

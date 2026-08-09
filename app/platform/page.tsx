@@ -25,7 +25,7 @@ export const metadata = {
  *
  * This replaced a five-module list that described the same product with a
  * different noun set and a different count. Two pages saying "five modules"
- * and "nine deliverables" about one engagement is the kind of thing a buyer
+ * and "nine deliverables" about one relationship is the kind of thing a buyer
  * notices and can't unsee, so the phases live here as a summary and the
  * deliverables are enumerated in exactly one place.
  */

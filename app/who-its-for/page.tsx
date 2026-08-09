@@ -420,7 +420,7 @@ export default function WhoItsFor() {
                 Get your free report
               </GradientButton>
               <GhostButtonLight href="/pricing">
-                See what an engagement costs
+                See how pricing works
               </GhostButtonLight>
             </div>
           </Reveal>

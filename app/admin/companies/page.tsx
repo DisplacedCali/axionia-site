@@ -14,10 +14,43 @@ export default async function AdminCompanies() {
   await requireStaff();
   const admin = createAdminClient();
 
-  const { data: companies } = await admin
+  /*
+    The error is READ, not discarded.
+
+    This page rendered "0 tracked" and an empty state when the query failed —
+    which is what happened the moment it started selecting merged_into against
+    a database where migration 023 hadn't run. A missing column and a genuinely
+    empty table looked identical, so the failure read as data loss.
+
+    Anywhere a query result feeds an empty state, the error has to be
+    distinguishable from the emptiness.
+  */
+  const { data: companies, error: companiesError } = await admin
     .from("companies")
     .select("id, domain, name, created_at, stage, next_action, next_action_at, merged_into")
     .order("created_at", { ascending: false });
+
+  if (companiesError) {
+    return (
+      <Section className="pt-12 pb-24">
+        <h1 className="font-serif font-light text-4xl">Companies</h1>
+        <div className="mt-6 border-l-2 border-risk pl-5 py-1 max-w-2xl">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-risk mb-2">
+            Couldn&rsquo;t load
+          </p>
+          <p className="text-[15px] leading-[1.7] text-gray-warm">
+            {companiesError.message}
+          </p>
+          <p className="mt-3 text-[14px] leading-[1.7] text-gray-warm">
+            If that mentions a column, a migration in{" "}
+            <span className="font-mono text-[13px]">supabase/migrations/</span>{" "}
+            hasn&rsquo;t been run yet. Nothing has been lost — the page just
+            asked for a field the database doesn&rsquo;t have.
+          </p>
+        </div>
+      </Section>
+    );
+  }
 
   const all = companies ?? [];
 

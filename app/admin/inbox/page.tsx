@@ -62,8 +62,15 @@ export default async function Inbox({
   */
   if (!showAll) q = q.is("handled_at", null).is("ignored_at", null);
 
-  const [{ data: leads }, { data: requests }, { data: deckRows }, { data: reqRows }] =
-    await Promise.all([
+  // Same reasoning as /admin/companies: a failed query must not render as an
+  // empty inbox. Selecting ignored_at before migration 022 has run would
+  // otherwise look exactly like "nothing outstanding".
+  const [
+    { data: leads, error: leadsError },
+    { data: requests },
+    { data: deckRows },
+    { data: reqRows },
+  ] = await Promise.all([
       q,
       admin
         .from("report_requests")
@@ -120,6 +127,25 @@ export default async function Inbox({
     (x) => x.signal.heat === "high" && !x.l.handled_at && !x.l.ignored_at,
   );
   const open = (requests ?? []).filter((r) => r.status === "new" || !r.assigned_to);
+
+  if (leadsError) {
+    return (
+      <Section className="pt-12 pb-24">
+        <h1 className="font-serif font-light text-4xl">Inbox</h1>
+        <div className="mt-6 border-l-2 border-risk pl-5 py-1 max-w-2xl">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-risk mb-2">
+            Couldn&rsquo;t load
+          </p>
+          <p className="text-[15px] leading-[1.7] text-gray-warm">{leadsError.message}</p>
+          <p className="mt-3 text-[14px] leading-[1.7] text-gray-warm">
+            If that mentions a column, a migration in{" "}
+            <span className="font-mono text-[13px]">supabase/migrations/</span>{" "}
+            hasn&rsquo;t been run. No inquiries have been lost.
+          </p>
+        </div>
+      </Section>
+    );
+  }
 
   return (
     <Section className="pt-12 pb-24">

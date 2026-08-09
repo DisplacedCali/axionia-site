@@ -6,7 +6,7 @@ durable record.
 
 **To resume: connect both folders below, then say "read docs/PROJECT_STATE.md".**
 
-Last updated: 2026-08-03
+Last updated: 2026-08-06
 
 ---
 
@@ -482,6 +482,14 @@ costs one wave and the job survives a closed tab.
 
 ## Invariants — don't break these
 
+**A discarded query error renders as an empty state, and empty looks like data
+loss.** `/admin/companies` destructured only `{ data }`. The moment it started
+selecting `merged_into` against a database where 023 hadn't run, PostgREST
+rejected the column, `data` came back null, and the page said "0 tracked" — so
+a missing migration was indistinguishable from every company having vanished.
+Both that page and `/admin/inbox` now read the error and say which migration is
+missing. **Anywhere a query feeds an empty state, read the error.**
+
 **Merging a duplicate means aliasing it, not deleting it.** Migration 023. One
 employer arrived as three companies — `invidiacap.com`, `invidiacapital.com`,
 `internal.invidia-capital.com` — because companies are created from an email
@@ -598,7 +606,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`017`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`023`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.

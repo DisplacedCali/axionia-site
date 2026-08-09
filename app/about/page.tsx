@@ -116,7 +116,7 @@ export default function About() {
                 is deliberate: we&rsquo;d rather the work were judged on whether
                 the numbers hold up than on a biography, which is the same
                 standard we apply to every vendor claim we take apart. Anyone
-                considering an engagement is introduced directly, before
+                considering working with us is introduced directly, before
                 committing to anything — you should know exactly who
                 you&rsquo;re dealing with, and you will.
               </p>
