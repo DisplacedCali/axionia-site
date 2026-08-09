@@ -258,7 +258,12 @@ export default async function RequestDetail({
             <dl className="space-y-3 text-[14px]">
               {[
                 ["Covered subscribers", payload.employees],
-                ["Workforce profile", payload.industry],
+                // Was labelled "Workforce profile", which it isn't — it's the
+                // single-select industry. The workforce input is role_groups
+                // below, and hiding it while mislabelling this one made the
+                // intake look like it collected less than it does.
+                ["Industry", payload.industry],
+                ["Role groups", payload.role_groups],
                 ["Programs of interest", payload.programs],
                 ["Additional context", payload.context],
                 ["Email domain", payload.email_domain],

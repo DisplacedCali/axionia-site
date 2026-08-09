@@ -1,12 +1,19 @@
 /**
- * Workforce segment library — 5 canonical segments.
+ * Workforce segment library — 9 canonical segments.
  *
  * Segments carry ordered benefit preferences. This encodes the core modelling
  * insight: a licensed-professional workforce and a frontline/hourly workforce
  * have different benefit economics, so the same spend buys different outcomes.
  *
- * Extracted programmatically from axionia-app src/App.js — values are
- * identical to the source. Do not hand-edit for formatting.
+ * SEG001–005 were extracted programmatically from axionia-app src/App.js and
+ * are identical to that source — do not hand-edit them for formatting.
+ *
+ * SEG006–009 were added afterwards to cover the non-clinical economy the
+ * original five missed entirely: senior professionals (investment principals,
+ * partners, attorneys), technical staff, skilled trades, and distributed
+ * remote workers. Without them a professional-services firm or a trades
+ * rollup had nowhere to land, and `matchSegmentToLibrary` would return its
+ * closest clinical analogue — which is the wrong answer stated confidently.
  */
 
 import type { Segment } from "./types";
