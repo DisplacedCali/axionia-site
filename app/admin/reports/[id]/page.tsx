@@ -4,6 +4,7 @@ import { requireStaff, RELEASE_ROLES } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Section } from "@/components/ui";
 import ReportReview from "@/components/admin/ReportReview";
+import InternalOrientation from "@/components/admin/InternalOrientation";
 import DocumentFlow from "@/components/admin/DocumentFlow";
 import { reportLinksEnabled } from "@/lib/reportLinks";
 import {
@@ -40,7 +41,9 @@ export default async function ReportPreview({ params }: { params: { id: string }
 
   const content = (report.content ?? null) as ResearchResult | null;
   const edits = (report.edits ?? {}) as ReportEdits;
-  const clientView = (report.client_view ?? "summary") as ReportView;
+  // Defaults to internal now (migration 028) — a run is a research file until
+  // somebody decides otherwise, rather than a client document by default.
+  const clientView = (report.client_view ?? "internal") as ReportView;
 
   // Admin always previews at the client's chosen view — reviewing the full
   // report while the client gets the summary would be reviewing the wrong thing.
@@ -118,11 +121,15 @@ export default async function ReportPreview({ params }: { params: { id: string }
                 content,
                 edits,
                 reviewedAt: report.reviewed_at ?? null,
+                view: clientView,
               })}
               canRelease={canRelease}
               linksEnabled={reportLinksEnabled()}
             />
           </div>
+          {clientView === "internal" && assembled && (
+            <InternalOrientation report={assembled} />
+          )}
           <ReportReview
             reportId={report.id}
             requestId={report.request_id ?? null}
@@ -133,6 +140,7 @@ export default async function ReportPreview({ params }: { params: { id: string }
               content,
               edits,
               reviewedAt: report.reviewed_at ?? null,
+              view: clientView,
             })}
             revisions={revisions}
             scoreNotes={edits.scoreNotes ?? {}}

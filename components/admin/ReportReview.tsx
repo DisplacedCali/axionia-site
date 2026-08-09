@@ -320,10 +320,20 @@ export default function ReportReview({
       <div className="border border-border p-5 print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className={eyebrow}>Client sees</span>
-            {(["summary", "full"] as const).map((v) => (
+            {/* Audience, not view. `internal` is the default and cannot be
+                released — it includes the pre-meeting brief, which is a sales
+                dossier about the reader. See migration 027. */}
+            <span className={eyebrow}>Audience</span>
+            {(
+              [
+                ["internal", "Internal", "Everything, incl. the brief"],
+                ["summary", "Client · free", "Scorecard, findings, designed mix"],
+                ["full", "Client · paid", "Adds workforce and benefit design"],
+              ] as const
+            ).map(([v, label, hint]) => (
               <button
                 key={v}
+                title={hint}
                 onClick={() =>
                   startTransition(async () => {
                     setView(v);
@@ -334,11 +344,13 @@ export default function ReportReview({
                 }
                 className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] border transition-colors ${
                   view === v
-                    ? "border-navy bg-navy text-base"
+                    ? v === "internal"
+                      ? "border-caution bg-caution text-base"
+                      : "border-navy bg-navy text-base"
                     : "border-border text-gray-warm hover:border-navy"
                 }`}
               >
-                {v}
+                {label}
               </button>
             ))}
           </div>

@@ -86,7 +86,9 @@ export default async function RequestDetail({
   // client renderer will, rather than re-deriving the overlay in two places.
   const content = (draft?.content ?? null) as ResearchResult | null;
   const edits = (draft?.edits ?? {}) as ReportEdits;
-  const clientView = (draft?.client_view ?? "summary") as ReportView;
+  // Internal is the default now (migration 028): a run is a research file
+  // until somebody decides it is a client document.
+  const clientView = (draft?.client_view ?? "internal") as ReportView;
 
   const assembled = content
     ? assembleReport({ content, edits, view: clientView })
@@ -124,6 +126,7 @@ export default async function RequestDetail({
             content,
             edits,
             reviewedAt: draft.reviewed_at ?? null,
+            view: clientView,
           }),
         }
       : draft

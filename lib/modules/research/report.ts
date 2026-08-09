@@ -20,7 +20,22 @@ import {
 } from "./data";
 import type { ResearchResult, ScoreSet } from "./pipeline/types";
 
-export type ReportView = "summary" | "full";
+/**
+ * Who a rendering is for.
+ *
+ * `full` used to mean both "the complete paid client report" and "Tom's
+ * research file", and those must never be the same document — the pre-meeting
+ * brief is a sales dossier about the reader, containing Conversation Hooks and
+ * Watch-Outs. See migration 027.
+ *
+ *   internal  everything, including the brief. The default.
+ *   summary   client, free tier
+ *   full      client, paid tier
+ *
+ * Values kept rather than renamed: renaming means rewriting every stored row
+ * to fix a vocabulary problem a comment solves.
+ */
+export type ReportView = "internal" | "summary" | "full";
 
 export type SectionId =
   | "scorecard"
@@ -38,6 +53,12 @@ export const SECTIONS: ReadonlyArray<{
   label: string;
   order: number;
   inSummary: boolean;
+  /**
+   * Never rendered to a client at any setting, including an explicit
+   * per-report override. A flag rather than a convention, because a
+   * convention only holds until someone adds a section without reading this.
+   */
+  internalOnly?: boolean;
 }> = [
   { id: "scorecard",     label: "Readiness Scorecard",    order: 10, inSummary: true },
   { id: "findings",      label: "Key Findings",           order: 20, inSummary: true },
@@ -57,7 +78,7 @@ export const SECTIONS: ReadonlyArray<{
   { id: "regulatory",    label: "Regulatory Exposure",    order: 40, inSummary: true },
   { id: "workforce",     label: "Workforce Intelligence", order: 50, inSummary: false },
   { id: "benefitDesign", label: "Benefit Design",         order: 60, inSummary: false },
-  { id: "brief",         label: "Pre-Meeting Brief",      order: 70, inSummary: false },
+  { id: "brief",         label: "Pre-Meeting Brief",      order: 70, inSummary: false, internalOnly: true },
 ] as const;
 
 /** Admin overrides. Every field optional — absent means "use the model's". */
@@ -191,7 +212,16 @@ export function resolveSections(
   const withheld: SectionId[] = [];
 
   for (const s of [...SECTIONS].sort((a, b) => a.order - b.order)) {
-    const byView = view === "full" ? true : s.inSummary;
+    // Checked first, and ahead of the explicit hide list, because an override
+    // must not be able to reveal something marked internal-only. Mirrors the
+    // ordering in report_visible_sections() — migration 028.
+    if (s.internalOnly && view !== "internal") {
+      withheld.push(s.id);
+      continue;
+    }
+
+    const byView =
+      view === "internal" || view === "full" ? true : s.inSummary;
     if (byView && !hiddenSet.has(s.id)) visible.push(s.id);
     else withheld.push(s.id);
   }
@@ -376,6 +406,8 @@ function computeBlockers(args: {
   content: ResearchResult | null;
   edits?: ReportEdits;
   reviewedAt?: string | null;
+  /** The audience currently set. Internal reports must not be releasable. */
+  view?: ReportView;
 }): ReleaseBlocker[] {
   const problems: ReleaseBlocker[] = [];
   const c = args.content;
@@ -409,6 +441,20 @@ function computeBlockers(args: {
     problems.push({ message: "Not yet marked as reviewed.", severity: "soft" });
   }
 
+  /**
+   * A hard stop, and the reason it's hard rather than soft: an internal report
+   * includes the pre-meeting brief, which is written about the reader —
+   * Conversation Hooks, Watch-Outs. Releasing one is not a degraded outcome
+   * that a warning covers. It's the single worst thing this product can do.
+   */
+  if (args.view === "internal") {
+    problems.push({
+      message:
+        "This is set to the internal audience, which includes the pre-meeting brief. Choose a client audience before releasing.",
+      severity: "hard",
+    });
+  }
+
   return problems;
 }
 
@@ -417,6 +463,7 @@ export function releaseBlockers(args: {
   content: ResearchResult | null;
   edits?: ReportEdits;
   reviewedAt?: string | null;
+  view?: ReportView;
 }): string[] {
   return computeBlockers(args).map((b) => b.message);
 }
