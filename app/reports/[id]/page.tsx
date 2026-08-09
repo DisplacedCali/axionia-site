@@ -20,12 +20,16 @@ export const dynamic = "force-dynamic";
  *
  * Three things hold this page together.
  *
- * 1. It reads through the ANON client carrying the user's session, not the
- *    service role. `reports_select_company_ready` then does the authorisation:
+ * 1. Authorisation is the DATABASE's decision, never TypeScript's. The page
+ *    reads the safe columns through the anon client carrying the user's
+ *    session, and `reports_select_company_ready` does the authorising:
  *    released only, and only for the requester or someone at the same company.
- *    Using the admin client here and checking status in TypeScript would move
- *    the guarantee out of the database and into whichever branch someone edits
- *    next.
+ *    That read succeeding IS the permission. Checking status in TypeScript
+ *    instead would move the guarantee into whichever branch someone edits next.
+ *
+ *    The payload is fetched separately with the service role, because RLS
+ *    gates rows and not columns — see migration 030. That is a fetch after a
+ *    decision, not a second decision.
  *
  * 2. It renders with the SAME `ReportRender` the admin preview uses. That is
  *    the whole reason that component takes optional slots — divergence between
@@ -79,22 +83,58 @@ export default async function ClientReport({
     redirect(`/login?redirectTo=/reports/${params.id}`);
   }
 
-  const cols =
-    "id, title, summary, version, content, edits, client_view, released_at, status";
+  /*
+    Two reads, and the split is the point.
 
-  const { data: report } = viaLink
+    `content` and `edits` are no longer selectable by anon or authenticated —
+    migration 030 revoked them, because RLS gates rows and not columns, so a
+    client could previously call the API with their own token and read the
+    whole research blob including the internal pre-meeting brief. Section
+    visibility was presentational; it decided what got rendered, never what
+    could be read.
+
+    So the entitlement read comes first, through the SESSION client, over the
+    safe columns only. That read IS the authorisation check — performed by
+    `reports_select_company_ready`, in the database, exactly as before. Nothing
+    moved into TypeScript. If the policy says no there is no row, and the page
+    404s before the service role is touched.
+
+    Only then does the server fetch the payload. The client never receives a
+    column it isn't entitled to, and the assembly that decides what's visible
+    stays in assembleReport() where it is defined once.
+  */
+  const safeCols = "id, title, summary, version, client_view, released_at, status";
+
+  const { data: entitlement } = viaLink
     ? await createAdminClient()
         .from("reports")
-        .select(cols)
+        .select(safeCols)
         .eq("id", params.id)
         // Asserted here because no RLS policy is doing it on this path.
         .eq("status", "ready")
         .maybeSingle()
-    : await supabase.from("reports").select(cols).eq("id", params.id).maybeSingle();
+    : await supabase
+        .from("reports")
+        .select(safeCols)
+        .eq("id", params.id)
+        .maybeSingle();
 
   // Missing, unreleased, or someone else's — all one answer. Distinguishing
   // them would confirm which report ids exist.
-  if (!report) notFound();
+  if (!entitlement) notFound();
+
+  // Authorised above. This is a fetch, not a second decision — the id is the
+  // one the database just approved, and no new predicate is introduced here.
+  const { data: payload } = await createAdminClient()
+    .from("reports")
+    .select("content, edits")
+    .eq("id", entitlement.id)
+    .maybeSingle();
+
+  const report = { ...entitlement, ...(payload ?? {}) } as typeof entitlement & {
+    content?: unknown;
+    edits?: unknown;
+  };
 
   const content = (report.content ?? null) as ResearchResult | null;
   const edits = (report.edits ?? {}) as ReportEdits;
