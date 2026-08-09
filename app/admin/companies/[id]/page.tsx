@@ -10,6 +10,9 @@ import ContactsPanel, {
   type Contact,
   type AccountUser,
 } from "@/components/admin/ContactsPanel";
+import DeckVersionsPanel, {
+  type DeckVersion,
+} from "@/components/admin/DeckVersionsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +102,7 @@ export default async function CompanyHub({
     { data: files },
     { data: people },
     { data: steps },
+    { data: deckVersions },
   ] = await Promise.all([
       admin
         .from("profiles")
@@ -136,12 +140,34 @@ export default async function CompanyHub({
         .eq("company_id", params.id)
         .order("done_at", { ascending: true, nullsFirst: true })
         .order("due_on", { ascending: true, nullsFirst: false }),
+      // 026. Recipients come back nested — who saw which version is the whole
+      // reason the table exists, and fetching them separately would mean
+      // stitching two lists by hand for no benefit.
+      admin
+        .from("deck_versions")
+        .select(
+          "id, label, audience, status, generated, edits, source_report_id, created_at, deck_version_recipients(id, name, presented_at)"
+        )
+        .eq("company_id", params.id)
+        .order("created_at", { ascending: false }),
     ]);
 
   const contactRows = contacts ?? [];
   const peopleRows = (people ?? []) as Contact[];
   const stepRows = (steps ?? []) as Step[];
   const openSteps = stepRows.filter((s) => !s.done_at);
+
+  const versionRows: DeckVersion[] = (deckVersions ?? []).map((v) => ({
+    id: v.id,
+    label: v.label,
+    audience: v.audience,
+    status: v.status,
+    generated: v.generated,
+    edits: v.edits,
+    source_report_id: v.source_report_id,
+    created_at: v.created_at,
+    recipients: (v.deck_version_recipients ?? []) as DeckVersion["recipients"],
+  }));
   const requestRows = requests ?? [];
   const reportRows = reports ?? [];
   const fileRows = files ?? [];
@@ -215,6 +241,20 @@ export default async function CompanyHub({
           companyId={company.id}
           contacts={peopleRows}
           users={contactRows as AccountUser[]}
+        />
+      </div>
+
+      <div className="mt-6">
+        <DeckVersionsPanel
+          companyId={company.id}
+          versions={versionRows}
+          reports={released.map((r) => ({
+            id: r.id,
+            title: r.title,
+            version: r.version,
+          }))}
+          contacts={peopleRows.map((c) => ({ id: c.id, name: c.name }))}
+          siteUrl={process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com"}
         />
       </div>
 

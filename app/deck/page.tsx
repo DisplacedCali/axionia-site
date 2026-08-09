@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyDownloadGrant, watermarkLine } from "@/lib/deckDownload";
 import DeckShell from "@/components/deck/DeckShell";
-import { SLIDES } from "@/components/deck/slides";
+import { buildSlides } from "@/components/deck/slides";
+import { mergeCustom, type DeckCustom } from "@/lib/deck/custom";
 import "./deck.css";
 
 export const dynamic = "force-dynamic";
@@ -28,12 +30,42 @@ export const metadata = {
 export default async function DeckPage({
   searchParams,
 }: {
-  searchParams: { dl?: string };
+  searchParams: { dl?: string; v?: string };
 }) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  /*
+    A tailored version, if one was asked for and approved.
+
+    APPROVED ONLY, checked here on the server. A draft holds unreviewed model
+    output, and the entire safety argument for letting an agent write deck copy
+    is that a person reads it before anyone else does. Serving drafts by id
+    would make that gate decorative — and ids leak, because they end up in
+    URLs people paste to each other.
+
+    A bad or draft id falls through to the standard deck rather than erroring.
+    Sending someone the wrong link should show them the normal argument, not a
+    404 in the middle of a meeting.
+  */
+  let custom = undefined;
+  if (searchParams.v) {
+    const { data: version } = await createAdminClient()
+      .from("deck_versions")
+      .select("generated, edits, status, deck")
+      .eq("id", searchParams.v)
+      .eq("status", "approved")
+      .eq("deck", "buyer")
+      .maybeSingle();
+    if (version) {
+      custom = mergeCustom(
+        version.generated as DeckCustom,
+        version.edits as DeckCustom,
+      );
+    }
+  }
 
   /*
     A download grant proves the address, because it arrived by email. The
@@ -49,9 +81,11 @@ export default async function DeckPage({
 
   return (
     <DeckShell
-      slides={SLIDES}
+      slides={buildSlides(custom)}
       signedIn={Boolean(user)}
       watermark={watermark}
+      grantName={grant?.ok ? grant.identity.name : null}
+      grantEmail={grant?.ok ? grant.identity.email : null}
     />
   );
 }

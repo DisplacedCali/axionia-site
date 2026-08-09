@@ -38,6 +38,9 @@ type Props = {
    * watermark.
    */
   watermark?: string | null;
+  /** Identity inside a verified download grant — prefills the print confirm. */
+  grantName?: string | null;
+  grantEmail?: string | null;
 };
 
 export default function DeckShell({
@@ -46,6 +49,8 @@ export default function DeckShell({
   deck = "buyer",
   linkLabel = null,
   watermark = null,
+  grantName = null,
+  grantEmail = null,
 }: Props) {
   const [i, setI] = useState(0);
   const [gate, setGate] = useState(false);
@@ -117,15 +122,27 @@ export default function DeckShell({
   }, []);
 
   const onPrintClick = useCallback(() => {
-    // A verified download grant is as good as a session here — the address was
-    // proven by clicking a link we sent to it.
-    if (signedIn || linkLabel || watermark) {
+    /*
+      A signed-in viewer prints straight through: the session is real proof of
+      identity, re-derived server-side, and asking them to type an address we
+      already hold would be theatre.
+
+      Everyone else gets a gate — including holders of a valid grant or share
+      link, which is a change. Those URLs are bearer tokens: whoever a
+      recipient forwards one to inherits the same watermark and, before this,
+      printed silently under the original recipient's name. The gate confirms
+      rather than interrogates — the grant's own name and email are prefilled,
+      so the intended recipient clicks once — and what it buys is the gap
+      between who a link was issued to and who actually printed. That gap is
+      the forwarding signal, and it was previously invisible.
+    */
+    if (signedIn) {
       logDeckPrint(undefined, deck, linkLabel);
       print();
       return;
     }
     setGate(true);
-  }, [signedIn, linkLabel, deck, print, watermark]);
+  }, [signedIn, linkLabel, deck, print]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -272,21 +289,55 @@ export default function DeckShell({
       {/* No onDone: the gate no longer hands over the file. It emails a link,
           and printing happens on the next visit with ?dl= — which is the
           point, since that visit is the one that proved the address. */}
-      {gate && <PrintGate deck={deck} onClose={() => setGate(false)} />}
+      {gate && (
+        <PrintGate
+          deck={deck}
+          linkLabel={linkLabel}
+          grantName={grantName}
+          grantEmail={grantEmail}
+          onPrinted={print}
+          onClose={() => setGate(false)}
+        />
+      )}
     </div>
   );
 }
 
 function PrintGate({
   deck,
+  linkLabel,
+  grantName,
+  grantEmail,
+  onPrinted,
   onClose,
 }: {
   deck: "buyer" | "founders";
+  linkLabel: string | null;
+  grantName: string | null;
+  grantEmail: string | null;
+  onPrinted: () => void;
   onClose: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  /*
+    Two modes, and which one you get depends on whether we already proved who
+    you are.
+
+    CONFIRM — you hold a verified download grant or a signed share link. We
+    know who the link was issued to, so the fields are prefilled and printing
+    is one click. "Not you?" clears them and requires a real address, which is
+    the forwarded case and the only one this mode exists to catch. Nothing is
+    emailed; you already have access.
+
+    REQUEST — you have neither, so nothing about you has been established.
+    Unchanged from before: we email a signed link rather than believing a typed
+    name, because that round trip is what makes the watermark mean anything.
+  */
+  const verified = Boolean(grantEmail || linkLabel);
+
+  const [name, setName] = useState(grantName ?? "");
+  const [email, setEmail] = useState(grantEmail ?? "");
   const [org, setOrg] = useState("");
+  const [mine, setMine] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<"yes" | "held" | null>(null);
@@ -304,6 +355,19 @@ function PrintGate({
     e.preventDefault();
     setBusy(true);
     setErr(null);
+
+    // Confirm mode: log who is actually printing, then print. The address is
+    // recorded alongside the link's own label, so a mismatch between the two
+    // is legible afterwards as a forward.
+    if (verified) {
+      const res = await logDeckPrint({ name, email, org }, deck, linkLabel);
+      setBusy(false);
+      if (!res.ok) return setErr(res.error);
+      onClose();
+      onPrinted();
+      return;
+    }
+
     const res = await requestDeckDownload({ deck, name, email, org });
     setBusy(false);
     if (!res.ok) return setErr(res.error);
@@ -349,14 +413,43 @@ function PrintGate({
   return (
     <div className="dk-modal" role="dialog" aria-modal="true" aria-label="Download the deck">
       <div className="dk-modal-box">
-        <div className="dk-eyebrow">Download the PDF</div>
-        <h2 className="dk-modal-h">Where should we send it?</h2>
+        <div className="dk-eyebrow">
+          {verified ? "Before you print" : "Download the PDF"}
+        </div>
+        <h2 className="dk-modal-h">
+          {verified ? "Who’s taking this copy?" : "Where should we send it?"}
+        </h2>
         <p className="dk-modal-p">
-          We&rsquo;ll email you a link rather than hand the file over here.
-          There&rsquo;s no follow-up sequence attached — the deck is a document,
-          not a funnel. Your copy carries your name on each page, so if it
-          travels we know which one it was.
+          {verified ? (
+            <>
+              This copy is registered to{" "}
+              <strong>{grantName || linkLabel || "the original recipient"}</strong>
+              , and every page carries that name. If you&rsquo;re someone else,
+              say so — we&rsquo;d rather know who has it than guess.
+            </>
+          ) : (
+            <>
+              We&rsquo;ll email you a link rather than hand the file over here.
+              There&rsquo;s no follow-up sequence attached — the deck is a
+              document, not a funnel. Your copy carries your name on each page,
+              so if it travels we know which one it was.
+            </>
+          )}
         </p>
+
+        {verified && mine && (
+          <button
+            type="button"
+            className="dk-notme"
+            onClick={() => {
+              setMine(false);
+              setName("");
+              setEmail("");
+            }}
+          >
+            Not {grantName || linkLabel}? Tell us who you are
+          </button>
+        )}
 
         <form onSubmit={submit}>
           <label className="dk-label" htmlFor="dk-name">Name</label>
@@ -392,7 +485,7 @@ function PrintGate({
 
           <div className="dk-modal-actions">
             <button type="submit" className="dk-btn dk-btn-solid" disabled={busy}>
-              {busy ? "One moment…" : "Open the PDF"}
+              {busy ? "One moment…" : verified ? "Confirm and print" : "Open the PDF"}
             </button>
             <button type="button" onClick={onClose} className="dk-btn">
               Cancel

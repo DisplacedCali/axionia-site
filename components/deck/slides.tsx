@@ -1,4 +1,5 @@
 import { OBJECTIVES } from "@/lib/objectives";
+import type { DeckCustom } from "@/lib/deck/custom";
 
 /**
  * Buyer deck content.
@@ -109,25 +110,73 @@ function Weights({ rows }: { rows: readonly (readonly [string, number, boolean])
   );
 }
 
-export const SLIDES = [
+/**
+ * Build the buyer deck, optionally tailored to one company.
+ *
+ * `custom` patches exactly three things — the cover headline, the cover sub,
+ * and one inserted slide that is about them. See lib/deck/custom.ts for why
+ * the surface is that small: a version nobody can review in a minute is a
+ * version nobody reviews.
+ *
+ * Everything else is the argument as written. A tailored deck is this deck
+ * with their name on the front, not a different deck.
+ */
+export function buildSlides(custom: DeckCustom = {}) {
+  const ctx = custom.context;
+
+  return [
   /* ── 00 · cover ── */
   <div className="dk-navy dk-cover" key="s0">
     <span className="dk-orb dk-orb-a" />
     <span className="dk-orb dk-orb-b" />
     <div className="dk-cover-in">
       <div className="dk-eyebrow dk-eyebrow-l">Axionia — Healthcare Decision Intelligence</div>
-      <h1 className="dk-h1">
-        Fifteen people reviewed it.
-        <br />
-        <em>None of them checked it.</em>
-      </h1>
+      {custom.cover?.headline ? (
+        <h1 className="dk-h1">{custom.cover.headline}</h1>
+      ) : (
+        <h1 className="dk-h1">
+          Fifteen people reviewed it.
+          <br />
+          <em>None of them checked it.</em>
+        </h1>
+      )}
       <p className="dk-sub dk-sub-l">
-        A benefit decision passes through more hands than almost anything else a
-        company buys. Attention isn&rsquo;t the problem. Almost nobody in that
-        chain is positioned to supply scrutiny.
+        {custom.cover?.sub ?? (
+          <>
+            A benefit decision passes through more hands than almost anything
+            else a company buys. Attention isn&rsquo;t the problem. Almost
+            nobody in that chain is positioned to supply scrutiny.
+          </>
+        )}
       </p>
     </div>
   </div>,
+
+  /* ── 00b · this company (only when tailored) ──
+     Marked as ours-about-them on purpose. A reader can see which claims are
+     about their business and which are Axionia's standing position, and that
+     line is what makes a wrong fact cheap to spot instead of expensive. */
+  ...(ctx
+    ? [
+        <div className="dk-navy dk-pad" key="s0b">
+          <div className="dk-eyebrow dk-eyebrow-l">
+            {ctx.eyebrow ?? "Where this starts for you"}
+          </div>
+          {ctx.title && <h2 className="dk-h2 dk-h2-l">{ctx.title}</h2>}
+          {ctx.lede && <p className="dk-sub dk-sub-l">{ctx.lede}</p>}
+          {ctx.points && ctx.points.length > 0 && (
+            <div className="dk-grid-2 dk-tight">
+              {ctx.points.map((p) => (
+                <div className="dk-gap" key={p.k}>
+                  <div className="dk-gap-k">{p.k}</div>
+                  <div className="dk-gap-v">{p.v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>,
+      ]
+    : []),
 
   /* ── 01 · the problem ── */
   <div key="s1">
@@ -539,4 +588,12 @@ export const SLIDES = [
     </blockquote>
     <div className="dk-site">axionia.com</div>
   </div>,
-];
+  ];
+}
+
+/**
+ * The untailored deck. Every existing caller keeps working — /deck without a
+ * version, the founders route, the print stylesheet — because the default is
+ * exactly what the array used to be.
+ */
+export const SLIDES = buildSlides();

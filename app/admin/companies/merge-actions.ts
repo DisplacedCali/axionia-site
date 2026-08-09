@@ -26,6 +26,9 @@ const COMPANY_REFS = [
   // because nothing else in the system records that the meeting happened.
   "contacts",
   "company_steps",
+  // 026. Recipients hang off the version rather than the company, so they
+  // follow it here without needing their own entry.
+  "deck_versions",
 ] as const;
 
 /**

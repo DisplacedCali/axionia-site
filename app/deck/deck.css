@@ -302,3 +302,15 @@
     z-index: 9999;
   }
 }
+
+/* "Not you?" on the print confirm. Understated on purpose — the common case is
+   the person we sent it to, and a loud escape hatch would imply we expect to be
+   lied to. */
+.dk-notme {
+  display: inline-block; margin: -4px 0 14px;
+  font-family: var(--dk-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.11em; color: var(--dk-cool);
+  background: none; border: none; padding: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.dk-notme:hover { color: var(--dk-navy); }
