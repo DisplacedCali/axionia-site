@@ -20,6 +20,7 @@ import {
   getSegmentBenefits,
   getVendorsForBenefit,
   matchSegmentToLibrary,
+  commonalityOf,
   computeOverallScore,
   bandForScore,
   rankStatesByExposure,
@@ -40,6 +41,7 @@ import type {
   WorkforceSegment,
   DesignedMix,
   DesignedMixPick,
+  MixPoint,
 } from "./types";
 
 export interface StepContext {
@@ -559,8 +561,73 @@ export function runDesignedMix(
   const named = new Set(
     namedPrograms.map((p) => p.trim().toLowerCase()).filter(Boolean),
   );
+  const isNamed = (name: string) => {
+    const n = name.toLowerCase();
+    return [...named].some((x) => n.includes(x) || x.includes(n));
+  };
 
-  const picks: DesignedMixPick[] = [];
+  /**
+   * "Nobody sells this" has to be true about the market, not merely about our
+   * 17-row vendor table. Without the category guard it fired on 401(k), which
+   * would tell a CFO nobody sells retirement plans.
+   */
+  const UNBROKERED = [
+    "Lifestyle / Flexible Perk",
+    "Lifestyle / On-site",
+    "Lifestyle / Core Work Support",
+    "Leave / Flexibility",
+    "Career Development",
+  ];
+
+  const quadrantOf = (financial: number, perceived: number): MixPoint["quadrant"] => {
+    // High employer leverage == low relative cost to the employer.
+    const cheap = financial >= 4;
+    const loved = perceived >= 4;
+    if (cheap && loved) return "cheap-loved";
+    if (!cheap && loved) return "costly-loved";
+    if (cheap && !loved) return "cheap-unloved";
+    return "costly-unloved";
+  };
+
+  // ── every relevant benefit, positioned ──
+  const map: MixPoint[] = [];
+  const seenOnMap = new Set<string>();
+  for (const seg of segments) {
+    const libId = seg.libraryMatch?.segmentId;
+    if (!libId) continue;
+    const lib = getSegmentBenefits(libId);
+    if (!lib?.segment) continue;
+
+    for (const b of [...lib.high, ...lib.medium, ...lib.low]) {
+      if (seenOnMap.has(b.id)) continue;
+      seenOnMap.add(b.id);
+      map.push({
+        benefit: b.name,
+        employerLeverage: b.financial,
+        perceived: b.perceived,
+        commonality: commonalityOf(b.id),
+        quadrant: quadrantOf(b.financial, b.perceived),
+        highlighted: false,
+      });
+    }
+  }
+
+  /*
+    ── the picks ──
+
+    Three rules, and the commonality one is the reason this was rewritten.
+
+    1. NOVELTY IS REQUIRED. The four scores measure value, and table-stakes
+       benefits score high on perceived and retention precisely because they
+       are table stakes — so a ranking built on value alone recommended a
+       401(k) to an investment firm. Only `uncommon` or `rare` can be a pick.
+    2. Never something they told us they run. Ranking a decision someone
+       already made, without seeing what it costs them, is not ours to make.
+    3. Rare before uncommon, then by how far it sits from the middle of the
+       map. Distance from the centre is what makes a point worth pointing at.
+  */
+  type Candidate = DesignedMixPick & { _rank: number };
+  const candidates: Candidate[] = [];
   const seen = new Set<string>();
 
   for (const seg of segments) {
@@ -571,34 +638,11 @@ export function runDesignedMix(
 
     for (const b of [...lib.high, ...lib.medium]) {
       if (seen.has(b.id)) continue;
+      if (isNamed(b.name)) continue;
 
-      // Never surface something they told us they already run. Ranking a
-      // client's own program from a bubble is a verdict we haven't earned.
-      const nameLower = b.name.toLowerCase();
-      if ([...named].some((n) => nameLower.includes(n) || n.includes(nameLower))) {
-        continue;
-      }
+      const commonality = commonalityOf(b.id);
+      if (commonality !== "uncommon" && commonality !== "rare") continue;
 
-      /**
-       * "Nobody sells this" is the most quotable claim in the section, so it
-       * has to be true about the market and not merely true about our vendor
-       * table — which lists 17 vendors and was never meant to be a census.
-       *
-       * Without the category guard this fired on 401(k), which would tell a
-       * CFO nobody sells retirement plans. Wrong, and wrong in the way that
-       * costs a meeting. The guard restricts the claim to the categories where
-       * the absence of a broker channel is a genuine property of the benefit:
-       * lifestyle, on-site, scheduling, and core work support. Health plans,
-       * clinical programs, insurance and retirement all have mature channels
-       * regardless of whether our library happens to name a vendor.
-       */
-      const UNBROKERED = [
-        "Lifestyle / Flexible Perk",
-        "Lifestyle / On-site",
-        "Lifestyle / Core Work Support",
-        "Leave / Flexibility",
-        "Career Development",
-      ];
       const noSeller =
         UNBROKERED.includes(b.category) && getVendorsForBenefit(b.id).length === 0;
       const cheapHighRank = b.financial >= 4 && b.perceived >= 4;
@@ -620,13 +664,13 @@ export function runDesignedMix(
         why =
           "Sits outside the clinical stack entirely, which is the comparison no point-solution vendor can make — they can only argue within their own category.";
       }
-
       if (!kind) continue;
 
       seen.add(b.id);
-      picks.push({
+      candidates.push({
         benefit: b.name,
         kind,
+        commonality,
         why: `${b.axioniaPOV ? b.axioniaPOV + " " : ""}${why}`,
         forSegment: seg.segment,
         scores: {
@@ -635,16 +679,22 @@ export function runDesignedMix(
           financial: b.financial,
           clinical: b.clinical,
         },
+        _rank:
+          (commonality === "rare" ? 100 : 0) +
+          Math.abs(b.perceived - 3) +
+          Math.abs(b.financial - 3),
       });
-      if (picks.length >= 5) break;
     }
-    if (picks.length >= 5) break;
   }
 
-  /**
-   * Cross-segment tension. Paid-only via SECTIONS, but computed here so the
-   * locked placeholder is honest — the analysis exists, it just isn't shown.
-   */
+  const picks = candidates
+    .sort((a, b) => b._rank - a._rank)
+    .slice(0, 3)
+    .map(({ _rank, ...p }) => p);
+
+  const highlighted = new Set(picks.map((p) => p.benefit));
+  for (const m of map) m.highlighted = highlighted.has(m.benefit);
+
   const tension: string[] = [];
   for (let i = 0; i < segments.length; i++) {
     for (let j = i + 1; j < segments.length; j++) {
@@ -665,6 +715,11 @@ export function runDesignedMix(
     premise:
       "This mix was built from your workforce shape and nothing else. We don't yet know which programs you already run, what they cost you, or which of them overlap — so read this as a comparison rather than a recommendation. Where it looks nothing like what you have, that difference is the conversation worth having.",
     picks,
+    map,
+    nothingSurprising:
+      picks.length === 0
+        ? "Nothing here surprised us. For a workforce shaped like yours the strong options are the ones most employers already carry, so a list would only tell you things you know. That is a finding rather than a gap — and it means the useful question moves to what your current programs are actually returning, which needs your numbers rather than your shape."
+        : undefined,
     acknowledged: namedPrograms.filter(Boolean).slice(0, 12),
     tension: tension.slice(0, 3),
   };

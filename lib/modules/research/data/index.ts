@@ -23,7 +23,13 @@ import type {
 } from "./types";
 
 export * from "./types";
-export { BENEFITS, BENEFITS_BY_ID } from "./benefits";
+export {
+  BENEFITS,
+  BENEFITS_BY_ID,
+  COMMONALITY,
+  commonalityOf,
+  type Commonality,
+} from "./benefits";
 export { SEGMENTS, SEGMENTS_BY_ID } from "./segments";
 export { VENDORS, VENDORS_BY_ID, BENEFIT_VENDORS, FERTILITY_VENDORS } from "./vendors";
 export { MANDATES } from "./mandates";

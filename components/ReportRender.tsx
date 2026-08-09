@@ -1,7 +1,9 @@
 "use client";
 
 import RadarChart, { type RadarAxis } from "@/components/RadarChart";
+import MixMap from "@/components/MixMap";
 import { CATEGORICAL, SEMANTIC } from "@/lib/modules/research/data/tokens";
+import { openingQuestions } from "@/lib/modules/research/report";
 import type { AssembledReport, SectionId } from "@/lib/modules/research/report";
 
 /**
@@ -253,6 +255,39 @@ export default function ReportRender({
       )}
 
       {/* ── Scorecard ────────────────────────────────────────────── */}
+      {/* ── questions ──
+          Deterministic, derived from the axis scores. No model call: a
+          generated question would reintroduce the fabrication risk this
+          section exists to avoid. */}
+      {visible.has("questions") && (
+        <Section id="questions" title="Questions Worth Asking">
+          <p className="text-[15px] leading-[1.75] text-navy max-w-measure mb-7">
+            These are the questions this analysis raised about your portfolio
+            that we can&rsquo;t answer from the outside. If any of them are
+            uncomfortable to answer quickly, that discomfort is the finding.
+          </p>
+          <ol className="space-y-6">
+            {openingQuestions({ axes: report.axes, company: report.company }).map(
+              (q, i) => (
+                <li key={q.q} className="grid grid-cols-[auto_1fr] gap-4">
+                  <span className="font-mono text-[11px] text-gray-cool tabular-nums pt-1">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p className="font-serif font-light text-xl md:text-[23px] leading-snug text-navy">
+                      {q.q}
+                    </p>
+                    <p className="mt-2 text-[13px] leading-[1.7] text-gray-warm max-w-measure">
+                      {q.why}
+                    </p>
+                  </div>
+                </li>
+              ),
+            )}
+          </ol>
+        </Section>
+      )}
+
       {visible.has("scorecard") && (
         <Section id="scorecard" title="Readiness Scorecard" slot={slots?.scorecard}>
           <div className="grid gap-10 md:grid-cols-[300px_1fr] items-start">
@@ -631,12 +666,25 @@ export default function ReportRender({
             {report.workforce.designedMix.premise}
           </p>
 
+          {report.workforce.designedMix.nothingSurprising && (
+            <p className="mb-8 text-[15px] leading-[1.75] text-navy border-l-2 border-stone pl-5 max-w-measure">
+              {report.workforce.designedMix.nothingSurprising}
+            </p>
+          )}
+
+          {report.workforce.designedMix.map?.length ? (
+            <div className="mb-10 border border-border bg-base p-5 sm:p-7">
+              <MixMap points={report.workforce.designedMix.map} />
+            </div>
+          ) : null}
+
           <ul className="divide-y divide-border border-y border-border">
             {report.workforce.designedMix.picks.map((p) => (
               <li key={p.benefit} className="py-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
                   <span className="text-[15px] text-navy">{p.benefit}</span>
                   <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-blue">
+                    {p.commonality === "rare" ? "RARELY OFFERED · " : ""}
                     {p.kind === "no-seller"
                       ? "Nobody sells this"
                       : p.kind === "cheap-high-rank"
@@ -757,6 +805,43 @@ export default function ReportRender({
       )}
 
       {/* ── Withheld ─────────────────────────────────────────────── */}
+      {/* ── the ask ──────────────────────────────────────────────
+          The document used to end on two locked boxes saying "ask about the
+          full analysis". That is absence, not an invitation — it tells a
+          reader what they don't have and gives them nothing to do about it.
+
+          One close, naming a specific next step and what it costs, placed
+          before the withheld list so the last thing read is an offer rather
+          than a wall. */}
+      {showWithheld && (
+        <section className="border-t-2 border-navy pt-8 mt-12 print:break-inside-avoid">
+          <h3 className={`${eyebrow} mb-4`}>What we&rsquo;d do next</h3>
+          <p className="font-serif font-light text-2xl md:text-[28px] leading-snug text-navy max-w-2xl">
+            Send us what you actually run — the programs, the renewal, the
+            invoice. We&rsquo;ll tell you what overlaps.
+          </p>
+          <p className="mt-5 text-[15px] leading-[1.75] text-gray-warm max-w-measure">
+            Everything above was built from the shape of your workforce and
+            nothing else. The questions at the top are the ones we can&rsquo;t
+            answer without your numbers — and they&rsquo;re the ones where the
+            money usually is. One conversation is normally enough to tell whether
+            there&rsquo;s anything here worth pursuing, and if there isn&rsquo;t
+            we&rsquo;ll say so.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <a
+              href="/contact?interest=benefit-design"
+              className="inline-block px-6 py-3 bg-navy text-base font-mono text-[10px] uppercase tracking-[0.14em] hover:opacity-90 transition-opacity print:hidden"
+            >
+              Start that conversation
+            </a>
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+              No commitment · we&rsquo;ll tell you if there&rsquo;s nothing here
+            </span>
+          </div>
+        </section>
+      )}
+
       {showWithheld && clientWithheld.length > 0 && (
         <section className="border-t border-border pt-8 mt-10 print:break-inside-avoid">
           <h3 className={`${eyebrow} mb-2`}>Analysed, not included</h3>

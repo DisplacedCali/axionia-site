@@ -203,7 +203,32 @@ export interface DesignedMixPick {
   kind: "no-seller" | "cheap-high-rank" | "off-clinical";
   why: string;
   forSegment: string;
+  /** How often this is already in place. Only uncommon or rare can be a pick. */
+  commonality: "uncommon" | "rare";
   scores: { perceived: number; retention: number; financial: number; clinical: number };
+}
+
+/**
+ * One benefit placed on employer cost x employee-attributed value.
+ *
+ * The map exists because the four scores measure VALUE and not NOVELTY, so a
+ * ranking built on them alone recommended a 401(k) to an investment firm.
+ * Position makes that visible: table stakes cluster together and read as a
+ * cluster, and the interesting things are at the edges.
+ *
+ * The quadrant nothing previously surfaced is `costly-unloved` — expensive and
+ * unnoticed. It is a sharper thing to say than any suggestion.
+ */
+export interface MixPoint {
+  benefit: string;
+  /** 1-5. High employer leverage means LOW relative cost to the employer. */
+  employerLeverage: number;
+  /** 1-5, what employees attribute to it. */
+  perceived: number;
+  commonality: "table-stakes" | "common" | "uncommon" | "rare";
+  quadrant: "cheap-loved" | "costly-loved" | "cheap-unloved" | "costly-unloved";
+  /** True when this is one of the three picks below. */
+  highlighted: boolean;
 }
 
 /**
@@ -229,7 +254,20 @@ export interface DesignedMixPick {
 export interface DesignedMix {
   /** The stated blind spot. Rendered before anything else in the section. */
   premise: string;
+  /**
+   * At most THREE, and zero is a valid answer.
+   *
+   * Capped because a list of five reads as a list and a list of three reads as
+   * a choice. Allowed to be empty because the previous version, ranking on
+   * value alone, suggested a 401(k) to an investment firm — and if the shape of
+   * a workforce doesn't produce a surprise, saying so is worth more than
+   * padding the section with things they already have.
+   */
   picks: DesignedMixPick[];
+  /** Every benefit placed on cost x perceived value, for the map. */
+  map: MixPoint[];
+  /** Set when nothing cleared the bar — rendered instead of the picks. */
+  nothingSurprising?: string;
   /** Programs the client named at intake. Listed, never scored. */
   acknowledged: string[];
   /**

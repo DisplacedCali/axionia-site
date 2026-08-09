@@ -752,3 +752,97 @@ export const BENEFITS: readonly Benefit[] = [
 export const BENEFITS_BY_ID: ReadonlyMap<string, Benefit> = new Map(
   BENEFITS.map((b) => [b.id, b]),
 );
+
+/* ──────────────────────────────────────────────────────────────────────
+   COMMONALITY — how often this is already in place
+
+   Added because the four scores measure VALUE and not NOVELTY, and a
+   suggestion list built on value alone recommends a 401(k) to an
+   investment firm. Table-stakes benefits score high on perceived and
+   retention precisely BECAUSE they are table stakes, so they win any
+   ranking that doesn't know what "already everywhere" means.
+
+   Editorial judgement, like axioniaPOV and the four scores — it is our
+   read of the market, not a prevalence statistic. When SHRM and BLS
+   figures are actually cited these should be checked against them, and
+   where they disagree the published number wins.
+
+   Held as a map rather than a field on each row so the whole judgement
+   is readable in one place and revisable in one edit. A row missing
+   from this map is treated as `common`, which keeps it out of a
+   suggestion list — the safe default is silence.
+
+     table-stakes  a candidate would notice its ABSENCE, not its presence
+     common        most peer employers have it
+     uncommon      a real differentiator; its absence was rarely a decision
+     rare          almost nobody offers it; saying so is the finding
+   ────────────────────────────────────────────────────────────────────── */
+
+export type Commonality = "table-stakes" | "common" | "uncommon" | "rare";
+
+export const COMMONALITY: Readonly<Record<string, Commonality>> = {
+  // Core insurance — universal. Never a suggestion.
+  BEN001: "table-stakes",
+  BEN002: "table-stakes",
+  BEN003: "table-stakes",
+  BEN004: "table-stakes",
+  BEN024: "table-stakes",
+  BEN048: "table-stakes",
+  BEN055: "table-stakes",
+  BEN056: "table-stakes",
+  BEN016: "table-stakes",
+  BEN032: "table-stakes",
+
+  // Widely adopted — worth analysing, not worth "suggesting".
+  BEN005: "common",
+  BEN012: "common",
+  BEN013: "common",
+  BEN014: "common",
+  BEN020: "common",
+  BEN026: "common",
+  BEN030: "common",
+  BEN033: "common",
+  BEN038: "common",
+  BEN042: "common",
+  BEN028: "common",
+
+  // Differentiators — present at good employers, absent at most.
+  BEN006: "uncommon",
+  BEN009: "uncommon",
+  BEN021: "uncommon",
+  BEN027: "uncommon",
+  BEN029: "uncommon",
+  BEN031: "uncommon",
+  BEN035: "uncommon",
+  BEN036: "uncommon",
+  BEN060: "uncommon",
+  BEN062: "uncommon",
+  BEN063: "uncommon",
+  BEN064: "uncommon",
+  BEN067: "uncommon",
+  BEN068: "uncommon",
+  BEN070: "uncommon",
+  BEN072: "uncommon",
+  BEN077: "uncommon",
+  BEN078: "uncommon",
+  BEN080: "uncommon",
+
+  // Rare — the ones where absence was never a decision anyone made.
+  BEN007: "rare",
+  BEN059: "rare",
+  BEN061: "rare",
+  BEN065: "rare",
+  BEN066: "rare",
+  BEN069: "rare",
+  BEN071: "rare",
+  BEN073: "rare",
+  BEN074: "rare",
+  BEN075: "rare",
+  BEN076: "rare",
+  BEN079: "rare",
+  BEN081: "rare",
+};
+
+export function commonalityOf(id: string): Commonality {
+  return COMMONALITY[id] ?? "common";
+}

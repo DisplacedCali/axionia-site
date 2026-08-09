@@ -43,6 +43,7 @@ export type SectionId =
   | "profile"
   | "regulatory"
   | "workforce"
+  | "questions"
   | "designedMix"
   | "benefitDesign"
   | "brief";
@@ -60,6 +61,15 @@ export const SECTIONS: ReadonlyArray<{
    */
   internalOnly?: boolean;
 }> = [
+  // Questions first, deliberately, and ahead of the score.
+  //
+  // The document used to open on an assessment and end on two locked boxes —
+  // it told a reader what they don't get, which is absence rather than need.
+  // Questions they can't answer create the need without asserting anything,
+  // and a question cannot be factually wrong the way an assertion can. This
+  // report has twice stated a parent company that did not exist; the part a
+  // reader hits first now carries no fabrication risk at all.
+  { id: "questions",     label: "Questions Worth Asking",  order: 5,  inSummary: true },
   { id: "scorecard",     label: "Readiness Scorecard",    order: 10, inSummary: true },
   { id: "findings",      label: "Key Findings",           order: 20, inSummary: true },
   { id: "profile",       label: "Company Profile",        order: 30, inSummary: true },
@@ -483,4 +493,75 @@ export function hardReleaseBlockers(args: {
   return computeBlockers(args)
     .filter((b) => b.severity === "hard")
     .map((b) => b.message);
+}
+
+/* ─────────────── questions they can't answer ─────────────── */
+
+/**
+ * Problem framing, as questions rather than assertions.
+ *
+ * The free report told a reader what they don't get — two locked boxes saying
+ * "ask about the full analysis." That is absence, not need. Nothing in the
+ * document made them feel a problem they hadn't already named.
+ *
+ * Questions rather than claims, for two reasons and the second is the
+ * important one:
+ *
+ * 1. A question a reader cannot answer creates the need without asserting
+ *    anything about them. It is also forwardable — "our CFO asked me this" is
+ *    a reason to reply.
+ * 2. A question CANNOT BE FACTUALLY WRONG the way an assertion can. This
+ *    report has twice stated a parent company that did not exist. Framing the
+ *    opening as questions means the part a reader hits first carries no
+ *    fabrication risk at all.
+ *
+ * Derived from the axis scores, deterministically. No model call: a generated
+ * question would reintroduce exactly the risk this section exists to avoid.
+ */
+export function openingQuestions(report: {
+  axes: AssembledReport["axes"];
+  company: string;
+}): { q: string; why: string }[] {
+  const score = (k: string) => report.axes.find((a) => a.key === k)?.score ?? null;
+  const weak = (k: string, under = 55) => {
+    const s = score(k);
+    return s !== null && s < under;
+  };
+
+  const all: { q: string; why: string; when: boolean }[] = [
+    {
+      q: "If two of your programs both claim to have avoided the same hospital admission, which one gets the credit?",
+      why: "Overlapping savings claims are counted twice more often than not, and nobody in the approval chain is positioned to notice — each program was approved in its own meeting.",
+      when: true,
+    },
+    {
+      q: "What did your last renewal actually buy that the year before didn't?",
+      why: "A renewal is usually priced against last year rather than against an outcome. Without a baseline you own, this year's advice is measured against nothing.",
+      when: weak("spendEfficiency") || weak("analyticsReadiness"),
+    },
+    {
+      q: "Which of your current programs would you keep if the vendor stopped calling?",
+      why: "Attention follows whoever is selling. That is ordinary, and it is also why the programs nobody sells rarely get considered at all.",
+      when: weak("vendorIndependence"),
+    },
+    {
+      q: "Could you show your CFO the assumptions behind any single benefit decision made this year?",
+      why: "Not the conclusion — the engagement rate, the population it was measured on, what else already touches those members. The number is usually available; the model behind it usually isn't.",
+      when: weak("cfoEngagement") || weak("decisionMaturity"),
+    },
+    {
+      q: "Does your benefit mix look different for the people you would struggle to replace than for everyone else?",
+      why: "One company-wide answer serves some groups well and others badly. Whether that trade was made on purpose is a different question from whether it was made.",
+      when: weak("workforceAlignment"),
+    },
+    {
+      q: "What would your people say is the most valuable thing you offer — and is it the thing you spend the most on?",
+      why: "Those two answers diverge more often than not, and the gap between them is usually the cheapest thing to fix.",
+      when: true,
+    },
+  ];
+
+  const picked = all.filter((x) => x.when).slice(0, 5);
+  // Always at least three; the two unconditional ones plus the strongest.
+  return (picked.length >= 3 ? picked : all.slice(0, 3)).map(({ q, why }) => ({ q, why }));
 }
