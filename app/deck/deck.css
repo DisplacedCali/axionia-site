@@ -58,6 +58,37 @@
 .dk-btn:disabled { opacity: .4; cursor: default; }
 .dk-btn-solid { background: var(--dk-navy); color: var(--dk-base); }
 
+/* The exit. Deliberately a plain link rather than a .dk-btn — it should read
+   as a way out, not as a third thing competing with Present and Download. */
+.dk-exit {
+  font-family: var(--dk-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--dk-cool); text-decoration: none;
+  transition: color .2s;
+}
+.dk-exit:hover { color: var(--dk-navy); }
+
+/* ── presentation mode ──
+   Chrome recedes so a projected slide isn't framed by our own toolbar, but it
+   must never disappear: "no way out" is worse than a faint bar. It returns on
+   hover or on keyboard focus, and Escape exits fullscreen natively regardless.
+   Nothing here is the only route out. */
+.dk-presenting .dk-bar,
+.dk-presenting .dk-nav {
+  opacity: .10;
+  transition: opacity .25s ease;
+}
+.dk-presenting .dk-bar:hover,
+.dk-presenting .dk-nav:hover,
+.dk-presenting .dk-bar:focus-within,
+.dk-presenting .dk-nav:focus-within {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dk-presenting .dk-bar,
+  .dk-presenting .dk-nav { transition: none; }
+}
+
 /* ── stage ── */
 .dk-stage { flex: 1 1 auto; position: relative; overflow: hidden; }
 .dk-slide {

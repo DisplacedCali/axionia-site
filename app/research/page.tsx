@@ -183,6 +183,91 @@ export default function Research() {
         </div>
       </DarkSection>
 
+      {/* ─────────────── WHERE IT LEADS ───────────────
+          The page previously ended a research engagement at the deliverable.
+          For a firm that's a cul-de-sac: they commission a memo and nothing
+          says what the relationship becomes.
+
+          The hard part is that "we decline research on active clients" reads
+          as a closed door — research and engagement structurally opposed. It
+          isn't a closed door, it's a handoff, and saying so plainly makes the
+          firewall stronger rather than weaker: you cannot be researching a
+          company for someone else and advising that company at the same time,
+          which is exactly what the promise already commits to.
+
+          The load-bearing claim is the last card. A firm can hold a portfolio
+          view without ever seeing one company's confidential data, because
+          the portfolio view is made of benchmark position and price
+          dispersion rather than of anyone's claims file. That is what makes
+          the whole model coherent, and it's also the thing a firm actually
+          wants. */}
+      <Section className="py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mb-12">
+            <Eyebrow>Where research leads</Eyebrow>
+            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+              The memo is the start of something,{" "}
+              <em className="italic">or it isn&rsquo;t. Both are fine.</em>
+            </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              Plenty of engagements are exactly what they say on the tin — a
+              screen before an LOI, a claim review before a term sheet, and
+              then we&rsquo;re done. But if you hold a portfolio, the first
+              piece of work is usually the cheapest way to find out whether the
+              rest is worth doing.
+            </p>
+          </div>
+        </Reveal>
+
+        <Stagger className="grid md:grid-cols-3 gap-px bg-border border border-border">
+          <StaggerItem className="bg-base p-7 md:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+              One company, from outside
+            </div>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              A diligence memo on a single business — what its benefit spend
+              actually buys, what&rsquo;s recoverable, what&rsquo;s locked into
+              contract. Built from public and market sources, delivered on a
+              date, priced as one piece of work.
+            </p>
+          </StaggerItem>
+          <StaggerItem className="bg-base p-7 md:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+              That company, from inside
+            </div>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              If the business becomes an Axionia client, we stop researching it
+              for you and start advising it with you. That isn&rsquo;t a
+              loophole in the wall above — it&rsquo;s the wall working. We
+              can&rsquo;t hold both roles, so the research relationship on that
+              company ends when the advisory one begins, and we&rsquo;ll say so
+              at the time.
+            </p>
+          </StaggerItem>
+          <StaggerItem className="bg-base p-7 md:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+              The portfolio, permanently
+            </div>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              What you keep across every conversion is the view above the
+              companies: where each sits against benchmark, which vendors
+              appear in how many of them, and at what spread of prices. None of
+              that requires one company&rsquo;s confidential data, which is
+              precisely why you can have it.
+            </p>
+          </StaggerItem>
+        </Stagger>
+
+        <Reveal delay={0.1}>
+          <div className="mt-10 border-l-2 border-blue pl-6 py-1 max-w-2xl">
+            <p className="font-serif italic text-xl md:text-2xl leading-snug text-navy">
+              The same vendor, sold into eleven of your companies at eleven
+              prices, is a finding no single engagement can produce.
+            </p>
+          </div>
+        </Reveal>
+      </Section>
+
       {/* ─────────────── HOW IT'S PRICED ─────────────── */}
       <Section className="py-16 sm:py-24">
         <Reveal>

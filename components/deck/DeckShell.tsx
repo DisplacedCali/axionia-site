@@ -49,7 +49,53 @@ export default function DeckShell({
 }: Props) {
   const [i, setI] = useState(0);
   const [gate, setGate] = useState(false);
+  const [presenting, setPresenting] = useState(false);
   const total = slides.length;
+
+  /**
+   * Presentation mode.
+   *
+   * `presenting` tracks the browser, never our own intent — the user can leave
+   * fullscreen by pressing Escape or F11, or by switching spaces, and none of
+   * those routes through our handler. Listening to `fullscreenchange` is what
+   * keeps the chrome from staying hidden after the browser has already exited.
+   *
+   * Fullscreen must be requested inside a user gesture, so this is only ever
+   * called from the key handler or the button. Safari still wants the webkit
+   * prefix; the cast is the price of that and stays local to these two calls.
+   */
+  const shell = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = shell.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      const req =
+        el.requestFullscreen ??
+        (el as unknown as { webkitRequestFullscreen?: () => Promise<void> })
+          .webkitRequestFullscreen;
+      req?.call(el);
+    } else {
+      const exit =
+        document.exitFullscreen ??
+        (
+          document as unknown as {
+            webkitExitFullscreen?: () => Promise<void>;
+          }
+        ).webkitExitFullscreen;
+      exit?.call(document);
+    }
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setPresenting(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
+  }, []);
 
   // Fires once per load. StrictMode double-invokes effects in dev, so the ref
   // is what stops every local page load logging two views.
@@ -109,17 +155,26 @@ export default function DeckShell({
           e.preventDefault();
           setI(total - 1);
           break;
+        case "f":
+        case "F":
+          // Not preventDefault'd for F11 — that's the browser's own fullscreen
+          // and hijacking it would surprise someone who already knows it.
+          e.preventDefault();
+          toggleFullscreen();
+          break;
         case "Escape":
+          // The browser exits fullscreen on Escape by itself; fullscreenchange
+          // updates `presenting`. All this needs to do is close the gate.
           setGate(false);
           break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [total]);
+  }, [total, toggleFullscreen]);
 
   return (
-    <div className="dk">
+    <div ref={shell} className={`dk${presenting ? " dk-presenting" : ""}`}>
       <header className="dk-bar">
         <div className="dk-brand">
           <svg width="21" height="21" viewBox="0 0 40 40" fill="none" aria-hidden="true">
@@ -140,9 +195,22 @@ export default function DeckShell({
         </div>
 
         <div className="dk-bar-r">
+          <button
+            onClick={toggleFullscreen}
+            className="dk-btn"
+            aria-pressed={presenting}
+          >
+            {presenting ? "Exit full screen" : "Present"}
+          </button>
           <button onClick={onPrintClick} className="dk-btn">
             Download PDF
           </button>
+          {/* The way out. `dk` covers the viewport and replaces the site nav,
+              so without this the only exit is the browser back button — and a
+              deck opened from a signed link has no history to go back to. */}
+          <a href="/" className="dk-exit" aria-label="Leave the deck">
+            Close
+          </a>
           <span className="dk-count">
             {String(i + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
           </span>

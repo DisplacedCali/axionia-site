@@ -120,6 +120,8 @@ export default function RequestReportPage() {
 
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  /** Whose benefit stack this is. See the control in the details form. */
+  const [subject, setSubject] = useState<"own" | "portfolio">("own");
   const [email, setEmail] = useState("");
   const [employees, setEmployees] = useState("");
   const [industry, setIndustry] = useState(DEFAULT_INDUSTRY);
@@ -227,6 +229,7 @@ export default function RequestReportPage() {
     }
 
     const res = await submitReportRequest({
+      subject,
       employees,
       industry,
       roleGroups,
@@ -443,6 +446,46 @@ export default function RequestReportPage() {
           </p>
 
           <form onSubmit={requestCode} className="grid gap-5">
+            {/* ── who the report is about ──
+                Companies are resolved from the requester's email domain, so
+                without this question an investor or a rollup CFO gets a report
+                on their own head office. Valtruis is about thirty people in
+                Chicago; the seventeen businesses they care about share none of
+                their domain. Answering "portfolio" is what stops the pipeline
+                confidently analysing the wrong entity. */}
+            <div className="flex flex-col gap-2">
+              <label className={labelCls}>This report is about</label>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {(
+                  [
+                    ["own", "The company I work for"],
+                    ["portfolio", "Companies I invest in or operate"],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    aria-pressed={subject === k}
+                    onClick={() => setSubject(k)}
+                    className={`px-4 py-3 text-left font-mono text-[10px] uppercase tracking-[0.1em] border transition-colors ${
+                      subject === k
+                        ? "border-navy bg-navy text-base"
+                        : "border-border text-gray-warm hover:border-navy"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {subject === "portfolio" && (
+                <span className="text-[12px] leading-[1.6] text-gray-cool">
+                  We&rsquo;ll scope the list with you rather than guess it —
+                  tell us the firm below and we&rsquo;ll come back to agree
+                  which businesses are in scope before anything runs.
+                </span>
+              )}
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-5">
               <div className="flex flex-col gap-2">
                 <label className={labelCls}>Full name</label>
@@ -454,7 +497,9 @@ export default function RequestReportPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className={labelCls}>Company</label>
+                <label className={labelCls}>
+                  {subject === "portfolio" ? "Firm or group" : "Company"}
+                </label>
                 <input
                   required
                   value={companyName}

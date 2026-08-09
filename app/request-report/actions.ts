@@ -8,7 +8,7 @@ import {
   companyNameFromDomain,
   resolveCompanyByDomain,
 } from "@/lib/company";
-import { checkAlignment } from "@/lib/alignment";
+import { checkAlignment, type AlignmentResult } from "@/lib/alignment";
 import { identifySession, track } from "@/lib/analytics";
 import {
   sendEmail,
@@ -33,6 +33,18 @@ export type SubmitResult =
  * request, and fires confirmation + admin notification email.
  */
 export async function submitReportRequest(formData: {
+  /**
+   * Whose benefit stack this is about.
+   *
+   * The company is resolved from the requester's email domain, which is
+   * correct for an employer and wrong for anyone holding a portfolio — an
+   * investor at a firm domain resolves to the firm's own head office, and the
+   * pipeline would analyse thirty people instead of the seventeen businesses
+   * they asked about. 'portfolio' means the subject has to be scoped by hand
+   * before anything runs, so the request is flagged for review rather than
+   * treated as a normal free report.
+   */
+  subject?: "own" | "portfolio";
   employees?: string;
   industry?: string;
   /** Free text, e.g. "hygienists, dental assistants, front office". */
@@ -124,7 +136,22 @@ export async function submitReportRequest(formData: {
   // ── does the subject company match the requester's domain? ──
   // A mismatch is the shape of a broker researching a prospect or someone
   // pulling intelligence on a competitor. Flag for review; never auto-block.
-  const alignment = checkAlignment(companyName, domain);
+  //
+  // A self-declared portfolio requester is the same shape for a different and
+  // legitimate reason, and it needs a person before it needs a pipeline: the
+  // businesses in scope share none of the requester's domain, so there is
+  // nothing here for the domain resolver to get right. Reviewing it as a
+  // mismatch is the correct handling — it routes to the same queue and reaches
+  // Tom rather than silently producing an analysis of the firm's head office.
+  const alignment: AlignmentResult =
+    formData.subject === "portfolio"
+      ? {
+          status: "review",
+          reason:
+            "Requester says this is about companies they invest in or operate. Scope the list before running anything — the domain resolves to the firm, not the portfolio.",
+          labels: [],
+        }
+      : checkAlignment(companyName, domain);
 
   // ── record the request ──
   const { data: request, error: reqErr } = await admin
@@ -140,6 +167,7 @@ export async function submitReportRequest(formData: {
       alignment: alignment.status,
       alignment_reason: alignment.reason,
       payload: {
+        subject: formData.subject ?? "own",
         employees: formData.employees ?? null,
         industry: formData.industry ?? null,
         role_groups: formData.roleGroups?.trim() || null,
