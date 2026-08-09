@@ -56,7 +56,7 @@ const FAQ = [
   },
   {
     q: "What benchmark data are you comparing me to?",
-    a: "Today: published industry survey data, public filings and regulatory sources, vendor-published outcomes, and two decades of prior modelling work across payer, provider and pharma. That's enough to place a portfolio credibly, and we'll tell you plainly when a comparison is directional rather than precise. Over time the benchmark becomes proprietary — every engagement adds to it — but we'd rather understate what we have now than overstate it.",
+    a: "Today: published industry survey data, public filings and regulatory sources, vendor-published outcomes, and two decades of prior modelling work across payer, provider and pharma. That's enough to place a portfolio credibly, and we'll tell you plainly when a comparison is directional rather than precise. Over time the benchmark becomes proprietary — every relationship adds to it — but we'd rather understate what we have now than overstate it.",
   },
   {
     q: "Do I have to switch anything or install software?",
@@ -68,11 +68,11 @@ const FAQ = [
   },
   {
     q: "How can you analyse our programs without our claims data?",
-    a: "Most of what determines whether a vendor's claim holds up isn't in your claims file — it's in the study design, the contract terms, the overlap with what you already run, and your workforce composition. Those come from documents you already have. Claims-level analysis is a deeper engagement and needs a secure path we'll set up separately.",
+    a: "Most of what determines whether a vendor's claim holds up isn't in your claims file — it's in the study design, the contract terms, the overlap with what you already run, and your workforce composition. Those come from documents you already have. Claims-level analysis is a deeper level of the relationship and needs a secure path we'll set up separately.",
   },
   {
     q: "Why is the report free? What's the catch?",
-    a: "It's how we meet people, and it's the fastest way for you to judge the work without a sales process. There's no call attached to it and no obligation afterwards. If it's useful, the deeper engagement is there; if it isn't, you've lost twenty minutes and gained a benchmark.",
+    a: "It's how we meet people, and it's the fastest way for you to judge the work without a sales process. There's no call attached to it and no obligation afterwards. If it's useful, the ongoing relationship is there; if it isn't, you've lost twenty minutes and gained a benchmark.",
   },
 ];
 
@@ -220,6 +220,76 @@ export default function Methodology() {
         <Reveal delay={0.1}>
           <IncentiveMap />
         </Reveal>
+      </Section>
+
+      {/* ─────────────── THE LINE NOBODY CROSSES ───────────────
+          Placed immediately before the Limits section on purpose. This makes
+          a real capability claim, and the very next thing a reader sees is
+          where that claim stops — which is the only honest way to make it.
+
+          The claim is RANK, never EQUIVALENCE. "Under these weights the
+          stipend outranks the fourth point solution" is supported by the
+          model. "The stipend is worth $40 PMPM in retention" is the /methodology
+          commitment below, broken. See lib/objectives.ts. */}
+      <Section className="py-16 sm:py-24">
+        <Reveal>
+          <div className="max-w-2xl mb-12">
+            <Eyebrow>The comparison nobody runs</Eyebrow>
+            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+              A gym membership and an MSK program{" "}
+              <em className="italic">compete for the same dollar.</em>
+            </h2>
+            <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+              They are never compared, because they aren&rsquo;t sold in the same
+              units. Point solutions are quoted in avoided claims. Perks are
+              quoted in retention and attraction — or not quoted at all. Two
+              currencies, one budget line, and no exchange rate.
+            </p>
+            <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
+              Nobody in the advice chain crosses that line, and not because
+              anyone is failing at their job. Perks are largely unbrokered:
+              there&rsquo;s no commission, no catalogue entry and no reason for
+              the question to reach the table. A musculoskeletal vendor
+              cannot recommend a fitness stipend instead of itself.
+            </p>
+          </div>
+        </Reveal>
+
+        <Stagger className="grid md:grid-cols-3 gap-px bg-border border border-border">
+          <StaggerItem className="bg-base p-7 md:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+              One scale, both halves
+            </div>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              Every program in our library — clinical and not — carries the same
+              four scores: perceived value, financial leverage, retention, and
+              clinical impact. That is what allows a stipend and a point
+              solution to appear in one ranking rather than two conversations.
+            </p>
+          </StaggerItem>
+          <StaggerItem className="bg-base p-7 md:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+              It bites hardest at the top
+            </div>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              High-paid, hard-to-replace workforces have low claims utilisation
+              relative to compensation. The clinical case is weakest precisely
+              where the retention case is strongest — so this is the population
+              where the standard stack is most likely to be the wrong answer.
+            </p>
+          </StaggerItem>
+          <StaggerItem className="bg-base p-7 md:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+              We rank. We don&rsquo;t price.
+            </div>
+            <p className="text-[14px] leading-[1.7] text-gray-warm">
+              Under a retention-weighted objective set we will tell you the
+              stipend outranks the fourth overlapping point solution. We will
+              not tell you it is worth forty dollars a month in retention,
+              because nobody honestly can. See below.
+            </p>
+          </StaggerItem>
+        </Stagger>
       </Section>
 
       {/* ─────────────── WHAT WE WON'T CLAIM (dark) ─────────────── */}

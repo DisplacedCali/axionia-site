@@ -151,6 +151,7 @@ export const SEGMENTS: readonly Segment[] = [
     "mediumValueBenefits": [
       "BEN026",
       "BEN038",
+      "BEN062",
       "BEN021"
     ],
     "lowValueBenefits": [
@@ -158,7 +159,7 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN042",
       "BEN027"
     ],
-    "notes": "Financial wellness and mental health are primary drivers. Career development investment signals organizational commitment to non-clinical staff.",
+    "notes": "Financial wellness and mental health are primary drivers. Career development investment signals organizational commitment to non-clinical staff. Subsidised meals sit here rather than with a higher-paid segment because this is where the daily cash value is largest relative to pay — and because this segment is the one most often asked to be onsite.",
     "dimensions": {
       "comp": "low",
       "work": [
@@ -220,19 +221,25 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN055",
       "BEN007",
       "BEN024",
+      "BEN065",
       "BEN033"
     ],
     "mediumValueBenefits": [
+      "BEN038",
+      "BEN069",
       "BEN036",
       "BEN048",
-      "BEN038",
-      "BEN006"
+      "BEN006",
+      "BEN060",
+      "BEN066"
     ],
     "lowValueBenefits": [
       "BEN003",
-      "BEN056"
+      "BEN056",
+      "BEN064",
+      "BEN061"
     ],
-    "notes": "Group long-term disability caps leave high earners materially underinsured; income protection and premium access matter more than perks. Standard packages are sized for mid-market employees, not this income band.",
+    "notes": "Group long-term disability caps leave high earners materially underinsured, so income protection and premium access still lead. But the ordering below the top is not what it was: claims utilisation is low relative to compensation here, so the clinical case is weakest exactly where the retention case is strongest. Sabbatical earns a high slot because its value is explicitly conditional on staying. The flexible account outranks any single lifestyle program, because at this income band the employer is a poor judge of which perk lands. Standard packages are sized for mid-market employees, not this income band.",
     "dimensions": {
       "comp": "very_high",
       "work": [
@@ -254,10 +261,13 @@ export const SEGMENTS: readonly Segment[] = [
     "highValueBenefits": [
       "BEN016",
       "BEN042",
-      "BEN021",
-      "BEN048"
+      "BEN067",
+      "BEN048",
+      "BEN021"
     ],
     "mediumValueBenefits": [
+      "BEN060",
+      "BEN068",
       "BEN033",
       "BEN030",
       "BEN026",
@@ -265,9 +275,10 @@ export const SEGMENTS: readonly Segment[] = [
     ],
     "lowValueBenefits": [
       "BEN002",
-      "BEN003"
+      "BEN003",
+      "BEN063"
     ],
-    "notes": "Recruited against employers with mature benefits platforms, so gaps are visible and priced into offers. Mental health and genuine flexibility outrank traditional insurance richness.",
+    "notes": "Recruited against employers with mature benefits platforms, so gaps are visible and priced into offers. Mental health and genuine flexibility outrank traditional insurance richness. AI tooling now sits high: it is the line a candidate comparing two offers notices first, and it is frequently bought as IT spend and never counted in the benefits total at all. Commuter benefit ranks low for the opposite reason to most segments — a remote-capable workforce derives little from subsidising a commute it does not make.",
     "dimensions": {
       "comp": "high",
       "work": [
@@ -295,6 +306,7 @@ export const SEGMENTS: readonly Segment[] = [
     "mediumValueBenefits": [
       "BEN013",
       "BEN006",
+      "BEN071",
       "BEN030",
       "BEN048"
     ],
@@ -331,13 +343,15 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN014",
       "BEN035",
       "BEN020",
-      "BEN038"
+      "BEN038",
+      "BEN070"
     ],
     "lowValueBenefits": [
       "BEN002",
-      "BEN003"
+      "BEN003",
+      "BEN063"
     ],
-    "notes": "Geographically dispersed, so network-based plans deliver unequal value and navigation matters more than network breadth. Benefits are one of few tangible signals of employer investment.",
+    "notes": "Geographically dispersed, so network-based plans deliver unequal value and navigation matters more than network breadth. Benefits are one of few tangible signals of employer investment. A stipend is the only lifestyle perk that reaches a workforce sharing no building — which is also why it duplicates BEN038 badly, and why an employer running both is usually paying twice for one idea.",
     "dimensions": {
       "comp": "high",
       "work": [

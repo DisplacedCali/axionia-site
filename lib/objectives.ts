@@ -24,6 +24,25 @@
  * management and the labour market to attribute honestly. Weighting an objective
  * changes what gets recommended and in what order. It must never be allowed to
  * mean a soft outcome quietly acquired a number.
+ *
+ * ── The substitution this makes visible ──
+ *
+ * The clinical and non-clinical halves of a benefit budget compete for the same
+ * dollar and are never compared, because they are sold in different units:
+ * point solutions in avoided claims, perks in retention and attraction. Nobody
+ * in the advice chain crosses that line — perks are largely unbrokered, so
+ * there is no commission, no catalogue entry, and no reason for the question to
+ * come up. An MSK vendor cannot recommend a fitness stipend instead of itself.
+ *
+ * Scoring both on the same four axes is what lets a retention-weighted
+ * portfolio put them in one order. It bites hardest on high-comp workforces,
+ * where claims utilisation is low relative to pay — so the clinical case is
+ * weakest exactly where the retention case is strongest.
+ *
+ * The permitted claim is RANK: under these weights, the fitness stipend
+ * outranks the fourth overlapping point solution. The forbidden claim is
+ * EQUIVALENCE: that the stipend is worth $X PMPM in retention. The first is
+ * what the model supports. The second is the line above, crossed.
  */
 
 export type ObjectiveFamily = {

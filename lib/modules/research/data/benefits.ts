@@ -410,6 +410,188 @@ export const BENEFITS: readonly Benefit[] = [
     "retention": 5,
     "clinical": 2,
     "axioniaPOV": "Potentially huge retention lever in high-cost geographies."
+  },
+
+  /* ──────────────────────────────────────────────────────────────────────
+     LIFESTYLE, ON-SITE AND EXECUTIVE PERQUISITES — added 2026-08
+
+     Why these were missing, and why it mattered.
+
+     The library was built from the clinical side of the ledger, where the
+     evidence lives. Everything in it competes on avoided claims. But the
+     non-clinical half of a benefit budget competes for the same dollar and
+     was almost entirely absent — "Lifestyle / Flexible Perk" held one row.
+
+     That absence quietly decided an answer. A high-comp, hard-to-replace
+     workforce has low claims utilisation relative to compensation, so the
+     clinical case is weakest exactly where the retention case is strongest.
+     With no perks in the library, a retention-weighted analysis could only
+     rank clinical programs against each other — and returned the fourth
+     overlapping point solution because nothing else was on the list.
+
+     Nobody in the advice chain surfaces this substitution, and not because
+     anyone is failing: perks are largely unbrokered, so there is no
+     commission, no catalogue entry and no reason for them to come up. An
+     MSK vendor cannot recommend a fitness stipend instead of itself.
+
+     HARD LINE ON WHAT THESE ROWS CONTAIN. The four scores and axioniaPOV
+     are editorial judgments — that is what those fields are for. They carry
+     NO prevalence percentages and NO cost figures, because those are facts
+     and would need a citation (SHRM's benefits survey and the BLS National
+     Compensation Survey, which publishes incidence by wage quartile, are
+     the sources when we add them). A plausible invented benchmark is worse
+     than a missing one. See BEN029.
+
+     And the constraint from lib/objectives.ts, which governs how these get
+     used: weights order decisions, they do not monetise outcomes. These
+     rows let a retention-weighted portfolio RANK a fitness stipend above a
+     marginal point solution. They must never be used to claim it is worth
+     $X PMPM — /methodology commits publicly against exactly that.
+     ────────────────────────────────────────────────────────────────────── */
+
+  {
+    "id": "BEN060",
+    "name": "Fitness / gym membership subsidy",
+    "category": "Lifestyle / Flexible Perk",
+    "type": "Standard",
+    "segments": "All employees; highest uptake among knowledge and professional workforces",
+    "perceived": 5,
+    "financial": 2,
+    "retention": 4,
+    "clinical": 2,
+    "axioniaPOV": "The most visible benefit per dollar in the library, and the one most often dismissed because its clinical case is weak. Judge it on the axis it actually serves. Where a portfolio already carries several overlapping clinical programs, a fitness subsidy is frequently the better marginal dollar for a retention-led objective — not because it is more effective clinically, but because it is not the fifth claim on the same avoided event."
+  },
+  {
+    "id": "BEN061",
+    "name": "Personal training / coached fitness",
+    "category": "Executive / Premium Perk",
+    "type": "Customized",
+    "segments": "Executives, senior professionals; occasionally broad in small high-comp firms",
+    "perceived": 4,
+    "financial": 1,
+    "retention": 3,
+    "clinical": 2,
+    "axioniaPOV": "A premium extension of a gym subsidy rather than a distinct benefit. Defensible where it is part of an executive package being priced as a whole; hard to defend as a standalone line."
+  },
+  {
+    "id": "BEN062",
+    "name": "On-site or subsidised meals",
+    "category": "Lifestyle / On-site",
+    "type": "Differentiated",
+    "segments": "Onsite and hybrid workforces; strongest where attendance is a live question",
+    "perceived": 5,
+    "financial": 2,
+    "retention": 4,
+    "clinical": 2,
+    "axioniaPOV": "Daily, tangible and impossible to forget you have — the opposite of a point solution nobody engages with. Its real argument is usually attendance and cohesion rather than health, and it should be evaluated against that objective rather than defended on nutrition."
+  },
+  {
+    "id": "BEN063",
+    "name": "Commuter and parking benefit",
+    "category": "Lifestyle / On-site",
+    "type": "Standard",
+    "segments": "Onsite workforces in dense metros",
+    "perceived": 4,
+    "financial": 3,
+    "retention": 3,
+    "clinical": 1,
+    "axioniaPOV": "Tax-advantaged and unglamorous. Where return-to-office is contested it is one of the few benefits that directly reduces the cost of the thing being asked for."
+  },
+  {
+    "id": "BEN064",
+    "name": "Pet insurance / pet care benefit",
+    "category": "Lifestyle / Flexible Perk",
+    "type": "Standard",
+    "segments": "All employees; skews younger and to remote workforces",
+    "perceived": 4,
+    "financial": 4,
+    "retention": 2,
+    "clinical": 1,
+    "axioniaPOV": "Usually voluntary and employee-paid, so employer cost is near zero and the honest case is goodwill per dollar rather than retention. Cheap to offer, weak to lean on."
+  },
+  {
+    "id": "BEN065",
+    "name": "Sabbatical / long-service leave",
+    "category": "Leave / Flexibility",
+    "type": "Differentiated",
+    "segments": "Long-tenure professional workforces; partnerships and senior technical staff",
+    "perceived": 5,
+    "financial": 3,
+    "retention": 5,
+    "clinical": 3,
+    "axioniaPOV": "One of very few benefits whose value is explicitly tied to staying, which makes it unusually well matched to a retention objective. Cost is real but deferred and largely coverage rather than cash."
+  },
+  {
+    "id": "BEN066",
+    "name": "Executive perquisites (vehicle, club, allowance)",
+    "category": "Executive / Premium Perk",
+    "type": "Customized",
+    "segments": "Named executives and partner-track roles",
+    "perceived": 4,
+    "financial": 1,
+    "retention": 3,
+    "clinical": 1,
+    "axioniaPOV": "Compensation wearing a benefits label. Worth carrying in the portfolio so it is visible in the total, but it should be assessed as pay — evaluating it as a benefit flatters it, and the tax treatment usually decides the answer anyway."
+  },
+  {
+    "id": "BEN067",
+    "name": "AI tool subscriptions",
+    "category": "Career Development",
+    "type": "Differentiated",
+    "segments": "Knowledge, technical and professional workforces",
+    "perceived": 5,
+    "financial": 4,
+    "retention": 4,
+    "clinical": 1,
+    "axioniaPOV": "The fastest-moving line in a professional benefits package, and the one where absence is most visible to a candidate comparing offers. Cheap relative to its signalling value; the risk is procurement treating it as IT spend and nobody counting it in the benefits total at all."
+  },
+  {
+    "id": "BEN068",
+    "name": "Paternity / secondary caregiver leave",
+    "category": "Leave / Family",
+    "type": "Differentiated",
+    "segments": "All employees; disproportionate signalling value in male-majority professional workforces",
+    "perceived": 5,
+    "financial": 3,
+    "retention": 4,
+    "clinical": 3,
+    "axioniaPOV": "Held separately from BEN032 because the two behave differently. Primary-caregiver leave is close to table stakes; secondary-caregiver leave still varies widely and is read as a statement about culture rather than as a benefit. Take-up is usually the binding constraint, not the policy."
+  },
+  {
+    "id": "BEN069",
+    "name": "Concierge / navigation for dependents and elders",
+    "category": "Family Care",
+    "type": "Differentiated",
+    "segments": "Mid-career and senior professionals with caregiving load",
+    "perceived": 4,
+    "financial": 3,
+    "retention": 4,
+    "clinical": 3,
+    "axioniaPOV": "Adjacent to BEN036 and frequently sold as a separate product — check for overlap before adding it. Where both exist the second one rarely earns its line."
+  },
+  {
+    "id": "BEN070",
+    "name": "Wellbeing stipend / wellness reimbursement",
+    "category": "Lifestyle / Flexible Perk",
+    "type": "Standard",
+    "segments": "All employees",
+    "perceived": 4,
+    "financial": 3,
+    "retention": 3,
+    "clinical": 2,
+    "axioniaPOV": "Functionally a narrow lifestyle spending account. Where BEN038 already exists this is usually duplication with extra administration — the flexible account does the same job with fewer rules."
+  },
+  {
+    "id": "BEN071",
+    "name": "Sleep, recovery and preventive screening programs",
+    "category": "Clinical Value",
+    "type": "Differentiated",
+    "segments": "Shift workers, executives, high-stress professional roles",
+    "perceived": 3,
+    "financial": 2,
+    "retention": 2,
+    "clinical": 3,
+    "axioniaPOV": "A category where vendor claims outrun the evidence more than most. Reasonable to carry, but treat the savings case as unverified until the population and the comparison group are both stated."
   }
 ] as const;
 
