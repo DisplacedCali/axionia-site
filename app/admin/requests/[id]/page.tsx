@@ -10,6 +10,7 @@ import type { ResearchResult } from "@/lib/modules/research/pipeline/types";
 import { activeResearchJob } from "@/app/admin/research-actions";
 import AlignmentPanel from "@/components/admin/AlignmentPanel";
 import LinkCompany from "@/components/admin/LinkCompany";
+import IntakePanel from "@/components/admin/IntakePanel";
 
 export const dynamic = "force-dynamic";
 
@@ -272,32 +273,22 @@ export default async function RequestDetail({
         {/* ── context sidebar ── */}
         <div className="space-y-8">
           <div className="border border-border p-6">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm mb-4">
-              Intake
-            </h2>
-            <dl className="space-y-3 text-[14px]">
-              {[
-                ["Covered subscribers", payload.employees],
-                // Was labelled "Workforce profile", which it isn't — it's the
-                // single-select industry. The workforce input is role_groups
-                // below, and hiding it while mislabelling this one made the
-                // intake look like it collected less than it does.
-                ["Industry", payload.industry],
-                ["Role groups", payload.role_groups],
-                ["Programs of interest", payload.programs],
-                ["Additional context", payload.context],
-                ["Email domain", payload.email_domain],
-              ].map(([label, value]) => (
-                <div key={String(label)}>
-                  <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-cool">
-                    {String(label)}
-                  </dt>
-                  <dd className="text-navy mt-0.5">
-                    {value ? String(value) : <span className="text-gray-cool">—</span>}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            {/* Editable, because a request is created at one moment and run at
+                another. Programs of interest in particular was collectable by
+                a stranger on the public form and by nobody afterwards. */}
+            <IntakePanel
+              requestId={request.id}
+              intake={{
+                employees: payload.employees ? String(payload.employees) : "",
+                industry: payload.industry ? String(payload.industry) : "",
+                roleGroups: payload.role_groups ? String(payload.role_groups) : "",
+                programs: payload.programs ? String(payload.programs) : "",
+                context: payload.context ? String(payload.context) : "",
+              }}
+              emailDomain={
+                payload.email_domain ? String(payload.email_domain) : null
+              }
+            />
             {payload.personal_email === true && (
               <p className="mt-4 text-[12px] leading-[1.6] text-caution bg-amber-light p-3 border-l-2 border-caution">
                 Personal email domain — not grouped into a company. Assign one manually

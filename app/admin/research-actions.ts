@@ -1,5 +1,6 @@
 "use server";
 
+import type { ValidateOutput } from "@/lib/modules/research/pipeline/types";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,6 +18,7 @@ import { reviseSection, type RevisableSection } from "@/lib/modules/research/pip
 import { assembleReport, releaseBlockers, type ReportEdits, type ReportView } from "@/lib/modules/research/report";
 import type { JobInput, ResearchResult } from "@/lib/modules/research/pipeline/types";
 import { STEPS } from "@/lib/modules/research/pipeline/plan";
+import { runValidate } from "@/lib/modules/research/pipeline/steps";
 
 type Result<T = unknown> = ({ ok: true } & (T extends object ? T : object)) | { ok: false; error: string };
 
@@ -83,8 +85,28 @@ export async function startResearchForRequest(args: {
     analystContext: args.analystContext?.trim() || null,
   };
 
+  /*
+    An identity confirmed at request creation is seeded as a completed,
+    confirmed `validate` step — so the run skips the call and does not stop at
+    the wave-1 gate to ask a question that was already answered.
+
+    Absent for client-submitted requests, where nobody looked anything up. Those
+    still run validate and still stop at the gate, which is the case the gate
+    was built for: a live run once analysed a fertility vendor as a behavioral
+    health employer because the premise was set at call two and inherited by
+    the other eight.
+  */
+  const confirmed = (payload.confirmed_identity ?? null) as unknown;
+
   try {
-    const job = await createJob({ input, requestId: request.id, createdBy: user.id });
+    const job = await createJob({
+      input,
+      requestId: request.id,
+      createdBy: user.id,
+      confirmedIdentity: confirmed
+        ? { output: confirmed, confirmedBy: user.id }
+        : null,
+    });
     revalidatePath(`/admin/requests/${args.requestId}`);
     return { ok: true, jobId: job.id };
   } catch (e) {
@@ -683,4 +705,63 @@ export async function setClientView(args: {
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/admin/reports/${args.reportId}`);
   return { ok: true };
+}
+
+/* ─────────────── identify before committing ─────────────── */
+
+/**
+ * Look a company up without creating anything.
+ *
+ * One model call, no job, no database write. This is `runValidate` pulled
+ * forward so identity is settled while it is still free to be wrong.
+ *
+ * ── Why the flow changed ──
+ *
+ * Identity used to be asserted three times. You guessed an industry on the
+ * form; validate returned its own and overwrote yours; then the wave-1 gate
+ * stopped the run and asked you to correct the model. Two of those three were
+ * noise, and the correction arrived after a wave had already been spent — the
+ * run that put Valtruis in Kansas City had already committed a call before
+ * anyone could say otherwise.
+ *
+ * Doing it here means the only identity assertion is the one a human ratified,
+ * and it costs a few seconds rather than a wave. It is also why the industry
+ * dropdown is gone rather than expanded: it existed to guess at something this
+ * call determines, so once this runs first there is nothing for it to do.
+ *
+ * `hint` reaches VALIDATE_SYSTEM as instructions that override the model's own
+ * assumptions — including about ownership. "The Chicago value-based-care
+ * investor, not the Kansas City one" belongs there.
+ */
+export async function lookupCompany(args: {
+  companyName: string;
+  website?: string;
+  hint?: string;
+}): Promise<
+  { ok: true; identity: ValidateOutput } | { ok: false; error: string }
+> {
+  await requireAdmin();
+
+  const companyName = args.companyName.trim();
+  if (!companyName) return { ok: false, error: "A company name is required." };
+
+  try {
+    const identity = await runValidate({
+      input: {
+        companyName,
+        website: args.website?.trim() || null,
+        notes: args.hint?.trim() || null,
+      },
+      outputs: {},
+      llm: createAnthropicClient(),
+    });
+    return { ok: true, identity };
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        (e as Error).message ||
+        "Could not identify that company. You can still create the request and correct it by hand.",
+    };
+  }
 }

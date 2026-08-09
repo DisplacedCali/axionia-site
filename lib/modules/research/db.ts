@@ -80,12 +80,47 @@ export async function createJob(args: {
   input: JobInput;
   requestId?: string | null;
   createdBy?: string | null;
+  /**
+   * An identity a human already confirmed, seeded as a completed `validate`
+   * step so the pipeline neither re-derives it nor stops to ask.
+   *
+   * The runner needs no special case for this. `toRun` excludes anything
+   * already `done`, so wave 0 runs zero steps and settles immediately; and the
+   * gate is `waveIndex === 0 && !steps.validate?.confirmedAt`, which a seeded
+   * `confirmedAt` satisfies. The saving is a model call and a round trip
+   * through a person who has already answered the question.
+   *
+   * Only ever set from a lookup that was shown to someone and accepted. A
+   * seeded identity is treated as fact by all nine remaining steps, so this is
+   * the wrong place to be optimistic.
+   */
+  confirmedIdentity?: { output: unknown; confirmedBy?: string | null } | null;
 }): Promise<PipelineJob> {
+  const seeded = args.confirmedIdentity
+    ? {
+        validate: {
+          status: "done" as const,
+          output: args.confirmedIdentity.output,
+          attempts: 0,
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+          ms: 0,
+          // No modelOutput: nothing was generated inside this job, so there is
+          // no model answer for a correction to be measured against. The
+          // lookup that produced it is a separate, unrecorded call by design —
+          // it costs one call and creating a job per lookup would cost a row
+          // per abandoned search.
+          confirmedAt: new Date().toISOString(),
+          confirmedBy: args.confirmedIdentity.confirmedBy ?? null,
+        },
+      }
+    : {};
+
   const { rows } = await getPool().query(
-    `insert into research.pipeline_jobs (input, request_id, created_by, status)
-     values ($1, $2, $3, 'queued')
+    `insert into research.pipeline_jobs (input, request_id, created_by, status, steps)
+     values ($1, $2, $3, 'queued', $4)
      returning *`,
-    [args.input, args.requestId ?? null, args.createdBy ?? null],
+    [args.input, args.requestId ?? null, args.createdBy ?? null, JSON.stringify(seeded)],
   );
   return toJob(rows[0]);
 }

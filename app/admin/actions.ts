@@ -77,6 +77,24 @@ export async function createAdminRequest(input: {
    */
   roleGroups?: string;
   /**
+   * "Programs or vendors you'd like looked at."
+   *
+   * Same omission as roleGroups: the public intake collected it and the admin
+   * form did not. The synthesis prompt requires a named program to be answered
+   * explicitly — "they asked it, so leaving it unaddressed is the one thing
+   * they will notice" — and the designed mix uses it to keep a program the
+   * client already runs out of the ranking.
+   */
+  programs?: string;
+  /**
+   * The identity a human confirmed at creation, from `lookupCompany`.
+   *
+   * Stored on the payload and seeded into the run as an already-confirmed
+   * validate step. Absent means nobody looked anything up, and the pipeline
+   * falls back to deriving identity itself and stopping at the wave-1 gate.
+   */
+  identity?: Record<string, unknown> | null;
+  /**
    * Firm or portfolio this company belongs to (migration 024).
    *
    * Free text, resolved-or-created. A dropdown would have meant creating firms
@@ -205,6 +223,8 @@ export async function createAdminRequest(input: {
         // research-actions.ts reads payload.role_groups into JobInput, so the
         // key has to be snake_case here to match what the public intake writes.
         role_groups: input.roleGroups?.trim() || null,
+        programs: input.programs?.trim() || null,
+        confirmed_identity: input.identity ?? null,
         email_domain: domain,
         admin_initiated: true,
       },
@@ -678,4 +698,71 @@ export async function linkRequestToCompany(args: {
   revalidatePath(`/admin/requests/${args.requestId}`);
   revalidatePath(`/admin/companies/${companyId}`);
   return { ok: true, companyId: companyId as string };
+}
+
+/* ─────────────── intake corrections ─────────────── */
+
+/**
+ * Edit the intake behind a request, before the research runs.
+ *
+ * The panel was a read-only list, which assumed intake is captured once and
+ * correct forever. It isn't: a request is created at one moment and run at
+ * another, and in between you take a call, read a renewal packet, or notice
+ * the industry is wrong. Re-running to change one field costs ten model calls.
+ *
+ * `programs` is the field this exists for. The synthesis prompt says a named
+ * program must be answered explicitly — "they asked it, so leaving it
+ * unaddressed is the one thing they will notice" — and the designed mix uses
+ * it to keep incumbents out of the ranking. It was collectable by a stranger
+ * on the public form and by nobody afterwards.
+ *
+ * Merged into `payload` rather than replacing it: the column also carries
+ * fields nothing here edits (email_domain, admin_initiated, the portfolio
+ * detail block), and a blind overwrite would silently drop them.
+ */
+export async function updateRequestIntake(
+  requestId: string,
+  patch: {
+    employees?: string;
+    industry?: string;
+    roleGroups?: string;
+    programs?: string;
+    context?: string;
+  },
+): Promise<Result> {
+  await requireStaff();
+  const admin = createAdminClient();
+
+  const { data: existing, error: readErr } = await admin
+    .from("report_requests")
+    .select("payload")
+    .eq("id", requestId)
+    .single();
+
+  if (readErr || !existing) {
+    return { ok: false, error: readErr?.message ?? "Request not found." };
+  }
+
+  const payload = (existing.payload ?? {}) as Record<string, unknown>;
+  const trim = (v: string | undefined, max: number) =>
+    v === undefined ? undefined : v.trim().slice(0, max) || null;
+
+  const next: Record<string, unknown> = { ...payload };
+  if (patch.employees !== undefined) next.employees = trim(patch.employees, 20);
+  if (patch.industry !== undefined) next.industry = trim(patch.industry, 120);
+  // snake_case: research-actions.ts reads payload.role_groups into JobInput,
+  // and the public intake writes it under that key.
+  if (patch.roleGroups !== undefined) next.role_groups = trim(patch.roleGroups, 400);
+  if (patch.programs !== undefined) next.programs = trim(patch.programs, 600);
+  if (patch.context !== undefined) next.context = trim(patch.context, 2000);
+
+  const { error } = await admin
+    .from("report_requests")
+    .update({ payload: next })
+    .eq("id", requestId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/requests/${requestId}`);
+  return { ok: true };
 }
