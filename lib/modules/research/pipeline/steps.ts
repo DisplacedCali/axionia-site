@@ -199,9 +199,10 @@ export async function runRegulatory(ctx: StepContext): Promise<RegulatoryOutput>
     system: P.regulatorySystem(focus.join(", "), other.join(", ")),
     user: P.regulatoryUser(company, stateList, profile, ctx.outputs.financial ?? ""),
     label: "regulatory",
-    // Was 2500. The prompt no longer asks for four categories per state, and a
-    // ceiling that can't be reached isn't a limit — it's permission.
-    maxTokens: 1400,
+    // 2500 → 1400 → 700. The prompt now asks for at most seven bullets total,
+    // and a ceiling that can't be reached isn't a limit, it's permission. The
+    // section earns its place by being verified rather than by being long.
+    maxTokens: 700,
   });
 
   return { regulatory: regRes.text, statesData };

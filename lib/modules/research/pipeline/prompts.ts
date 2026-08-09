@@ -162,7 +162,8 @@ export function linkedinUser(co: CompanyContext, notes?: string | null): string 
 }
 
 export const PROFILE_SYSTEM =
-  "You are a B2B analyst. Give 4 bullet points (plain text, start each with -) about this company: workforce composition, business model, ownership structure, HR characteristics. No headers or bold.";
+  "You are a B2B analyst. Give 4 bullet points (plain text, start each with -) about this company: workforce composition, business model, how it is funded or held IF YOU SPECIFICALLY KNOW, and HR characteristics. No headers or bold.\n\n" +
+  "OWNERSHIP RULE. Do not name a parent, investor or affiliate unless you specifically know it. Do not infer one from the company's city, sector, size or name. If you do not know, write \"Ownership not established\" and move on — that is the correct answer, and every later step treats these bullets as fact. A run on Valtruis invented a Providence affiliation this way and it reached four separate recommendations.";
 
 export function profileUser(co: CompanyContext): string {
   return `Company: ${companyLine(co)}\n${co.description ?? ""}`;
@@ -175,7 +176,8 @@ export const BENEFITS_SYSTEM =
   "If the client named specific programs or vendors, address those directly in at least two bullets — say what the program is typically worth to an employer of this type and what to be sceptical about in the vendor's own claims. Be specific rather than generic.";
 
 export const FINANCIAL_SYSTEM =
-  "You are a financial analyst. Give 4 bullet points (plain text, start each with -) about financial posture relevant to benefits: margins, ownership, workforce stability, urgency signals. No headers or bold.";
+  "You are a financial analyst. Give 4 bullet points (plain text, start each with -) about financial posture relevant to benefits: margins, workforce stability, urgency signals. No headers or bold.\n\n" +
+  "Do not assert or reason from a parent company, investor or corporate affiliation. If the material you were given names one and you do not independently know it to be true, ignore it.";
 
 export function contextOnlyUser(
   co: CompanyContext,
@@ -217,33 +219,74 @@ export function statesUser(
  * much work as the state limit — the model was spending its budget
  * transcribing statute numbers and effective dates the report already shows.
  */
+/**
+ * The regulatory read.
+ *
+ * ── What went wrong before ──
+ *
+ * The instruction was "be specific to this employer", and the model complied by
+ * INVENTING specificity. A live run produced: "given Providence's
+ * infrastructure", "the Providence affiliation warrants a controlled group
+ * analysis immediately", "likely remote analysts or advisors", "likely high-end
+ * plan design with behavioral health EAP carve-outs". Valtruis has no
+ * Providence affiliation. Each fabricated premise then carried three bullets of
+ * confident reasoning, and one of them was a recommendation to act.
+ *
+ * Speculation also stacked: "If Valtruis is self-insured (likely at this
+ * size)" became the premise for four further bullets, and "if Valtruis has even
+ * one CA employee and has not updated its policy, it is currently out of
+ * compliance" is an accusation of non-compliance resting on two guesses.
+ *
+ * ── What changed ──
+ *
+ * 1. THE TABLE IS THE SECTION. It is curated, verified, and carries the ERISA
+ *    self-insured reach nobody else surfaces. Prose supports it; it does not
+ *    compete with it.
+ * 2. NO CONDITIONALS. "If they are self-insured" is not analysis, it is a
+ *    branch the reader has to resolve — and we ask instead.
+ * 3. QUESTIONS, NOT VERDICTS. "Does your plan document reflect SB 729?" is the
+ *    same fact as "you are out of compliance" and cannot be wrong about a
+ *    funding structure we have not seen.
+ * 4. NOTHING ABOUT CORPORATE STRUCTURE. Ownership reached this step through
+ *    the profile and linkedin prose, downstream of the guard on validate's
+ *    structured field. Closed here explicitly.
+ *
+ * Full state-by-state analysis is not withheld to sell it — it genuinely
+ * requires knowing funding structure and where people sit, which the free tier
+ * does not. Saying so is more honest than guessing and reads better.
+ */
 export function regulatorySystem(focusStates: string, otherStates: string): string {
-  return `You are a healthcare employment law and benefits compliance expert advising an employer on its benefit program.
+  return `You are advising an employer on where state benefit law reaches them. You are writing a SHORT read that sits beside a curated, verified table of mandates.
 
-IMPORTANT CONTEXT: the report this text appears in ALREADY renders a curated table of state mandates, with statute names, effective dates and ERISA self-insured reach for each. Do not restate those. A table carries them better than prose does. Your job is the employer-specific read the table cannot give: what this actually means for them, what to do, and what to watch.
+WHAT THE TABLE ALREADY SHOWS, which you must NOT restate: statute names, effective dates, and whether each mandate reaches a self-insured plan. A table carries those better than prose.
 
-Return plain bullet points starting with -. No preamble, no closing summary.
+HARD RULES — these matter more than completeness.
 
-Structure exactly as follows.
+1. NEVER speculate about corporate structure, ownership, parent companies or affiliates. Do not mention a parent or affiliate even if one appears in the material you were given. If plan sponsorship depends on corporate structure, ASK whether it does; do not assume an answer.
+2. NEVER assume funding structure. You do not know whether they are self-insured, level-funded or fully insured. Do not write "if they are self-insured (likely...)". Where the answer changes by funding structure, say so in one clause and ask.
+3. NEVER state or imply they are out of compliance. You have not seen a plan document. An obligation they may not have met is a QUESTION, not a finding.
+4. No conditional chains. One "if" per bullet at most, and never an "if" resting on another "if".
 
-## Federal overlay
-ONE section, not repeated per state. ACA employer mandate status, ERISA obligations, FMLA and MHPAEA parity — only as they bear on THIS employer's size and funding structure. 4 bullets maximum. Skip anything that is merely true of all employers.
+Return plain bullets starting with -. No preamble, no summary.
 
-${
-  focusStates
-    ? `## Priority states — ${focusStates}
-A short section per state, in that order. These carry the highest exposure. For each, 3-4 bullets covering: where state law reaches a self-insured plan despite ERISA preemption, paid leave obligations with real operational consequences, and any pending change creating near-term urgency. Lead with the exposure, not the citation.`
-    : ""
-}
+## What reaches you regardless of funding
+Maximum 3 bullets, and ONLY for mandates in the table marked as reaching self-insured plans. This is the counterintuitive part and the only part most employers genuinely miss — everything else they or their broker already handle. If none apply, write one bullet saying so plainly.
 
-${
-  otherStates
-    ? `## Other states — ${otherStates}
-ONE bullet per state. Name the single most consequential obligation and nothing else. If there is nothing materially different from the federal baseline, say exactly that in one clause.`
-    : ""
-}
+## Questions this raises
+Maximum 3 bullets. Each a direct question the employer can answer and we cannot: whether a plan document was updated, where employees actually sit, whether a policy meets a new floor. Phrase as questions, not as risks.${
+    focusStates ? `
 
-Be specific to this employer. Bold anything that reaches a self-insured plan — that is the fact most likely to be missed, because employers assume preemption covers them and for most mandates it does.`;
+Draw these from ${focusStates}, which carry the highest exposure.` : ""
+  }${
+    otherStates
+      ? `
+
+## Not assessed
+ONE bullet, exactly: name ${otherStates} and say our curated library does not cover them yet, so we have said nothing rather than guess. Do not add commentary about those states.`
+      : ""
+  }
+
+Bold anything that reaches a self-insured plan. Be brief — this section earns its place by being verified, not by being long.`;
 }
 
 export function regulatoryUser(
@@ -319,7 +362,9 @@ Dimensions:
 
 Return JSON with these exact fields: spendEfficiency, decisionMaturity, workforceAlignment, vendorIndependence, analyticsReadiness, cfoEngagement, regulatoryReadiness, appreciationValue, readinessLabel (Foundation Only/Emerging/Structured/Strategic/Optimized), spendRationale, maturityRationale, alignmentRationale, vendorRationale, analyticsRationale, cfoRationale, regulatoryRationale, appreciationRationale, topOpportunity, urgencySignal, conversationHook, weakestAxis.
 
-Do NOT return overallScore — it is computed from the eight dimensions using fixed weights. Score each dimension independently on its own merits.`;
+Do NOT return overallScore — it is computed from the eight dimensions using fixed weights. Score each dimension independently on its own merits.
+
+OWNERSHIP RULE. The material you are scoring may name a parent company, investor or affiliate. Do not repeat it, reason from it, or let it influence a score or a rationale. A live run scored this company partly on a "Providence affiliation" that does not exist — the claim entered upstream as prose and was inherited here as fact. If corporate structure would change your answer, say the answer depends on it rather than assuming one.`;
 
 export function scoringUser(args: {
   co: CompanyContext;
