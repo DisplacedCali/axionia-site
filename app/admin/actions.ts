@@ -13,6 +13,7 @@ import { sendEmail, reportReleased } from "@/lib/email";
 import {
   hardReleaseBlockers,
   type ReportEdits,
+  type ReportView,
 } from "@/lib/modules/research/report";
 import type { ResearchResult } from "@/lib/modules/research/pipeline/types";
 
@@ -416,7 +417,7 @@ export async function releaseReport(args: {
 
   const { data: report, error: repErr } = await admin
     .from("reports")
-    .select("id, user_id, title, content, edits, reviewed_at")
+    .select("id, user_id, title, content, edits, reviewed_at, client_view")
     .eq("id", args.reportId)
     .single();
 
@@ -440,6 +441,11 @@ export async function releaseReport(args: {
     content: (report.content ?? null) as ResearchResult | null,
     edits: (report.edits ?? {}) as ReportEdits,
     reviewedAt: report.reviewed_at ?? null,
+    // The audience is a HARD blocker and has to be checked HERE, not just in
+    // the panel. An internal report carries the pre-meeting brief, which is
+    // written about the reader — and the comment above is the reason this
+    // line exists: a disabled button is a courtesy, not a guarantee.
+    view: (report.client_view ?? "internal") as ReportView,
   });
 
   if (blockers.length) {

@@ -477,6 +477,8 @@ export function hardReleaseBlockers(args: {
   content: ResearchResult | null;
   edits?: ReportEdits;
   reviewedAt?: string | null;
+  /** Required at the release action — an internal audience is a hard stop. */
+  view?: ReportView;
 }): string[] {
   return computeBlockers(args)
     .filter((b) => b.severity === "hard")
