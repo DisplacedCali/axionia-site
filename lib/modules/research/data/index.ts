@@ -487,6 +487,35 @@ export function inferDimensions(seg: {
 const COMP_ORDER: CompLevel[] = ["low", "medium", "high", "very_high"];
 const REPL_ORDER: Replaceability[] = ["easy", "moderate", "hard"];
 
+/**
+ * How `replaceability` is allowed to appear in words.
+ *
+ * The dimension itself is an internal matching key and stays as it is — the
+ * scoring depends on it. But `SegmentMatch.reason` is rendered by
+ * `ReportRender`, and `ReportRender` is the CLIENT view as well as the admin
+ * preview. Before this, a client could open their own report and read
+ * "easy to replace" written about their own staff.
+ *
+ * The economic fact is about the hiring market, not about the person. Saying
+ * a role is widely available restates it accurately and is the version an HR
+ * leader can forward to their own committee — which is the same test every
+ * other piece of copy on this product has to pass.
+ *
+ * This is not softening. "Easy to replace" was never the claim the model was
+ * making; it was shorthand for how quickly the role can be filled, and the
+ * shorthand read as a judgment about people.
+ */
+function hiringMarketPhrase(r: Replaceability): string {
+  switch (r) {
+    case "easy":
+      return "widely available in the hiring market";
+    case "moderate":
+      return "moderately hard to hire for";
+    case "hard":
+      return "hard to hire for";
+  }
+}
+
 export interface SegmentMatch {
   segmentId: string | null;
   confidence: "high" | "medium" | "low" | "none";
@@ -556,7 +585,7 @@ export function matchSegmentToLibrary(
     return {
       segmentId: null,
       confidence: "none",
-      reason: `No library segment fits these characteristics (${dims.comp} comp, ${dims.work}, ${dims.replaceability} to replace${dims.clinical ? ", clinical" : ""}).`,
+      reason: `No library segment fits these characteristics (${dims.comp} comp, ${dims.work}, ${hiringMarketPhrase(dims.replaceability)}${dims.clinical ? ", clinical" : ""}).`,
       dimensions: dims,
     };
   }
@@ -570,7 +599,7 @@ export function matchSegmentToLibrary(
     confidence,
     reason:
       `Matched to ${best.seg.name} on ${dims.comp.replace("_", " ")} compensation, ` +
-      `${dims.work} work, ${dims.replaceability} to replace` +
+      `${dims.work} work, ${hiringMarketPhrase(dims.replaceability)}` +
       (dims.clinical ? ", clinical" : "") + ".",
     dimensions: dims,
   };

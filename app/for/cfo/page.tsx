@@ -46,6 +46,10 @@ const cfg: AudienceConfig = {
       v: "Every program scored on one scale, so the question stops being “is this vendor credible” and becomes “where does the next dollar do the most work.” That’s a question finance is already equipped to answer.",
     },
     {
+      k: "The other side of the question",
+      v: "Knowing what a program is worth tells you the real size of the budget. It doesn’t tell you whether the budget is pointed at the right things. We do both, in that order — a mix proposed without an audit behind it is just another opinion.",
+    },
+    {
       k: "Standing, earlier",
       v: "You get into the decision while it’s still a decision, with something to contribute beyond the size of the cheque — and with a model your benefits team can use rather than one that overrules them.",
     },

@@ -592,6 +592,160 @@ export const BENEFITS: readonly Benefit[] = [
     "retention": 2,
     "clinical": 3,
     "axioniaPOV": "A category where vendor claims outrun the evidence more than most. Reasonable to carry, but treat the savings case as unverified until the population and the comparison group are both stated."
+  },
+
+  /* ──────────────────────────────────────────────────────────────────────
+     HOURLY AND SHIFT-BASED WORKFORCES — added 2026-08
+
+     The first lifestyle expansion skewed to salaried professionals, which
+     left the same hole at the other end of the wage scale. It is the more
+     interesting end.
+
+     For an hourly workforce the binding constraint usually arrives before
+     clinical spend does. A missed shift caused by a failed alternator, a
+     payday that lands three days after the rent, a schedule published on
+     Friday for a Monday — these determine whether someone stays, and no
+     point solution in the library touches any of them. The marginal dollar
+     leaves the clinical stack here too, for the opposite reason it does at
+     the top: not because utilisation is low, but because access friction
+     and cash-flow timing bind first.
+
+     Several of these cost the employer almost nothing. Predictable
+     scheduling is free. That is not a reason to rank them low — it is the
+     single strongest argument in the library for running the comparison at
+     all, because nothing in the brokered channel will ever surface a
+     zero-cost option that displaces a paid one.
+
+     LANGUAGE. These rows describe a CONSTRAINT, never a person. Nothing
+     here calls anyone replaceable, low-skill or entry-level, and nothing
+     should: the same sentence has to be readable by the workforce it
+     describes and by the CFO funding it. `SegmentMatch.reason` renders in
+     the client's own report, which is how "easy to replace" once reached a
+     reader — see hiringMarketPhrase() in data/index.ts.
+
+     Same evidence rule as the tier above: scores and POV are editorial
+     judgment, no prevalence or cost figures without a citation.
+     ────────────────────────────────────────────────────────────────────── */
+
+  {
+    "id": "BEN072",
+    "name": "Earned wage access / on-demand pay",
+    "category": "Financial Wellbeing",
+    "type": "Differentiated",
+    "segments": "Hourly and shift-based workforces",
+    "perceived": 5,
+    "financial": 4,
+    "retention": 5,
+    "clinical": 2,
+    "axioniaPOV": "Among the highest perceived-value-per-employer-dollar options available, because the employer is changing timing rather than adding cost. Where pay cycles and rent cycles are misaligned, this addresses the thing that actually triggers a departure. Check the fee structure carefully — the employee-paid per-advance models transfer the cost rather than removing it, and a program that charges for early access to earned wages is not the same product."
+  },
+  {
+    "id": "BEN073",
+    "name": "Emergency hardship fund / crisis grants",
+    "category": "Financial Wellbeing",
+    "type": "Differentiated",
+    "segments": "All employees; largest effect where savings buffers are thin",
+    "perceived": 5,
+    "financial": 4,
+    "retention": 4,
+    "clinical": 2,
+    "axioniaPOV": "Small, infrequent, and disproportionate. A few hundred dollars at the right moment prevents an exit that costs a multiple of it to replace. Usually underfunded relative to its effect because the spend is unpredictable and therefore hard to budget — which is a budgeting problem, not an evidence problem."
+  },
+  {
+    "id": "BEN074",
+    "name": "Transportation support / vehicle repair assistance",
+    "category": "Lifestyle / Core Work Support",
+    "type": "Customized",
+    "segments": "Onsite and field workforces without dense transit",
+    "perceived": 5,
+    "financial": 3,
+    "retention": 4,
+    "clinical": 1,
+    "axioniaPOV": "Getting to work reliably is a precondition for every other benefit in the portfolio, and vehicle failure is a leading cause of unplanned absence in field and shift work. Rarely evaluated as a benefit at all, which is why it is rarely funded."
+  },
+  {
+    "id": "BEN075",
+    "name": "Predictable and self-directed scheduling",
+    "category": "Leave / Flexibility",
+    "type": "Differentiated",
+    "segments": "Shift-based workforces",
+    "perceived": 5,
+    "financial": 5,
+    "retention": 5,
+    "clinical": 3,
+    "axioniaPOV": "Frequently the most-requested item in an employee survey and one of the few with no premium attached — the cost is operational discipline and scheduling software, not spend. When a portfolio review finds a zero-cost option outranking a funded program, this is usually the one. It is also the clearest case for running the comparison at all: nothing in a brokered channel surfaces an option nobody sells."
+  },
+  {
+    "id": "BEN076",
+    "name": "Legal and immigration services",
+    "category": "Financial Wellbeing",
+    "type": "Differentiated",
+    "segments": "Workforces with significant foreign-born or mixed-status populations",
+    "perceived": 5,
+    "financial": 4,
+    "retention": 4,
+    "clinical": 1,
+    "axioniaPOV": "Low cost, high stakes, and almost never in the mix unless someone has asked. Where a workforce carries immigration matters, this is among the few benefits whose absence is itself a retention risk. Handle procurement carefully — confidentiality here is not a nice-to-have."
+  },
+  {
+    "id": "BEN077",
+    "name": "Credit building and savings-at-work programs",
+    "category": "Financial Wellbeing",
+    "type": "Standard",
+    "segments": "Hourly and early-career workforces",
+    "perceived": 4,
+    "financial": 4,
+    "retention": 3,
+    "clinical": 1,
+    "axioniaPOV": "A better-evidenced financial benefit than generic coaching, because it changes a balance rather than delivering advice. Pairs naturally with earned wage access — one addresses the timing problem, the other the buffer that would have made timing irrelevant."
+  },
+  {
+    "id": "BEN078",
+    "name": "Tool, uniform and equipment allowance",
+    "category": "Lifestyle / Core Work Support",
+    "type": "Standard",
+    "segments": "Trades, field and shift workforces",
+    "perceived": 4,
+    "financial": 3,
+    "retention": 3,
+    "clinical": 2,
+    "axioniaPOV": "Removing a cost of doing the job is read very differently from adding a perk. Modest sums, and where the alternative is an employee absorbing it out of pocket the perceived value runs well ahead of the spend."
+  },
+  {
+    "id": "BEN079",
+    "name": "Language, literacy and skills classes",
+    "category": "Career Development",
+    "type": "Differentiated",
+    "segments": "Workforces with multilingual or non-traditional-pathway populations",
+    "perceived": 4,
+    "financial": 3,
+    "retention": 4,
+    "clinical": 1,
+    "axioniaPOV": "Tuition assistance sized for a degree misses people for whom the next step is a certification or a language. The benefit is the same idea at the right rung of the ladder, and it is usually cheaper."
+  },
+  {
+    "id": "BEN080",
+    "name": "On-site or near-site clinic",
+    "category": "Healthcare Access",
+    "type": "Customized",
+    "segments": "Geographically concentrated workforces of sufficient scale",
+    "perceived": 5,
+    "financial": 3,
+    "retention": 4,
+    "clinical": 4,
+    "axioniaPOV": "One of very few interventions that removes the access friction rather than adding a program to work around it. Needs real density to justify — below a few hundred concentrated lives the fixed cost dominates, and a shared or near-site model is the honest version of the question."
+  },
+  {
+    "id": "BEN081",
+    "name": "Shift-compatible dependent care",
+    "category": "Family Care",
+    "type": "Customized",
+    "segments": "Shift and non-standard-hours workforces",
+    "perceived": 5,
+    "financial": 3,
+    "retention": 5,
+    "clinical": 2,
+    "axioniaPOV": "Held separately from BEN030 because most childcare benefits assume standard hours and therefore reach nobody working nights or rotating shifts. A subsidy that cannot be spent is not a benefit, and this is the most common way a benefit that looks generous on paper delivers nothing."
   }
 ] as const;
 

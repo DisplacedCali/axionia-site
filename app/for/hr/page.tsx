@@ -46,6 +46,10 @@ const cfg: AudienceConfig = {
       v: "An independent expected value is the strongest thing you can carry into a contract conversation. Vendors negotiate differently against a number they didn’t produce, particularly when it’s a range with the reasoning attached.",
     },
     {
+      k: "Options nobody sold you",
+      v: "We didn’t place any of your current programs, so we have no reason to leave one alone — and no catalogue to sell from. Some of the strongest options for a given workforce carry no commission and appear in no vendor deck, which is exactly why they never reach the table.",
+    },
+    {
       k: "Permission to keep things",
       v: "Independent analysis defends incumbent programs as often as it unseats them. “This one is working, here’s why, here’s what it’s worth” is a finding — and it’s the one that’s hardest to say convincingly without an outside model.",
     },

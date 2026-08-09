@@ -19,7 +19,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 export const metadata = {
   title: { absolute: "Axionia — Independent analysis of employee benefit programs" },
   description:
-    "A vendor says their program saves you money. Axionia checks whether that's true — independently, with every assumption on the table.",
+    "A vendor says their program saves you money. Axionia checks whether that's true — then tells you what the same budget could buy instead. Independent, with every assumption on the table.",
 };
 
 
@@ -52,10 +52,34 @@ const REVIEW_GAPS = [
   },
 ];
 
+/**
+ * The five principles, plus one that was missing.
+ *
+ * "Independent Value Assessment" claimed only FINANCIAL independence — no
+ * commission, no stake in the vendor. True, and every fee-only advisor says it.
+ *
+ * The independence that is actually rare is from HISTORY. The broker who placed
+ * a program three years ago cannot recommend removing it without indicting
+ * their own advice. The benefits leader who championed it is in the same
+ * position, and the CFO has now approved it four times. Everyone in the room is
+ * implicated in an incumbency. We are the only party with no past
+ * recommendation to defend — which is what makes it possible for us to propose
+ * a different mix rather than only grade the existing one.
+ *
+ * That is also the honest relationship between the two halves of this business.
+ * The audit is not a separate service from the design; it is what earns the
+ * right to do the design. Anyone can propose a benefit mix. Only someone who
+ * has independently de-duplicated the current one knows what the budget
+ * actually is.
+ */
 const principles = [
   {
     title: "Independent Value Assessment",
     body: "We aren't paid more when your costs go up. Our analysis has no stake in which vendor you choose.",
+  },
+  {
+    title: "No Incumbency to Defend",
+    body: "We didn't place your current programs and we have no past recommendation to protect. Everyone else in the room does — which is why the option to do something different so rarely reaches the table.",
   },
   {
     title: "Clarity Over Complexity",
@@ -126,9 +150,17 @@ export default function Home() {
                   can argue with any of them.
                 </p>
                 <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
-                  That&rsquo;s it. No software to roll out, no data feed to build. You
-                  tell us what you&rsquo;re being sold; we tell you what it&rsquo;s
-                  actually worth.
+                  Then we do the part that&rsquo;s worth more: we tell you what
+                  else the same money could buy. We didn&rsquo;t choose any of
+                  your current programs, so we have no reason to leave one in
+                  place — including options nobody sells you, because they
+                  carry no commission and appear in no catalogue.
+                </p>
+                <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
+                  No software to roll out, no data feed to build. You tell us
+                  what you&rsquo;re running and what you&rsquo;re being sold; we
+                  tell you what it&rsquo;s worth and what a better mix looks
+                  like.
                 </p>
               </div>
             </div>
@@ -288,13 +320,95 @@ export default function Home() {
         </Section>
       </div>
 
+      {/* ─────────────── AND THEN THE DESIGN ───────────────
+          The site was an auditor. Counted across every page, diagnostic
+          language ran roughly twenty to one against generative — everything
+          promised to check, adjust, de-duplicate and verify, and almost
+          nothing promised a better mix.
+
+          That undersells the firm and it quietly recreates the HR problem: an
+          audit frame implicates past decisions no matter how carefully it's
+          worded. A design frame doesn't, because nobody has to have been wrong
+          for a better option to exist.
+
+          The audit is NOT dropped. It's the half that earns the other one —
+          anyone can propose a mix, only someone who has independently
+          de-duplicated the current one knows what the budget really is. The
+          order is the product. */}
+      <div className="border-t border-border">
+        <Section className="py-16 sm:py-24">
+          <Reveal>
+            <div className="max-w-2xl mb-12">
+              <Eyebrow>And then the harder half</Eyebrow>
+              <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
+                Knowing what it&rsquo;s worth is the start.{" "}
+                <em className="italic">Knowing what else it could buy is the point.</em>
+              </h2>
+              <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
+                Independent analysis of what you already run tells you the real
+                size of the budget. It doesn&rsquo;t, on its own, tell you
+                whether that budget is pointed at the right things. Those are two
+                different jobs, and the second one is where the money is.
+              </p>
+              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
+                We do both, in that order, because the order matters. A mix
+                proposed without an audit behind it is just another opinion.
+              </p>
+            </div>
+          </Reveal>
+
+          <Stagger className="grid md:grid-cols-3 gap-px bg-border border border-border">
+            <StaggerItem className="bg-base p-7 md:p-8">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+                We audit what exists
+              </div>
+              <p className="text-[14px] leading-[1.7] text-gray-warm">
+                Claims de-duplicated, selection adjusted, every program scored on
+                one scale against your covered population. This is the part that
+                establishes what the budget actually is, as opposed to what the
+                invoices add up to.
+              </p>
+            </StaggerItem>
+            <StaggerItem className="bg-base p-7 md:p-8">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+                Then we design against it
+              </div>
+              <p className="text-[14px] leading-[1.7] text-gray-warm">
+                The same scale ranks things you don&rsquo;t currently run — including
+                options nobody sells you, because they carry no commission and
+                appear in no catalogue. Some of the strongest cost nothing at all.
+              </p>
+            </StaggerItem>
+            <StaggerItem className="bg-base p-7 md:p-8">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">
+                Balanced across your people
+              </div>
+              <p className="text-[14px] leading-[1.7] text-gray-warm">
+                A single mix rarely serves everyone equally. We model it by
+                workforce group, so the result answers each group on the axis
+                that group actually feels — inside one budget, not by growing it.
+              </p>
+            </StaggerItem>
+          </Stagger>
+
+          <Reveal delay={0.1}>
+            <div className="mt-10 border-l-2 border-blue pl-6 py-1 max-w-2xl">
+              <p className="font-serif italic text-xl md:text-2xl leading-snug text-navy">
+                We didn&rsquo;t place any of it, so we have nothing to defend by
+                leaving it alone.
+              </p>
+            </div>
+          </Reveal>
+        </Section>
+      </div>
+
       {/* ─────────────── PRINCIPLES ─────────────── */}
       <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-2xl mb-14">
             <Eyebrow>What we believe</Eyebrow>
             <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-              Five principles
+              Six principles
             </h2>
           </div>
         </Reveal>

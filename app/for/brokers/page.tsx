@@ -51,6 +51,10 @@ const cfg: AudienceConfig = {
       v: "Overlapping claims separated and each figure’s evidence quality scored on the same scale, before the committee meets rather than after it has already anchored on the best narrative.",
     },
     {
+      k: "A second opinion with no history",
+      v: "We didn’t place any of it, which means we can say “remove this” without indicting anyone’s prior advice — including our own, because we don’t have any. That is occasionally the most useful thing a client can hear, and the hardest thing for an incumbent adviser to say.",
+    },
+    {
       k: "A baseline that outlasts the year",
       v: "A portfolio measure the client owns. Counter-intuitively that works in your favour: it’s what makes your contribution attributable in the renewals that follow.",
     },

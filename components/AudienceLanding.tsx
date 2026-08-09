@@ -137,7 +137,7 @@ export default function AudienceLanding({ cfg }: { cfg: AudienceConfig }) {
           </div>
         </Reveal>
 
-        <Stagger className="grid md:grid-cols-3 gap-px bg-border border border-border">
+        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border">
           {cfg.changes.map((c) => (
             <StaggerItem key={c.k} className="bg-base p-7 md:p-8">
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-4">

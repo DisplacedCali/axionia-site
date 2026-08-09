@@ -73,6 +73,8 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN032"
     ],
     "mediumValueBenefits": [
+      "BEN081",
+      "BEN072",
       "BEN033",
       "BEN020",
       "BEN038",
@@ -98,21 +100,27 @@ export const SEGMENTS: readonly Segment[] = [
   },
   {
     "id": "SEG003",
-    "name": "Frontline / Entry-Level Service Workers",
+    "name": "Frontline & Service Roles",
     "compensationLevel": "Low / Medium",
     "workModel": "Onsite / field",
     "industryExamples": "Dental Assistants, Home Care Workers, CNAs, Retail Associates, Warehouse",
     "highValueBenefits": [
+      "BEN075",
+      "BEN072",
       "BEN016",
-      "BEN030",
+      "BEN074",
+      "BEN081",
+      "BEN073",
       "BEN048",
-      "BEN001",
-      "BEN020",
-      "BEN021"
+      "BEN001"
     ],
     "mediumValueBenefits": [
+      "BEN030",
+      "BEN020",
+      "BEN077",
+      "BEN079",
+      "BEN021",
       "BEN002",
-      "BEN003",
       "BEN031",
       "BEN038"
     ],
@@ -121,7 +129,7 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN042",
       "BEN059"
     ],
-    "notes": "Immediate, usable, low-friction benefits drive perceived value. Financial wellness and career ladder access are the primary retention levers.",
+    "notes": "The binding constraint usually arrives before clinical spend does. Predictable scheduling ranks first and costs nothing but operational discipline — a zero-cost option outranking funded programs is exactly the finding a brokered review cannot produce, because nobody sells it. Pay timing, reliable transport and care that matches actual shift hours decide retention here; a childcare subsidy that cannot be spent at 5am is not a benefit. Immediate and usable beats comprehensive.",
     "dimensions": {
       "comp": "low",
       "work": [
@@ -150,6 +158,8 @@ export const SEGMENTS: readonly Segment[] = [
     ],
     "mediumValueBenefits": [
       "BEN026",
+      "BEN076",
+      "BEN077",
       "BEN038",
       "BEN062",
       "BEN021"
@@ -304,6 +314,9 @@ export const SEGMENTS: readonly Segment[] = [
       "BEN016"
     ],
     "mediumValueBenefits": [
+      "BEN078",
+      "BEN074",
+      "BEN080",
       "BEN013",
       "BEN006",
       "BEN071",

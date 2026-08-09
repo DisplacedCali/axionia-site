@@ -39,7 +39,8 @@ export default function HeroIntro() {
       >
         When a benefits vendor tells you their program will save you money, Axionia
         checks whether that&rsquo;s true — independently, with every assumption on the
-        table. Built for the HR leaders and CFOs who want defensible numbers, not
+        table. Then we tell you what the same budget could buy instead. Built for
+        the HR leaders and CFOs who want defensible numbers and a better mix, not
         another pitch deck.
       </motion.p>
 
