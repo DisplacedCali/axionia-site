@@ -119,6 +119,12 @@ export interface ValidateOutput {
   description?: string;
   website?: string;
   confidence?: "high" | "medium" | "low";
+  /**
+   * Who owns this company, if the model specifically knows. Null is the
+   * correct answer when it doesn't — see VALIDATE_SYSTEM.
+   */
+  ownership?: string | null;
+  ownershipConfidence?: "high" | "medium" | "low" | "unknown";
   stateOfOperations?: string[];
 }
 

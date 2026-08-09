@@ -85,13 +85,32 @@ export class StepError extends Error {
 export async function runValidate(ctx: StepContext): Promise<ValidateOutput> {
   const res = await completeJson(ctx.llm, {
     system: P.VALIDATE_SYSTEM,
-    user: P.validateUser(ctx.input),
+    user: P.validateUser({ ...ctx.input, notes: ctx.input.notes }),
     label: "validate",
   });
   const data = extractJson<ValidateOutput>(res.text);
   if (!data?.name) {
     throw new StepError("Could not identify the company from the model response.", "validate");
   }
+
+  /**
+   * Drop an ownership claim the model isn't sure about, here, at the source.
+   *
+   * Suppressing it later would be too late: eight subsequent steps read the
+   * validated company as fact, so a shaky parent company propagates into the
+   * profile, the regulatory analysis and the recommendations before anyone
+   * sees it. The Valtruis run is the worked example — a guessed HCSC
+   * affiliation produced five pages of controlled-group analysis and the
+   * report's headline recommendation.
+   *
+   * `unknown` is the default rather than an error state. Most companies we run
+   * have no ownership worth asserting, and a blank is the honest output.
+   */
+  if (data.ownershipConfidence !== "high") {
+    data.ownership = null;
+    data.ownershipConfidence = data.ownershipConfidence ?? "unknown";
+  }
+
   return data;
 }
 

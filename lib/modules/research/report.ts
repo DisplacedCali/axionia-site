@@ -42,13 +42,20 @@ export const SECTIONS: ReadonlyArray<{
   { id: "scorecard",     label: "Readiness Scorecard",    order: 10, inSummary: true },
   { id: "findings",      label: "Key Findings",           order: 20, inSummary: true },
   { id: "profile",       label: "Company Profile",        order: 30, inSummary: true },
+  // The designed mix IS in the summary, and sits AHEAD of regulatory.
+  //
+  // A live free report ran twelve pages: a scorecard, findings, a profile, and
+  // then five pages of state-by-state statute. Everything that creates desire —
+  // workforce, benefit design, the brief — was paid. So the free artifact gave
+  // away the commodity, which an HR lead already knows or a broker handles, and
+  // withheld every part that would make someone want to buy.
+  //
+  // Compliance depth is real and differentiating and stays. It just isn't the
+  // thing to lead a free report with, and it isn't worth five of twelve pages
+  // to a reader who hasn't yet decided you're interesting.
+  { id: "designedMix",   label: "A Mix Built for This Workforce", order: 35, inSummary: true },
   { id: "regulatory",    label: "Regulatory Exposure",    order: 40, inSummary: true },
   { id: "workforce",     label: "Workforce Intelligence", order: 50, inSummary: false },
-  // The designed mix IS in the summary — that is the point of it. It is built
-  // from workforce shape alone and says so, so it gives away the shape of an
-  // answer without giving away the paid product: what the client actually
-  // runs, what it costs, what overlaps, and the cross-segment allocation.
-  { id: "designedMix",   label: "A Mix Built for This Workforce", order: 55, inSummary: true },
   { id: "benefitDesign", label: "Benefit Design",         order: 60, inSummary: false },
   { id: "brief",         label: "Pre-Meeting Brief",      order: 70, inSummary: false },
 ] as const;

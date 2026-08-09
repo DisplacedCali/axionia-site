@@ -570,3 +570,106 @@ export async function assignUserCompany(
   revalidatePath("/admin/users");
   return { ok: true };
 }
+
+/* ─────────────── link a company after the run ─────────────── */
+
+/**
+ * Attach a request — and its report — to a company, after the fact.
+ *
+ * There was no way to do this. A run started without a domain produced a report
+ * that said "it will file under the company once one is linked", and nothing
+ * could ever link one. The report was stranded: invisible on every company hub,
+ * and unreachable by a client who later signed up with a matching domain.
+ *
+ * Defaults come from what `validate` returned rather than from what was typed
+ * at the start, because by this point the pipeline has identified the company
+ * properly — official name, confirmed website. Re-typing what the research
+ * already established is how a second, slightly different company row gets
+ * created.
+ *
+ * Resolve-or-create by domain, same rule as everywhere else, and it follows a
+ * merge so work never lands on an alias.
+ */
+export async function linkRequestToCompany(args: {
+  requestId: string;
+  companyName: string;
+  domain?: string | null;
+}): Promise<{ ok: true; companyId: string } | { ok: false; error: string }> {
+  await requireStaff();
+  const admin = createAdminClient();
+
+  const name = args.companyName.trim();
+  if (!name) return { ok: false, error: "A company name is required." };
+
+  const rawDomain = (args.domain ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/.*$/, "");
+  const domain = rawDomain || null;
+
+  let companyId: string | null = null;
+
+  if (domain) {
+    const { data: existing } = await admin
+      .from("companies")
+      .select("id, merged_into")
+      .eq("domain", domain)
+      .maybeSingle();
+    // Follow the pointer — 023 keeps aliases alive, and filing under one would
+    // hide the report on a row that is no longer a company.
+    companyId = existing?.merged_into ?? existing?.id ?? null;
+  }
+
+  if (!companyId) {
+    const { data: byName } = await admin
+      .from("companies")
+      .select("id, merged_into")
+      .ilike("name", name)
+      .is("merged_into", null)
+      .maybeSingle();
+    companyId = byName?.id ?? null;
+  }
+
+  if (!companyId) {
+    const { data: created, error: createErr } = await admin
+      .from("companies")
+      .insert({
+        domain:
+          domain ?? `internal.${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        name,
+        notes: "Linked after research completed.",
+      })
+      .select("id")
+      .single();
+    if (createErr) return { ok: false, error: createErr.message };
+    companyId = created.id;
+  } else if (domain) {
+    // A company created from a synthetic domain gets its real one the first
+    // time we learn it, so future lookups by email domain resolve.
+    await admin
+      .from("companies")
+      .update({ name })
+      .eq("id", companyId)
+      .like("domain", "internal.%");
+  }
+
+  const { error: reqErr } = await admin
+    .from("report_requests")
+    .update({ company_id: companyId })
+    .eq("id", args.requestId);
+  if (reqErr) return { ok: false, error: reqErr.message };
+
+  // The report carries its own company_id — filing the request without the
+  // report would leave the artifact stranded, which is the bug being fixed.
+  await admin
+    .from("reports")
+    .update({ company_id: companyId })
+    .eq("request_id", args.requestId);
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/requests/${args.requestId}`);
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true, companyId: companyId as string };
+}

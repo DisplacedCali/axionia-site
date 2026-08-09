@@ -9,6 +9,7 @@ import { assembleReport, releaseBlockers, type ReportEdits, type ReportView } fr
 import type { ResearchResult } from "@/lib/modules/research/pipeline/types";
 import { activeResearchJob } from "@/app/admin/research-actions";
 import AlignmentPanel from "@/components/admin/AlignmentPanel";
+import LinkCompany from "@/components/admin/LinkCompany";
 
 export const dynamic = "force-dynamic";
 
@@ -183,6 +184,22 @@ export default async function RequestDetail({
           </span>
         )}
       </div>
+
+      {/* Nothing to file the report under. Shown once research exists, because
+          before that there is nothing to seed the defaults from — and the run
+          may still identify the company itself. */}
+      {!request.company_id && content && (
+        <div className="mt-8">
+          <LinkCompany
+            requestId={request.id}
+            suggestedName={content.company || request.company_name || ""}
+            suggestedDomain={(content.website || "")
+              .replace(/^https?:\/\//, "")
+              .replace(/^www\./, "")
+              .replace(/\/.*$/, "")}
+          />
+        </div>
+      )}
 
       {/* alignment sits above everything — it gates whether work should start */}
       {request.alignment !== "matched" && (

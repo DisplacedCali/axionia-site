@@ -99,17 +99,47 @@ export function clientAskBlock(input: {
 
 // ── Step 1: validate / identify ─────────────────────────────────────────────
 
+/**
+ * Company identification.
+ *
+ * The ownership rule below is not boilerplate caution. A run on Valtruis — a
+ * Welsh Carson portfolio company — returned "subsidiary or affiliate of HCSC",
+ * and because HCSC is a very large Chicago insurer and Valtruis is a Chicago
+ * value-based-care investor, the guess was plausible enough to survive. It then
+ * became load-bearing: the controlled-group analysis, the ALE exposure, the top
+ * recommendation and the whole time-sensitivity argument all rested on it.
+ *
+ * A wrong parent company in a report addressed to that company, from a firm
+ * selling analytical rigour, is the most expensive error this pipeline can make.
+ * So the instruction is explicit that omitting ownership is the correct answer
+ * when it isn't known — a model will not volunteer "I don't know" unless told
+ * that doing so is success rather than failure.
+ */
 export const VALIDATE_SYSTEM =
-  "You are a company identification assistant. Given a company name, optional website, and industry hint, identify and verify the company. Return JSON with fields: name (official), industry (standardized), hq (City, State), size (e.g. ~1,200 employees), description (2-3 sentences relevant to HR and benefits decisions), website (confirmed URL), confidence (high/medium/low), stateOfOperations (array of state abbreviations where they operate).";
+  "You are a company identification assistant. Given a company name, optional website, and industry hint, identify and verify the company. Return JSON with fields: name (official), industry (standardized), hq (City, State), size (e.g. ~1,200 employees), description (2-3 sentences relevant to HR and benefits decisions), website (confirmed URL), confidence (high/medium/low), ownership (parent, investor or corporate group — or null), ownershipConfidence (high/medium/low/unknown), stateOfOperations (array of state abbreviations where they operate).\n\n" +
+  "OWNERSHIP RULE — read carefully. Do NOT infer a parent company, investor or corporate affiliation from geography, sector, name similarity or plausibility. If you do not specifically know who owns this company, set ownership to null and ownershipConfidence to \"unknown\". That is a correct and expected answer, not a failure. A confidently wrong parent is far worse than an absent one, because everything downstream will be built on it.\n\n" +
+  "The description must not assert corporate structure, parent companies or affiliations unless ownershipConfidence is \"high\". Describe what the company does instead.";
 
 export function validateUser(input: {
   companyName: string;
   website?: string | null;
   industry?: string | null;
+  /**
+   * Operator instructions. Routed here as well as to the LinkedIn step, because
+   * this is where identity is decided — and an instruction like "this is not
+   * affiliated with X" is useless if it only reaches a later step that has
+   * already inherited the wrong premise.
+   */
+  notes?: string | null;
 }): string {
   const parts = [`Company: ${input.companyName.trim()}`];
   if (input.website?.trim()) parts.push(`Website: ${input.website.trim()}`);
   if (input.industry?.trim()) parts.push(`Industry: ${input.industry.trim()}`);
+  if (input.notes?.trim()) {
+    parts.push(
+      `Operator instructions — these come from a human who knows this company and OVERRIDE your own assumptions, including any assumption about ownership or affiliation: ${input.notes.trim()}`,
+    );
+  }
   return parts.join("\n");
 }
 
@@ -118,11 +148,11 @@ export function validateUser(input: {
 export const LINKEDIN_SYSTEM = `You are a research analyst. Return 6-8 concise bullet points (start each with -) covering:
 1. HR/benefits leadership — CHRO, VP Total Rewards, Benefits Director names and tenure if findable
 2. C-suite and key executives relevant to benefits decisions (CEO, CFO, COO) — background and priorities
-3. Investors and ownership — PE firm, major investors, board members, recent funding rounds or ownership changes
+3. Investors and ownership — PE firm, major investors, board members, recent funding rounds or ownership changes. State only what you specifically know. If you cannot name the owner, write "- Ownership: not established from available sources" and move on. Never infer a parent or affiliate from shared geography, shared sector or a similar name.
 4. Advisors or board members with HR/benefits relevance
 5. Recent HR hires, departures, or org changes
 6. Benefits-related job postings or signals
-Be specific with names and roles where findable.`;
+Be specific with names and roles where findable — and say so plainly where they are not. An honest "not established" is worth more here than a plausible guess, because everything downstream treats these bullets as fact.`;
 
 export function linkedinUser(co: CompanyContext, notes?: string | null): string {
   let s = `Company: ${companyLine(co)}`;
