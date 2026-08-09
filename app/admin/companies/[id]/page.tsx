@@ -4,20 +4,38 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/auth";
 import { Section } from "@/components/ui";
 import CrmPanel from "@/components/admin/CrmPanel";
+import BriefPanel from "@/components/admin/BriefPanel";
+import StepsPanel, { type Step } from "@/components/admin/StepsPanel";
+import ContactsPanel, {
+  type Contact,
+  type AccountUser,
+} from "@/components/admin/ContactsPanel";
 
 export const dynamic = "force-dynamic";
 
 /**
  * The company hub.
  *
- * Everything in this product is eventually about one account — its contacts,
- * its open work, its report history, its files. Before this page that
- * information was spread across three list views keyed on different things,
- * and answering "what's the state of Acme" meant three scans and a memory.
+ * Everything in this product is eventually about one account — its people, its
+ * open work, its report history, its files. Before this page that information
+ * was spread across three list views keyed on different things, and answering
+ * "what's the state of Acme" meant three scans and a memory.
  *
- * Deliberately read-only. Actions live where they already work — on the
- * request and report pages — and duplicating them here would mean two places
- * to keep correct.
+ * It used to say "deliberately read-only, actions live where they already
+ * work". That stopped being true the moment CrmPanel landed, and the page then
+ * spent a while being neither: a record with one editable box in the middle of
+ * it, labelled "Pipeline", holding three unrelated questions — what stage is
+ * this, who owns it, what happens next.
+ *
+ * The rule now: **this page owns the account, the request and report pages own
+ * the work.** Anything that describes the relationship — the brief, the people,
+ * the next steps, the stage — is edited here, because here is where you are
+ * when you think about it. Anything that advances a piece of work still lives
+ * with that work.
+ *
+ * Ordering follows the question you arrive with. Brief and steps first, because
+ * "what is this and what do I do next" is why you opened the page. Counts and
+ * history below, because they answer a question you only ask second.
  */
 
 const REQUEST_STATUS: Record<string, { dot: string; text: string; label: string }> = {
@@ -74,8 +92,14 @@ export default async function CompanyHub({
 
   if (!company) notFound();
 
-  const [{ data: contacts }, { data: requests }, { data: reports }, { data: files }] =
-    await Promise.all([
+  const [
+    { data: contacts },
+    { data: requests },
+    { data: reports },
+    { data: files },
+    { data: people },
+    { data: steps },
+  ] = await Promise.all([
       admin
         .from("profiles")
         .select("id, email, full_name, role, created_at")
@@ -98,9 +122,26 @@ export default async function CompanyHub({
         .select("id, filename, kind, created_at")
         .eq("company_id", params.id)
         .order("created_at", { ascending: false }),
+      // 025. People you've met, whether or not they ever signed up.
+      admin
+        .from("contacts")
+        .select("id, name, title, email, source, notes, profile_id")
+        .eq("company_id", params.id)
+        .order("created_at", { ascending: true }),
+      // Open first and by due date, then closed. `due_on` nulls last so an
+      // undated step doesn't sort above one that's actually overdue.
+      admin
+        .from("company_steps")
+        .select("id, step, due_on, done_at")
+        .eq("company_id", params.id)
+        .order("done_at", { ascending: true, nullsFirst: true })
+        .order("due_on", { ascending: true, nullsFirst: false }),
     ]);
 
   const contactRows = contacts ?? [];
+  const peopleRows = (people ?? []) as Contact[];
+  const stepRows = (steps ?? []) as Step[];
+  const openSteps = stepRows.filter((s) => !s.done_at);
   const requestRows = requests ?? [];
   const reportRows = reports ?? [];
   const fileRows = files ?? [];
@@ -149,27 +190,40 @@ export default async function CompanyHub({
             {company.domain} · tracked since {when(company.created_at)}
           </p>
         </div>
-        {open.length > 0 && (
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-caution border border-caution/40 bg-amber-light px-3 py-1.5">
-            {open.length} open
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {openSteps.length > 0 && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-blue border border-blue/40 bg-blue-light px-3 py-1.5">
+              {openSteps.length} step{openSteps.length === 1 ? "" : "s"}
+            </span>
+          )}
+          {open.length > 0 && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-caution border border-caution/40 bg-amber-light px-3 py-1.5">
+              {open.length} open
+            </span>
+          )}
+        </div>
       </div>
 
-      {company.notes && (
-        <p className="mt-6 max-w-measure text-[14px] leading-[1.7] text-gray-warm border-l-2 border-border pl-4">
-          {company.notes}
-        </p>
-      )}
-
-      <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-6">
-        <Stat n={contactRows.length} label="Contacts" />
-        <Stat n={open.length} label="Open requests" />
-        <Stat n={released.length} label="Released reports" />
-        <Stat n={fileRows.length} label="Files" />
+      {/* Brief and steps first — the two questions you arrive with. */}
+      <div className="mt-8 grid lg:grid-cols-2 gap-6">
+        <BriefPanel companyId={company.id} notes={company.notes ?? null} />
+        <StepsPanel companyId={company.id} steps={stepRows} />
       </div>
 
-      <div className="mt-10">
+      <div className="mt-6">
+        <ContactsPanel
+          companyId={company.id}
+          contacts={peopleRows}
+          users={contactRows as AccountUser[]}
+        />
+      </div>
+
+      {/* Stage and owner. Kept as their own panel rather than folded into the
+          header — they're set rarely and read often, which is the opposite of
+          the steps above. `next_action` still lives here for now; the steps
+          list supersedes it and it should be migrated across and dropped once
+          nothing depends on the column. */}
+      <div className="mt-6">
         <CrmPanel
           companyId={company.id}
           stage={company.stage ?? "lead"}
@@ -178,6 +232,13 @@ export default async function CompanyHub({
           nextActionAt={company.next_action_at ?? null}
           staff={staffOptions}
         />
+      </div>
+
+      <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <Stat n={peopleRows.length + contactRows.length} label="People" />
+        <Stat n={open.length} label="Open requests" />
+        <Stat n={released.length} label="Released reports" />
+        <Stat n={fileRows.length} label="Files" />
       </div>
 
       {/* ── requests ── */}

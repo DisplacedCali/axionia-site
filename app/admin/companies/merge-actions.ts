@@ -21,6 +21,11 @@ const COMPANY_REFS = [
   "report_files",
   "report_recipients",
   "site_events",
+  // 025. Contacts and steps are the two most likely to be noticed by their
+  // absence — losing the people you met is worse than losing a file row,
+  // because nothing else in the system records that the meeting happened.
+  "contacts",
+  "company_steps",
 ] as const;
 
 /**

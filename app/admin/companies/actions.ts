@@ -63,3 +63,154 @@ export async function updateCrm(
   revalidatePath(`/admin/companies/${companyId}`);
   return { ok: true };
 }
+
+/* ─────────────── brief ─────────────── */
+
+/**
+ * The company brief — who they are and why they matter, in your words.
+ *
+ * `companies.notes` has existed since 002 and the hub has always rendered it.
+ * Nothing could ever write it, so in practice it was a column that displayed
+ * an empty string. This is the missing half.
+ *
+ * Separate from `updateCrm` on purpose: that one saves on every keystroke's
+ * blur because its fields are selects and dates. A paragraph wants an explicit
+ * save, and mixing the two would either make the brief lossy or make the
+ * selects sluggish.
+ */
+export async function updateBrief(
+  companyId: string,
+  notes: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireStaff();
+
+  const { error } = await createAdminClient()
+    .from("companies")
+    .update({ notes: notes.trim().slice(0, 4000) || null })
+    .eq("id", companyId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
+
+/* ─────────────── contacts ─────────────── */
+
+/**
+ * A person you've met, whether or not they ever sign up.
+ *
+ * See migration 025 for why this isn't a `profiles` row. The short version:
+ * profiles.id is the join every RLS policy reads, and a profile that can't
+ * authenticate is a hole rather than a contact.
+ */
+export async function addContact(
+  companyId: string,
+  contact: { name: string; title?: string; email?: string; source?: string; notes?: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { profile: staff } = await requireStaff();
+
+  const name = contact.name?.trim();
+  if (!name) return { ok: false, error: "A contact needs a name." };
+
+  const { error } = await createAdminClient().from("contacts").insert({
+    company_id: companyId,
+    name: name.slice(0, 200),
+    title: contact.title?.trim().slice(0, 200) || null,
+    email: contact.email?.trim().toLowerCase().slice(0, 320) || null,
+    source: contact.source?.trim().slice(0, 400) || null,
+    notes: contact.notes?.trim().slice(0, 4000) || null,
+    created_by: staff?.id ?? null,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
+
+export async function removeContact(
+  companyId: string,
+  contactId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireStaff();
+
+  const { error } = await createAdminClient()
+    .from("contacts")
+    .delete()
+    .eq("id", contactId)
+    .eq("company_id", companyId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
+
+/* ─────────────── steps ─────────────── */
+
+export async function addStep(
+  companyId: string,
+  step: { step: string; dueOn?: string | null },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { profile: staff } = await requireStaff();
+
+  const text = step.step?.trim();
+  if (!text) return { ok: false, error: "A step needs a description." };
+
+  const { error } = await createAdminClient().from("company_steps").insert({
+    company_id: companyId,
+    step: text.slice(0, 400),
+    due_on: step.dueOn || null,
+    created_by: staff?.id ?? null,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
+
+/**
+ * Close a step, or reopen it.
+ *
+ * `done_at` carries when rather than whether (migration 025, decision 3), so
+ * reopening clears the timestamp rather than setting a second flag. There is
+ * only ever one answer to "is this open".
+ */
+export async function toggleStep(
+  companyId: string,
+  stepId: string,
+  done: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireStaff();
+
+  const { error } = await createAdminClient()
+    .from("company_steps")
+    .update({ done_at: done ? new Date().toISOString() : null })
+    .eq("id", stepId)
+    .eq("company_id", companyId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
+
+export async function removeStep(
+  companyId: string,
+  stepId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireStaff();
+
+  const { error } = await createAdminClient()
+    .from("company_steps")
+    .delete()
+    .eq("id", stepId)
+    .eq("company_id", companyId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
