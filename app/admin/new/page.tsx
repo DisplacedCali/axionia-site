@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Section } from "@/components/ui";
 import NewResearchForm from "@/components/admin/NewResearchForm";
 
@@ -7,6 +8,13 @@ export const dynamic = "force-dynamic";
 
 export default async function NewResearch() {
   await requireAdmin();
+
+  // Existing firms, so the field autocompletes rather than making you remember
+  // exactly how you spelled one last month. Free text still creates a new one.
+  const { data: firms } = await createAdminClient()
+    .from("firms")
+    .select("id, name, kind")
+    .order("name");
 
   return (
     <Section className="pt-12 pb-24">
@@ -27,7 +35,7 @@ export default async function NewResearch() {
         </p>
       </div>
 
-      <NewResearchForm />
+      <NewResearchForm firms={firms ?? []} />
     </Section>
   );
 }

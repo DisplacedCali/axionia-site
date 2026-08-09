@@ -66,6 +66,24 @@ export async function createAdminRequest(input: {
   domain?: string;
   employees?: string;
   industry?: string;
+  /**
+   * Free text: the largest role groups at this employer.
+   *
+   * The prompt builder treats this as authoritative and explicitly ranks it
+   * ABOVE the industry label, which "only ever yields a default mix". The
+   * public intake collected it and this form did not, so admin-initiated
+   * research was being fed worse input than a stranger's free request.
+   */
+  roleGroups?: string;
+  /**
+   * Firm or portfolio this company belongs to (migration 024).
+   *
+   * Free text, resolved-or-created. A dropdown would have meant creating firms
+   * somewhere else first, and the moment you actually need one is while you're
+   * setting up research on the first company in it.
+   */
+  firmName?: string;
+  firmKind?: "investor" | "operator";
   notes?: string;
 }): Promise<{ ok: true; requestId: string } | { ok: false; error: string }> {
   await requireAdmin();
@@ -119,6 +137,43 @@ export async function createAdminRequest(input: {
     }
   }
 
+  // ── resolve or create the firm, and attach the company to it ──
+  //
+  // Deliberately after the company exists, and deliberately tolerant: a failure
+  // here must not lose the research request. A company with no firm is a normal
+  // state; a request that vanished because a grouping failed is not.
+  const firmName = (input.firmName ?? "").trim();
+  if (firmName && companyId) {
+    try {
+      const { data: existingFirm } = await admin
+        .from("firms")
+        .select("id")
+        .ilike("name", firmName)
+        .maybeSingle();
+
+      let firmId = existingFirm?.id ?? null;
+      if (!firmId) {
+        const { data: newFirm } = await admin
+          .from("firms")
+          .insert({ name: firmName.slice(0, 200), kind: input.firmKind ?? "investor" })
+          .select("id")
+          .single();
+        firmId = newFirm?.id ?? null;
+      }
+
+      // 024 forbids an alias carrying a firm, so only ever write to a live row.
+      if (firmId) {
+        await admin
+          .from("companies")
+          .update({ firm_id: firmId })
+          .eq("id", companyId)
+          .is("merged_into", null);
+      }
+    } catch {
+      /* grouping is a convenience; the request matters more */
+    }
+  }
+
   // ── refresh or first pull? ──
   let kind: "new" | "refresh" = "new";
   const { count } = await admin
@@ -146,6 +201,9 @@ export async function createAdminRequest(input: {
       payload: {
         employees: input.employees || null,
         industry: input.industry || null,
+        // research-actions.ts reads payload.role_groups into JobInput, so the
+        // key has to be snake_case here to match what the public intake writes.
+        role_groups: input.roleGroups?.trim() || null,
         email_domain: domain,
         admin_initiated: true,
       },

@@ -4,6 +4,21 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createAdminRequest } from "@/app/admin/actions";
 
+/**
+ * An industry HINT, and only that.
+ *
+ * Step one of the pipeline (`runValidate`) is told to return a standardised
+ * industry of its own, and everything downstream reads that rather than this.
+ * So for any company the model can identify — the normal case — whatever is
+ * picked here is overwritten within seconds. It earns its place only when the
+ * company can't be identified, where it stops a blind guess.
+ *
+ * Which is why the list is short and stays short. Expanding it to twenty
+ * options would give more ways to specify something that gets replaced. The
+ * field that actually drives the analysis is `roleGroups` below: the prompt
+ * builder treats it as authoritative and explicitly ranks it above the industry
+ * label, "which only ever yields a default mix".
+ */
 const INDUSTRIES = [
   "Light Manufacturing",
   "Professional Services",
@@ -12,17 +27,22 @@ const INDUSTRIES = [
   "Other",
 ];
 
+type Firm = { id: string; name: string; kind: string };
+
 const labelCls =
   "block font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm mb-2";
 const inputCls =
   "w-full border border-border bg-white/60 px-4 py-2.5 text-[15px] focus:outline-none focus:border-navy transition-colors";
 
-export default function NewResearchForm() {
+export default function NewResearchForm({ firms = [] }: { firms?: Firm[] }) {
   const router = useRouter();
   const [companyName, setCompanyName] = useState("");
   const [domain, setDomain] = useState("");
   const [employees, setEmployees] = useState("");
   const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [roleGroups, setRoleGroups] = useState("");
+  const [firmName, setFirmName] = useState("");
+  const [firmKind, setFirmKind] = useState<"investor" | "operator">("investor");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -37,6 +57,9 @@ export default function NewResearchForm() {
       domain,
       employees,
       industry,
+      roleGroups,
+      firmName,
+      firmKind,
       notes,
     });
 
@@ -89,7 +112,7 @@ export default function NewResearchForm() {
             />
           </div>
           <div>
-            <label className={labelCls}>Workforce profile</label>
+            <label className={labelCls}>Industry hint (optional)</label>
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
@@ -99,6 +122,68 @@ export default function NewResearchForm() {
                 <option key={i}>{i}</option>
               ))}
             </select>
+            <p className="mt-2 text-[12px] leading-[1.6] text-gray-cool">
+              Only used if the company can&rsquo;t be identified — otherwise the
+              analysis derives its own.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>Largest role groups</label>
+          <input
+            value={roleGroups}
+            onChange={(e) => setRoleGroups(e.target.value)}
+            placeholder="investment principals, portfolio operations, finance, admin"
+            className={inputCls}
+          />
+          <p className="mt-2 text-[12px] leading-[1.6] text-gray-cool">
+            The single most useful thing on this form. The analysis treats this
+            as authoritative and weights it above the industry above — a sector
+            label alone only ever produces a default mix.
+          </p>
+        </div>
+
+        {/* ── firm / portfolio ──
+            Free text with autocomplete rather than a dropdown: the moment you
+            need a firm to exist is while you’re setting up research on the
+            first company in it, and a dropdown would send you elsewhere to
+            create one first. */}
+        <div className="grid sm:grid-cols-[1.6fr_1fr] gap-5">
+          <div>
+            <label className={labelCls}>Firm or portfolio (optional)</label>
+            <input
+              list="firm-names"
+              value={firmName}
+              onChange={(e) => setFirmName(e.target.value)}
+              placeholder="Valtruis"
+              className={inputCls}
+            />
+            <datalist id="firm-names">
+              {firms.map((f) => (
+                <option key={f.id} value={f.name} />
+              ))}
+            </datalist>
+            <p className="mt-2 text-[12px] leading-[1.6] text-gray-cool">
+              Groups this company under an investor or operator. Type a new name
+              to create one. Leave blank for a standalone employer.
+            </p>
+          </div>
+          <div>
+            <label className={labelCls}>Firm type</label>
+            <select
+              value={firmKind}
+              onChange={(e) => setFirmKind(e.target.value as "investor" | "operator")}
+              className={inputCls}
+              disabled={!firmName.trim()}
+            >
+              <option value="investor">Investor — influences many buyers</option>
+              <option value="operator">Operator — is the buyer</option>
+            </select>
+            <p className="mt-2 text-[12px] leading-[1.6] text-gray-cool">
+              Only applied when creating a new firm. Consolidation advice is
+              only sensible for an operator.
+            </p>
           </div>
         </div>
 

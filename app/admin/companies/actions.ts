@@ -214,3 +214,79 @@ export async function removeStep(
   revalidatePath(`/admin/companies/${companyId}`);
   return { ok: true };
 }
+
+/* ─────────────── firm ─────────────── */
+
+/**
+ * Group a company under a firm, or detach it.
+ *
+ * Resolve-or-create by name for the same reason the research form does it:
+ * the moment you need a firm to exist is while you're looking at the company
+ * that belongs to it.
+ *
+ * Refuses on an alias. Migration 024 has a check constraint saying a merged
+ * row cannot carry a firm_id, so the database would reject this anyway — but
+ * a clear message beats a constraint violation surfacing as a 500.
+ */
+export async function setCompanyFirm(
+  companyId: string,
+  firmName: string,
+  kind: "investor" | "operator" = "investor",
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireStaff();
+  const admin = createAdminClient();
+
+  const { data: company } = await admin
+    .from("companies")
+    .select("id, merged_into")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (!company) return { ok: false, error: "No such company." };
+  if (company.merged_into) {
+    return {
+      ok: false,
+      error:
+        "This row is an alias of another company. Group the surviving company instead — the alias follows it.",
+    };
+  }
+
+  const name = firmName.trim();
+
+  if (!name) {
+    const { error } = await admin
+      .from("companies")
+      .update({ firm_id: null })
+      .eq("id", companyId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath(`/admin/companies/${companyId}`);
+    revalidatePath("/admin/firms");
+    return { ok: true };
+  }
+
+  const { data: existing } = await admin
+    .from("firms")
+    .select("id")
+    .ilike("name", name)
+    .maybeSingle();
+
+  let firmId = existing?.id ?? null;
+  if (!firmId) {
+    const { data: created, error: createErr } = await admin
+      .from("firms")
+      .insert({ name: name.slice(0, 200), kind })
+      .select("id")
+      .single();
+    if (createErr) return { ok: false, error: createErr.message };
+    firmId = created.id;
+  }
+
+  const { error } = await admin
+    .from("companies")
+    .update({ firm_id: firmId })
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  revalidatePath("/admin/firms");
+  return { ok: true };
+}

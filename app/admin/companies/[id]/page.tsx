@@ -13,6 +13,7 @@ import ContactsPanel, {
 import DeckVersionsPanel, {
   type DeckVersion,
 } from "@/components/admin/DeckVersionsPanel";
+import FirmPanel from "@/components/admin/FirmPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,7 @@ export default async function CompanyHub({
   const { data: company } = await admin
     .from("companies")
     .select(
-      "id, domain, name, notes, created_at, stage, owner_id, next_action, next_action_at"
+      "id, domain, name, notes, created_at, stage, owner_id, next_action, next_action_at, firm_id, firms(name, kind)"
     )
     .eq("id", params.id)
     .single();
@@ -188,6 +189,9 @@ export default async function CompanyHub({
     (assignees ?? []).map((a) => [a.id, a.full_name || a.email])
   );
 
+  // Firm list for the datalist — small table, one query, no pagination needed.
+  const { data: allFirms } = await admin.from("firms").select("id, name").order("name");
+
   const { data: staff } = await admin
     .from("profiles")
     .select("id, email, full_name")
@@ -230,8 +234,21 @@ export default async function CompanyHub({
         </div>
       </div>
 
+      <div className="mt-8">
+        <FirmPanel
+          companyId={company.id}
+          firmName={
+            (company as { firms?: { name?: string } | null }).firms?.name ?? null
+          }
+          firmKind={
+            (company as { firms?: { kind?: string } | null }).firms?.kind ?? null
+          }
+          firms={allFirms ?? []}
+        />
+      </div>
+
       {/* Brief and steps first — the two questions you arrive with. */}
-      <div className="mt-8 grid lg:grid-cols-2 gap-6">
+      <div className="mt-6 grid lg:grid-cols-2 gap-6">
         <BriefPanel companyId={company.id} notes={company.notes ?? null} />
         <StepsPanel companyId={company.id} steps={stepRows} />
       </div>
