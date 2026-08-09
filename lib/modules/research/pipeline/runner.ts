@@ -31,7 +31,9 @@ import {
   validatePlan,
 } from "./plan";
 import { LlmError, type LlmClient, type Usage } from "./llm";
-import { StepError, type StepContext } from "./steps";
+import { StepError, type StepContext,
+  runDesignedMix,
+} from "./steps";
 import type {
   PipelineJob,
   ResearchResult,
@@ -324,8 +326,22 @@ async function finish(
 
   // benefitdesign is attached to workforceData because that is the shape the
   // existing report tabs and the benefit_gaps insert already expect.
+  // designedMix is derived, not a step: it composes over benefitdesign and the
+  // library, costs no model call, and cannot fail mid-run. Named programs come
+  // from intake so the mix never ranks something the client told us they run.
+  const designSegments = o.benefitdesign ?? [];
   const workforceData = o.workforce
-    ? { ...o.workforce, benefitDesign: o.benefitdesign ?? [] }
+    ? {
+        ...o.workforce,
+        benefitDesign: designSegments,
+        designedMix: runDesignedMix(
+          designSegments,
+          (job.input.programs ?? "")
+            .split(/[,;\n]/)
+            .map((x) => x.trim())
+            .filter(Boolean),
+        ),
+      }
     : null;
 
   const result: ResearchResult = {

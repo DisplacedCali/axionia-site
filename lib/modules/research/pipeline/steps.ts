@@ -38,6 +38,8 @@ import type {
   ValidateOutput,
   WorkforceOutput,
   WorkforceSegment,
+  DesignedMix,
+  DesignedMixPick,
 } from "./types";
 
 export interface StepContext {
@@ -509,4 +511,142 @@ export async function runSynthesis(ctx: StepContext): Promise<string> {
     maxTokens: 2500,
   });
   return res.text;
+}
+
+// ── designed mix ────────────────────────────────────────────────────────────
+
+/**
+ * A mix built from workforce shape alone, plus what's surprising about it.
+ *
+ * DETERMINISTIC ON PURPOSE — no model call. Three reasons:
+ *
+ * 1. The provocation comes from library scores that are already reviewed data.
+ *    A model asked to be surprising will be surprising, which is not the same
+ *    as being right, and this is the page a reader is most likely to quote back.
+ * 2. Pure means it runs in the dry-run harness like every other step.
+ * 3. It costs nothing and cannot fail mid-run.
+ *
+ * The surprise is computable because it comes from the shape of the library
+ * rather than from anything about this employer: benefits with no vendor
+ * pitching them, benefits where financial leverage is as high as perceived
+ * value, and benefits outside the clinical stack entirely. None of those
+ * require knowing what the employer already runs — which is exactly why this
+ * can be given away without giving away the paid product.
+ */
+export function runDesignedMix(
+  segments: BenefitDesignSegment[],
+  namedPrograms: string[] = [],
+): DesignedMix {
+  const named = new Set(
+    namedPrograms.map((p) => p.trim().toLowerCase()).filter(Boolean),
+  );
+
+  const picks: DesignedMixPick[] = [];
+  const seen = new Set<string>();
+
+  for (const seg of segments) {
+    const libId = seg.libraryMatch?.segmentId;
+    if (!libId) continue;
+    const lib = getSegmentBenefits(libId);
+    if (!lib?.segment) continue;
+
+    for (const b of [...lib.high, ...lib.medium]) {
+      if (seen.has(b.id)) continue;
+
+      // Never surface something they told us they already run. Ranking a
+      // client's own program from a bubble is a verdict we haven't earned.
+      const nameLower = b.name.toLowerCase();
+      if ([...named].some((n) => nameLower.includes(n) || n.includes(nameLower))) {
+        continue;
+      }
+
+      /**
+       * "Nobody sells this" is the most quotable claim in the section, so it
+       * has to be true about the market and not merely true about our vendor
+       * table — which lists 17 vendors and was never meant to be a census.
+       *
+       * Without the category guard this fired on 401(k), which would tell a
+       * CFO nobody sells retirement plans. Wrong, and wrong in the way that
+       * costs a meeting. The guard restricts the claim to the categories where
+       * the absence of a broker channel is a genuine property of the benefit:
+       * lifestyle, on-site, scheduling, and core work support. Health plans,
+       * clinical programs, insurance and retirement all have mature channels
+       * regardless of whether our library happens to name a vendor.
+       */
+      const UNBROKERED = [
+        "Lifestyle / Flexible Perk",
+        "Lifestyle / On-site",
+        "Lifestyle / Core Work Support",
+        "Leave / Flexibility",
+        "Career Development",
+      ];
+      const noSeller =
+        UNBROKERED.includes(b.category) && getVendorsForBenefit(b.id).length === 0;
+      const cheapHighRank = b.financial >= 4 && b.perceived >= 4;
+      const offClinical = b.clinical <= 2 && b.retention >= 4;
+
+      let kind: DesignedMixPick["kind"] | null = null;
+      let why = "";
+
+      if (noSeller && (b.perceived >= 4 || b.retention >= 4)) {
+        kind = "no-seller";
+        why =
+          "Nothing in the brokered channel pitches this, so its absence from a portfolio was never a decision anyone made — there was simply no meeting at which it came up.";
+      } else if (cheapHighRank) {
+        kind = "cheap-high-rank";
+        why =
+          "Scores at the top of the library on employer leverage as well as perceived value. Where a portfolio already carries several overlapping clinical programs, this is frequently the better marginal dollar.";
+      } else if (offClinical) {
+        kind = "off-clinical";
+        why =
+          "Sits outside the clinical stack entirely, which is the comparison no point-solution vendor can make — they can only argue within their own category.";
+      }
+
+      if (!kind) continue;
+
+      seen.add(b.id);
+      picks.push({
+        benefit: b.name,
+        kind,
+        why: `${b.axioniaPOV ? b.axioniaPOV + " " : ""}${why}`,
+        forSegment: seg.segment,
+        scores: {
+          perceived: b.perceived,
+          retention: b.retention,
+          financial: b.financial,
+          clinical: b.clinical,
+        },
+      });
+      if (picks.length >= 5) break;
+    }
+    if (picks.length >= 5) break;
+  }
+
+  /**
+   * Cross-segment tension. Paid-only via SECTIONS, but computed here so the
+   * locked placeholder is honest — the analysis exists, it just isn't shown.
+   */
+  const tension: string[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    for (let j = i + 1; j < segments.length; j++) {
+      const a = segments[i];
+      const b = segments[j];
+      const aTop = new Set(a.bestInClass.map((x) => x.benefit));
+      const bLow = new Set(b.bareMinimum.map((x) => x.benefit));
+      const clash = [...aTop].find((x) => bLow.has(x));
+      if (clash) {
+        tension.push(
+          `${clash} ranks near the top for ${a.segment} and near the bottom for ${b.segment}. A single company-wide answer serves one of them badly; a flexible structure is usually the resolution rather than picking a winner.`,
+        );
+      }
+    }
+  }
+
+  return {
+    premise:
+      "This mix was built from your workforce shape and nothing else. We don't yet know which programs you already run, what they cost you, or which of them overlap — so read this as a comparison rather than a recommendation. Where it looks nothing like what you have, that difference is the conversation worth having.",
+    picks,
+    acknowledged: namedPrograms.filter(Boolean).slice(0, 12),
+    tension: tension.slice(0, 3),
+  };
 }

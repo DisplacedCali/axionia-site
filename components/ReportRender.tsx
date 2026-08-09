@@ -86,7 +86,7 @@ const WITHHELD_COPY: Record<
   benefitDesign: {
     label: "Benefit Design",
     blurb:
-      "A prioritised prescription per segment — what to add, what to renegotiate, what already overlaps something you pay for elsewhere — with the gap analysis behind each call and the assumptions left visible.",
+      "The mix above was built from your workforce shape alone. This is the same analysis run against what you actually carry — your programs scored, overlapping claims separated and quantified, the spend reallocated rather than only ranked, and the cross-segment view showing where serving one group well serves another badly.",
     interest: "benefit-design",
     cta: "Ask about the full analysis",
   },
@@ -613,6 +613,69 @@ export default function ReportRender({
           </div>
         </Section>
       )}
+
+      {/* ── A mix built for this workforce (free) ──────────────────
+          Deliberately opens by naming what it doesn't know. A confident
+          prescription assembled without the client's current programs would be
+          the exact overreach this product exists to catch — and the honest
+          version converts better, because the reader's objection ("you don't
+          know we already run X") is the buying signal, and stating it first
+          turns it into the invitation.
+
+          Nothing here scores a program the client told us they run. Those are
+          listed, unranked, under `acknowledged`. Ranking someone's own decision
+          from a bubble is the line between provocative and offensive. */}
+      {visible.has("designedMix") && report.workforce?.designedMix?.picks?.length ? (
+        <Section id="designedMix" title="A Mix Built for This Workforce">
+          <p className="text-[14px] leading-[1.75] text-gray-warm max-w-measure border-l-2 border-blue pl-5 mb-8">
+            {report.workforce.designedMix.premise}
+          </p>
+
+          <ul className="divide-y divide-border border-y border-border">
+            {report.workforce.designedMix.picks.map((p) => (
+              <li key={p.benefit} className="py-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
+                  <span className="text-[15px] text-navy">{p.benefit}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-blue">
+                    {p.kind === "no-seller"
+                      ? "Nobody sells this"
+                      : p.kind === "cheap-high-rank"
+                        ? "Low cost, high rank"
+                        : "Outside the clinical stack"}
+                  </span>
+                </div>
+                <p className="text-[13px] leading-[1.7] text-gray-warm max-w-measure">
+                  {p.why}
+                </p>
+                <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-gray-cool">
+                  {p.forSegment} · perceived {p.scores.perceived}/5 · retention{" "}
+                  {p.scores.retention}/5 · employer leverage {p.scores.financial}/5
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {report.workforce.designedMix.acknowledged.length > 0 && (
+            <p className="mt-6 text-[13px] leading-[1.7] text-gray-cool max-w-measure">
+              You told us about{" "}
+              <span className="text-gray-warm">
+                {report.workforce.designedMix.acknowledged.join(", ")}
+              </span>
+              . We&rsquo;ve deliberately left those out of the ranking above —
+              judging a program you already chose, without seeing what it costs
+              you or who else it overlaps, isn&rsquo;t a call we&rsquo;ve earned
+              the right to make yet.
+            </p>
+          )}
+
+          <p className="mt-6 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
+            Ordering only. We don&rsquo;t put a dollar figure on retention or
+            satisfaction — those are too confounded by pay, management and the
+            labour market to attribute honestly, and a method that invents one is
+            the thing we exist to catch.
+          </p>
+        </Section>
+      ) : null}
 
       {/* ── Benefit design (paid) ────────────────────────────────── */}
       {visible.has("benefitDesign") && report.workforce?.benefitDesign?.length ? (

@@ -178,12 +178,69 @@ export interface BenefitDesignSegment {
   gap: BenefitDesignGap[];
 }
 
+/**
+ * A benefit the reader is unlikely to have been shown, and why.
+ *
+ * `kind` is the reason it's surprising, and each one is computable from the
+ * library without knowing anything about what the employer currently runs:
+ *
+ *  - `no-seller`      nothing in the brokered channel pitches this, so its
+ *                     absence from a portfolio was never a decision anyone made
+ *  - `cheap-high-rank` scores at the top of the library on financial leverage
+ *                     as well as value — the case where a low-cost option
+ *                     outranks a funded one
+ *  - `off-clinical`   sits outside the clinical stack entirely, which is the
+ *                     axis no point-solution vendor can argue across
+ */
+export interface DesignedMixPick {
+  benefit: string;
+  kind: "no-seller" | "cheap-high-rank" | "off-clinical";
+  why: string;
+  forSegment: string;
+  scores: { perceived: number; retention: number; financial: number; clinical: number };
+}
+
+/**
+ * A mix designed from workforce shape alone.
+ *
+ * The point of this section is that it is built WITHOUT knowing the employer's
+ * current programs, and says so first. Two reasons that framing is load-bearing
+ * rather than a disclaimer:
+ *
+ * 1. It's true, and this product's entire claim is that it exposes its own
+ *    model. A confident prescription built from a bubble would be the exact
+ *    overreach we exist to catch.
+ *
+ * 2. It converts better. The reader's first reaction to an unfamiliar mix is
+ *    "but you don't know we already run X" — and that thought is the buying
+ *    signal. Naming the blind spot first turns the objection into the invitation.
+ *
+ * What this must never do is score or rank a program the employer told us they
+ * already run. That would be a verdict on a decision they made, delivered
+ * without their data, which is the difference between provocative and
+ * offensive. Named programs are acknowledged in `acknowledged` and left alone.
+ */
+export interface DesignedMix {
+  /** The stated blind spot. Rendered before anything else in the section. */
+  premise: string;
+  picks: DesignedMixPick[];
+  /** Programs the client named at intake. Listed, never scored. */
+  acknowledged: string[];
+  /**
+   * Where serving one group well serves another badly. Genuinely the most
+   * distinctive output here, and reserved for the paid view — see SECTIONS,
+   * where `benefitDesign` carries it and stays out of the summary.
+   */
+  tension: string[];
+}
+
 export interface WorkforceOutput {
   segments: WorkforceSegment[];
   summaryBullets: string[];
   overallInsight: string;
   axioniaPitch: string;
   benefitDesign?: BenefitDesignSegment[];
+  designedMix?: DesignedMix;
 }
 
 export type ScoreSet = Partial<Record<AxisKey, number>> & {

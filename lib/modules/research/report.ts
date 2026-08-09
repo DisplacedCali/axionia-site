@@ -28,6 +28,7 @@ export type SectionId =
   | "profile"
   | "regulatory"
   | "workforce"
+  | "designedMix"
   | "benefitDesign"
   | "brief";
 
@@ -43,6 +44,11 @@ export const SECTIONS: ReadonlyArray<{
   { id: "profile",       label: "Company Profile",        order: 30, inSummary: true },
   { id: "regulatory",    label: "Regulatory Exposure",    order: 40, inSummary: true },
   { id: "workforce",     label: "Workforce Intelligence", order: 50, inSummary: false },
+  // The designed mix IS in the summary — that is the point of it. It is built
+  // from workforce shape alone and says so, so it gives away the shape of an
+  // answer without giving away the paid product: what the client actually
+  // runs, what it costs, what overlaps, and the cross-segment allocation.
+  { id: "designedMix",   label: "A Mix Built for This Workforce", order: 55, inSummary: true },
   { id: "benefitDesign", label: "Benefit Design",         order: 60, inSummary: false },
   { id: "brief",         label: "Pre-Meeting Brief",      order: 70, inSummary: false },
 ] as const;
