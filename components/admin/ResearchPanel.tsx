@@ -478,7 +478,7 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
             and it should still be there when it does.
           */}
           <div className="mb-6 flex justify-center">
-            <PipelineOrbit steps={steps} percent={percent} />
+            <PipelineOrbit steps={steps} percent={percent} live={running} />
           </div>
 
           <ul className="space-y-1.5">

@@ -24,9 +24,12 @@ import type { MixPoint } from "@/lib/modules/research/pipeline/types";
  * reader distrust everything else on the page.
  */
 
-const W = 680;
+const W = 860;
 const H = 460;
-const PAD = { t: 34, r: 28, b: 56, l: 64 };
+// Right padding is a LABEL COLUMN, not margin — the highlighted picks are
+// named there rather than beside their dots, which is what stopped them
+// overflowing the frame and colliding with each other.
+const PAD = { t: 34, r: 210, b: 56, l: 64 };
 
 export default function MixMap({ points }: { points: MixPoint[] }) {
   if (!points.length) return null;
@@ -34,15 +37,30 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
   const iw = W - PAD.l - PAD.r;
   const ih = H - PAD.t - PAD.b;
 
-  // 1–5 → pixels. X inverted: leverage 5 (cheapest) sits left.
-  const x = (leverage: number) => PAD.l + ((5 - leverage) / 4) * iw;
-  const y = (perceived: number) => PAD.t + ((5 - perceived) / 4) * ih;
+  /*
+    INSET the scale. A 1–5 axis mapped edge to edge puts every 5 exactly on the
+    boundary — and since almost every benefit in a segment's list scores 4 or 5
+    on perceived value, the top row sat ON the frame and the jitter pushed it
+    outside. The first render leaked a dozen dots above the plot.
+
+    The inset costs a little dynamic range and buys points that are always
+    inside the box they belong to.
+  */
+  const INSET = 26;
+  const x = (leverage: number) =>
+    PAD.l + INSET + ((5 - leverage) / 4) * (iw - INSET * 2);
+  const y = (perceived: number) =>
+    PAD.t + INSET + ((5 - perceived) / 4) * (ih - INSET * 2);
 
   const midX = PAD.l + iw / 2;
   const midY = PAD.t + ih / 2;
 
+  const clampX = (v: number) => Math.min(PAD.l + iw - 6, Math.max(PAD.l + 6, v));
+  const clampY = (v: number) => Math.min(PAD.t + ih - 6, Math.max(PAD.t + 6, v));
+
   // Jitter identical coordinates apart deterministically — a 1–5 grid collides
   // constantly, and overlapping dots read as one benefit rather than six.
+  // Clamped, because a spiral near an edge would otherwise walk straight off it.
   const seen = new Map<string, number>();
   const placed = points.map((p) => {
     const key = `${p.employerLeverage}:${p.perceived}`;
@@ -50,8 +68,25 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
     seen.set(key, n + 1);
     const angle = n * 2.4;
     const r = n === 0 ? 0 : 7 + n * 3.5;
-    return { ...p, cx: x(p.employerLeverage) + Math.cos(angle) * r, cy: y(p.perceived) + Math.sin(angle) * r };
+    return {
+      ...p,
+      cx: clampX(x(p.employerLeverage) + Math.cos(angle) * r),
+      cy: clampY(y(p.perceived) + Math.sin(angle) * r),
+    };
   });
+
+  /*
+    Labels only on the highlighted three, and stacked rather than placed at
+    their dots.
+
+    Anchoring each label to its own point produced the two failures in the
+    first render: labels ran off the right edge, and the highlighted points
+    cluster (that is the finding) so their labels overlapped each other. A
+    leader line to a stacked list is legible at any density and cannot
+    overflow, because the list is laid out rather than positioned.
+  */
+  const labelled = placed.filter((p) => p.highlighted);
+  const labelX = PAD.l + iw + 10;
 
   return (
     <figure className="m-0">
@@ -102,16 +137,25 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
                 stroke={p.highlighted ? "#1C2431" : "none"}
                 strokeWidth={p.highlighted ? 1.5 : 0}
               />
-              {p.highlighted && (
-                <text
-                  x={p.cx + 11}
-                  y={p.cy + 4}
-                  className="mm-l"
-                  fill="#1C2431"
-                >
-                  {p.benefit.length > 34 ? p.benefit.slice(0, 32) + "…" : p.benefit}
-                </text>
-              )}
+
+            </g>
+          );
+        })}
+
+        {/* leader lines to a stacked list — see the note above */}
+        {labelled.map((p, i) => {
+          const ly = PAD.t + 18 + i * 20;
+          return (
+            <g key={`lab-${p.benefit}`}>
+              <path
+                d={`M ${p.cx + 8} ${p.cy} L ${labelX - 8} ${ly - 4}`}
+                stroke="#AEB4BC"
+                strokeWidth="0.75"
+                fill="none"
+              />
+              <text x={labelX} y={ly} className="mm-l" fill="#1C2431">
+                {p.benefit.length > 26 ? p.benefit.slice(0, 24) + "…" : p.benefit}
+              </text>
             </g>
           );
         })}

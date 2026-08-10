@@ -143,3 +143,46 @@ body {
     content: "";
   }
 }
+
+/* PipelineOrbit: the sweep.
+   A short arc travelling the track for as long as the job is unfinished.
+
+   Separate from the progress arc on purpose. Progress is a real number and
+   only moves when a step lands; animating it would invent motion the pipeline
+   has not earned. The sweep claims nothing except "this is still alive" —
+   which is the only question someone staring at 80% is actually asking.
+
+   4s a revolution: fast enough to read as continuous at a glance, slow enough
+   not to read as a spinner. A spinner is the visual language of waiting. */
+@keyframes ax-sweep-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ax-sweep {
+  animation: ax-sweep-spin 4s linear infinite;
+}
+
+/* The centre number breathes while work is in flight. Very slight — it is a
+   sign of life, not a demand for attention. */
+@keyframes ax-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+.ax-breathe {
+  animation: ax-breathe 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-sweep,
+  .ax-breathe {
+    animation: none;
+  }
+}

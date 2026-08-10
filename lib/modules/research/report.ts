@@ -70,21 +70,21 @@ export const SECTIONS: ReadonlyArray<{
   // report has twice stated a parent company that did not exist; the part a
   // reader hits first now carries no fabrication risk at all.
   { id: "questions",     label: "Questions Worth Asking",  order: 5,  inSummary: true },
+  // The map sits BEFORE the scorecard, and the order is an argument.
+  //
+  // The 2x2 is the landscape — what the options are and where they sit on cost
+  // against what employees actually feel. The radar is this employer's position.
+  // Landscape first, then position on it: the spider means more once you know
+  // what it is measured against, and the map sets that up in one glance.
+  //
+  // It also answers the earlier complaint properly. The mix was the last thing
+  // read; moving it ahead of the score makes it the first substantive thing,
+  // which is the right weight for the half of the product that proposes rather
+  // than grades.
+  { id: "designedMix",   label: "A Mix Built for This Workforce", order: 7, inSummary: true },
   { id: "scorecard",     label: "Readiness Scorecard",    order: 10, inSummary: true },
   { id: "findings",      label: "Key Findings",           order: 20, inSummary: true },
   { id: "profile",       label: "Company Profile",        order: 30, inSummary: true },
-  // The designed mix IS in the summary, and sits AHEAD of regulatory.
-  //
-  // A live free report ran twelve pages: a scorecard, findings, a profile, and
-  // then five pages of state-by-state statute. Everything that creates desire —
-  // workforce, benefit design, the brief — was paid. So the free artifact gave
-  // away the commodity, which an HR lead already knows or a broker handles, and
-  // withheld every part that would make someone want to buy.
-  //
-  // Compliance depth is real and differentiating and stays. It just isn't the
-  // thing to lead a free report with, and it isn't worth five of twelve pages
-  // to a reader who hasn't yet decided you're interesting.
-  { id: "designedMix",   label: "A Mix Built for This Workforce", order: 35, inSummary: true },
   { id: "regulatory",    label: "Regulatory Exposure",    order: 40, inSummary: true },
   { id: "workforce",     label: "Workforce Intelligence", order: 50, inSummary: false },
   { id: "benefitDesign", label: "Benefit Design",         order: 60, inSummary: false },

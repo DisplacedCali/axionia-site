@@ -51,12 +51,26 @@ export default function PipelineOrbit({
   steps,
   percent,
   label,
+  live = false,
 }: {
   steps: OrbitStep[];
   /** 0–100. Drives the arc. */
   percent: number;
   /** Centre caption — usually the running step, or a final state. */
   label?: string;
+  /**
+   * The JOB is alive — queued, paused between waves, or running a step.
+   *
+   * Distinct from "a step is currently marked running", and that distinction is
+   * the whole fix. The runner advances one wave per call, so between waves no
+   * step carries `running` — and the old component gated every animation on
+   * that, which meant the ring went completely still at exactly the moment it
+   * looked hung. A screenshot at 80% read "WAITING" with nothing moving.
+   *
+   * Motion now means "this job is not finished". It stops when the work stops,
+   * which is the only honest thing for it to signal.
+   */
+  live?: boolean;
 }) {
   const total = steps.length || 1;
   const running = steps.filter((s) => s.status === "running");
@@ -65,7 +79,21 @@ export default function PipelineOrbit({
   ).length;
 
   const active = running[0] ?? null;
-  const caption = label ?? active?.label ?? (settled === total ? "Complete" : "Waiting");
+  const done = settled === total;
+  const inFlight = Boolean(live) && !done;
+
+  /*
+    "Waiting" was the wrong word and it was on screen for most of the run.
+    Between waves the job isn't waiting on anything — it's about to start the
+    next step, and we know which one. Naming it is more informative than a
+    status, and it changes as the run progresses, which is itself a signal
+    that something is happening.
+  */
+  const nextUp = steps.find((s) => s.status === "pending");
+  const caption =
+    label ??
+    active?.label ??
+    (done ? "Complete" : inFlight ? (nextUp ? `Starting ${nextUp.label}` : "Working") : "Waiting");
 
   return (
     <div className="flex flex-col items-center">
@@ -104,6 +132,35 @@ export default function PipelineOrbit({
           transform={`rotate(-90 ${C} ${C})`}
           style={{ transition: "stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)" }}
         />
+
+        {/*
+          The sweep. A short bright arc travelling the track continuously for
+          as long as the job is unfinished.
+
+          This is the "not hung" signal, and it is deliberately separate from
+          the progress arc: progress is a real number that only moves when a
+          step lands, and animating it would be inventing motion the pipeline
+          hasn't earned. The sweep claims nothing except that the job is alive,
+          which is exactly the question a person staring at 80% is asking.
+
+          Its slowest step is Workforce at ~108 seconds — nearly two minutes on
+          one call. That is the stretch this exists for.
+        */}
+        {inFlight && (
+          <g className="ax-sweep" style={{ transformOrigin: `${C}px ${C}px` }}>
+            <circle
+              cx={C}
+              cy={C}
+              r={TRACK}
+              fill="none"
+              stroke="#4AC9DC"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={`${CIRC * 0.08} ${CIRC * 0.92}`}
+              opacity="0.85"
+            />
+          </g>
+        )}
 
         {/*
           The orbit. One dot per step currently running — so wave 2 shows four
@@ -179,7 +236,7 @@ export default function PipelineOrbit({
           x={C}
           y={C - 4}
           textAnchor="middle"
-          className="font-mono"
+          className={`font-mono${inFlight ? " ax-breathe" : ""}`}
           fontSize="30"
           fill="#1C2431"
           style={{ fontVariantNumeric: "tabular-nums" }}
