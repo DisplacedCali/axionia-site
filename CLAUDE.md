@@ -27,8 +27,36 @@ npx tsc --noEmit            # always — the only type gate; no ESLint configure
 - **Brand tokens are canonical.** `axionia_brand_tokens.md` in project knowledge
   governs fonts, colour, the semantic scale and the logo. Never redraw the logo.
 - **Comments explain *why*.** The what is in the code.
-- **Don't push.** Stage and commit; leave `git push` to Tom.
+- **Don't commit and don't push.** Tom does both, by hand. Leave the working
+  tree dirty and unstaged, and hand him the block below to paste — see
+  *Handing off a change*.
 - **Never print secrets.** Describe a key by shape or decoded role, not value.
+
+## Handing off a change
+
+Finish by giving Tom one pasteable block in this exact shape — `npm run build`,
+an explicit `git add` naming every file touched, the commit, then `git push`:
+
+```bash
+cd ~/Desktop/axionia-site
+npm run build
+git add path/to/one.tsx path/to/two.tsx
+git commit -m "Imperative summary line, no full stop
+...body..."
+git push
+```
+
+The message follows the house style:
+
+- **Subject in the imperative, one line, no full stop.** What the change makes
+  true, not what was done to the code — "Make page one survive being printed".
+- **Body is prose in short paragraphs.** No bullets, no `-` lists, no
+  Co-Authored-By or generated-with trailers.
+- **Name the fault, then the fix, in that order.** Each paragraph takes one
+  fault: what was wrong, the mechanism that made it wrong, what replaced it.
+  Numbers where they exist — `9px arrives at 5.3px`, not `too small`.
+- **Say what the change did NOT touch** when that's the reassuring part, as its
+  own closing line. "No content changed."
 
 ## Tom is testing in production
 

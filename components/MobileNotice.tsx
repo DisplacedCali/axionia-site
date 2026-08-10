@@ -40,6 +40,7 @@ export default function MobileNotice() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          data-print-hide
           className="md:hidden fixed bottom-4 inset-x-4 z-40"
         >
           <div className="relative bg-navy text-base px-5 py-4 pr-12 shadow-lg">

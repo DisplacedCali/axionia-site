@@ -6,7 +6,11 @@ import { SECTIONS } from "@/lib/modules/research/report";
 import type { AssembledReport } from "@/lib/modules/research/report";
 
 /**
- * Page one — at a glance, and where everything is.
+ * Pages one and two — at a glance, then where everything is.
+ *
+ * In print this is two sheets, not one: the score, the two thumbnails and the
+ * three named options on page one; the contents on page two. See the note at
+ * the contents block for why it's split there rather than squeezed.
  *
  * ── Why it exists ──
  *
@@ -92,9 +96,13 @@ export default function ReportCover({
           PRINT viewport, which can fall below 768px — the two charts then stack,
           the cover runs past one page, and `break-after-page` breaks it in the
           wrong place. Print gets the two-up layout unconditionally. */}
-      <div className="grid md:grid-cols-2 print:grid-cols-2 gap-px bg-border border border-border mt-8">
+      {/* print:break-inside-avoid on the grid AND on each cell. Without it the
+          grid split across the page boundary: the left cell's caption stayed on
+          page one while its chart went to page two, and page two opened with an
+          empty bordered box where the left column used to be. */}
+      <div className="grid md:grid-cols-2 print:grid-cols-2 gap-px bg-border border border-border mt-8 print:break-inside-avoid">
         {mix?.map?.length ? (
-          <div className="bg-base p-5">
+          <div className="bg-base p-5 print:break-inside-avoid">
             <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3">
               Where the options sit
             </div>
@@ -107,7 +115,7 @@ export default function ReportCover({
         ) : null}
 
         {radarAxes.length > 0 && (
-          <div className="bg-base p-5">
+          <div className="bg-base p-5 print:break-inside-avoid">
             <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3">
               How your portfolio reads
             </div>
@@ -121,7 +129,7 @@ export default function ReportCover({
 
       {/* the three, named — the single most useful thing to see early */}
       {mix?.picks?.length ? (
-        <div className="mt-8">
+        <div className="mt-8 print:break-inside-avoid">
           <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3">
             The three
           </div>
@@ -138,24 +146,37 @@ export default function ReportCover({
         </div>
       ) : null}
 
-      {/* where everything is */}
-      <div className="mt-8">
-        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3">
+      {/* ── Where everything is ──────────────────────────────────────────────
+          Its own page in print. Everything above runs to a little over one
+          sheet, so wherever the contents sat it was going to be cut in half by
+          a break we didn't choose — and a contents list is the one thing in the
+          document that is worthless when half of it is on the previous page.
+          Given it costs a page either way, it gets the page.
+
+          The rows are anchor links. Chrome carries internal links through to
+          the exported PDF, so the contents is navigable in the artifact a
+          client actually receives, not only in the browser. Printed page
+          numbers would be better still and are not available: they need CSS
+          `target-counter`, which no shipping browser implements. */}
+      <div className="mt-10 print:mt-0 print:break-before-page">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3 print:mb-5">
           What&rsquo;s in here
         </div>
         <ol className="border-t border-border">
           {contents.map((s, i) => (
-            <li
-              key={s.id}
-              className="grid grid-cols-[auto_1fr_auto] gap-4 items-baseline py-2.5 border-b border-border"
-            >
-              <span className="font-mono text-[10px] text-gray-cool tabular-nums">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span className="text-[14px] text-navy">{s.label}</span>
-              <span className="text-[13px] text-gray-warm text-right hidden sm:block print:block">
-                {ANSWERS[s.id]}
-              </span>
+            <li key={s.id} className="border-b border-border print:break-inside-avoid">
+              <a
+                href={`#${s.id}`}
+                className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto] print:grid-cols-[auto_1fr_auto] gap-x-4 gap-y-1 items-baseline py-2.5 print:py-4 no-underline hover:bg-base-2 transition-colors"
+              >
+                <span className="font-mono text-[10px] text-gray-cool tabular-nums">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="text-[14px] print:text-[15px] text-navy">{s.label}</span>
+                <span className="col-start-2 sm:col-start-3 print:col-start-3 text-[13px] text-gray-warm sm:text-right print:text-right">
+                  {ANSWERS[s.id]}
+                </span>
+              </a>
             </li>
           ))}
         </ol>

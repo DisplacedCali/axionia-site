@@ -33,7 +33,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen">
-      <div className="border-b border-border bg-base-2">
+      <div data-print-hide className="border-b border-border bg-base-2">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-8">
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-navy">
             Admin

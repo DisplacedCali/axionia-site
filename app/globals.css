@@ -124,21 +124,38 @@ body {
     print-color-adjust: exact;
   }
   /* Chrome that has no business in a client deliverable. The desktop notice was
-     printing on all 13 pages of the exported PDF. */
-  header nav,
+     printing on all 13 pages of the exported PDF.
+
+     `nav` alone was not enough: the site header is a sticky bar whose logo and
+     auth links sit OUTSIDE its <nav>, so hiding the nav left the shell behind —
+     and a sticky shell in paged media prints wherever the scroll position
+     happened to leave it, which is how the AXIONIA bar landed on top of the
+     company name on page one.
+
+     Chrome opts out by carrying `data-print-hide` rather than being matched as
+     `header`, because the report's own masthead is a <header> too and it is the
+     one piece of the page that MUST print. */
   nav,
   footer,
-  [data-print-hide],
-  .mobile-notice {
+  [data-print-hide] {
     display: none !important;
+  }
+  /* Sticky and fixed have no meaning once the page stops scrolling. Anything
+     left positioned prints detached from the flow, on top of whatever is
+     underneath it. Scoped to the two Tailwind classes rather than `*` because
+     the charts rely on absolute positioning inside their own containers. */
+  .sticky,
+  .fixed {
+    position: static !important;
   }
   article {
     max-width: none !important;
   }
-  /* Keep a section and its heading together rather than splitting mid-thought. */
-  section {
-    break-inside: avoid;
-  }
+  /* Keeping a section whole only works when the section FITS. Applied to every
+     section it was a promise the engine had to break: an over-tall section is
+     broken at an arbitrary line anyway, and the break lands worse than one we
+     chose. Sections opt in via `print:break-inside-avoid` where they're short
+     enough to honour it. */
   a[href]::after {
     content: "";
   }

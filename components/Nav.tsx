@@ -154,6 +154,7 @@ export default function Nav() {
     <>
       <header
         ref={headerRef}
+        data-print-hide
         className="sticky top-0 z-50 border-b border-border bg-base/85 backdrop-blur-md supports-[backdrop-filter]:bg-base/70"
       >
         <div className="max-w-6xl mx-auto px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
