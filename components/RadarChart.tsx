@@ -19,6 +19,20 @@ const VB_H = 320;
 const CX = 200;
 const CY = 150;
 
+/*
+  Compact matches MixMap's compact canvas EXACTLY — 420x300.
+
+  Not for tidiness. The two thumbnails sit in equal columns of the same grid at
+  `w-full h-auto`, so their rendered heights are set entirely by their aspect
+  ratios. At 400x320 against the map's 420x300 the radar came out ~12% taller
+  than the chart beside it, which is a ragged bottom edge on the one page that
+  is meant to look composed.
+*/
+const CVB_W = 420;
+const CVB_H = 300;
+const CCX = 210;
+const CCY = 150;
+
 /**
  * Signature 8-axis radar, per the brand dataviz spec.
  *
@@ -60,13 +74,18 @@ export default function RadarChart({
   const animate = !reduceMotion;
   const show = inView || fallback || !animate;
 
+  const vbW = compact ? CVB_W : VB_W;
+  const vbH = compact ? CVB_H : VB_H;
+  const cx = compact ? CCX : CX;
+  const cy = compact ? CCY : CY;
+
   const MAX_R = compact ? 88 : 96;
   const LABEL_R = compact ? 104 : 112;
 
   const pointAt = (index: number, value: number) => {
     const angle = (-90 + index * (360 / axes.length)) * (Math.PI / 180);
     const r = (value / 100) * MAX_R;
-    return { x: CX + r * Math.cos(angle), y: CY + r * Math.sin(angle) };
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   };
 
   /** Closed <path> data — universally supported by getTotalLength(). */
@@ -89,7 +108,7 @@ export default function RadarChart({
   return (
     <div ref={containerRef}>
       <svg
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        viewBox={`0 0 ${vbW} ${vbH}`}
         className="w-full h-auto overflow-visible"
         role="img"
         aria-label="Portfolio score across eight dimensions, plotted against the peer median"
@@ -118,8 +137,8 @@ export default function RadarChart({
           return (
             <line
               key={`spoke-${a.label}`}
-              x1={CX}
-              y1={CY}
+              x1={cx}
+              y1={cy}
               x2={p.x}
               y2={p.y}
               stroke="#DDD9D0"
@@ -178,14 +197,14 @@ export default function RadarChart({
           );
         })}
 
-        <circle cx={CX} cy={CY} r="2" fill="#1C2431" />
+        <circle cx={cx} cy={cy} r="2" fill="#1C2431" />
 
         {/* axis labels — suppressed on phones, where they'd render ~6px */}
         <g className="hidden sm:block">
           {axes.map((a, i) => {
             const angle = (-90 + i * (360 / axes.length)) * (Math.PI / 180);
-            const x = CX + LABEL_R * Math.cos(angle);
-            const y = CY + LABEL_R * Math.sin(angle);
+            const x = cx + LABEL_R * Math.cos(angle);
+            const y = cy + LABEL_R * Math.sin(angle);
             const cos = Math.cos(angle);
             const sin = Math.sin(angle);
             const anchor = cos > 0.2 ? "start" : cos < -0.2 ? "end" : "middle";

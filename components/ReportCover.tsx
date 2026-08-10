@@ -88,7 +88,11 @@ export default function ReportCover({
       </div>
 
       {/* the two shapes */}
-      <div className="grid md:grid-cols-2 gap-px bg-border border border-border mt-8">
+      {/* print:grid-cols-2 is load-bearing. Tailwind's `md:` resolves against the
+          PRINT viewport, which can fall below 768px — the two charts then stack,
+          the cover runs past one page, and `break-after-page` breaks it in the
+          wrong place. Print gets the two-up layout unconditionally. */}
+      <div className="grid md:grid-cols-2 print:grid-cols-2 gap-px bg-border border border-border mt-8">
         {mix?.map?.length ? (
           <div className="bg-base p-5">
             <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3">
@@ -121,7 +125,7 @@ export default function ReportCover({
           <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm mb-3">
             The three
           </div>
-          <div className="grid sm:grid-cols-3 gap-px bg-border border border-border">
+          <div className="grid sm:grid-cols-3 print:grid-cols-3 gap-px bg-border border border-border">
             {mix.picks.map((p) => (
               <div key={p.benefit} className="bg-base p-4">
                 <div className="text-[14px] leading-snug text-navy">{p.benefit}</div>
@@ -149,7 +153,7 @@ export default function ReportCover({
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span className="text-[14px] text-navy">{s.label}</span>
-              <span className="text-[13px] text-gray-warm text-right hidden sm:block">
+              <span className="text-[13px] text-gray-warm text-right hidden sm:block print:block">
                 {ANSWERS[s.id]}
               </span>
             </li>

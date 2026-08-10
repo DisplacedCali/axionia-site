@@ -31,6 +31,20 @@ const H = 460;
 // overflowing the frame and colliding with each other.
 const PAD = { t: 34, r: 210, b: 56, l: 64 };
 
+/*
+  Compact gets its own CANVAS, not the same canvas with bigger text.
+
+  The first attempt kept viewBox 860x460 and scaled the quadrant labels from
+  9px to 13px. That made it worse: the thumbnail renders into roughly a
+  350px-wide grid cell, so everything is scaled by ~0.4 and 13px arrived on the
+  page at about 5px — smaller than the 9px it replaced. In an SVG the viewBox
+  is the unit of measurement, so the fix is a smaller box, not larger type
+  inside a big one.
+*/
+const CW = 420;
+const CH = 300;
+const CPAD = { t: 16, r: 16, b: 16, l: 16 };
+
 export default function MixMap({
   points,
   compact = false,
@@ -45,10 +59,12 @@ export default function MixMap({
 }) {
   if (!points.length) return null;
 
-  // Compact drops the label gutter, so the plot reclaims that width.
-  const padR = compact ? 24 : PAD.r;
-  const iw = W - PAD.l - padR;
-  const ih = H - PAD.t - PAD.b;
+  // Compact swaps the whole canvas — see the note above.
+  const w = compact ? CW : W;
+  const h = compact ? CH : H;
+  const pad = compact ? CPAD : PAD;
+  const iw = w - pad.l - pad.r;
+  const ih = h - pad.t - pad.b;
 
   /*
     INSET the scale. A 1–5 axis mapped edge to edge puts every 5 exactly on the
@@ -59,17 +75,18 @@ export default function MixMap({
     The inset costs a little dynamic range and buys points that are always
     inside the box they belong to.
   */
-  const INSET = 26;
+  const INSET = compact ? 14 : 26;
   const x = (leverage: number) =>
-    PAD.l + INSET + ((5 - leverage) / 4) * (iw - INSET * 2);
+    pad.l + INSET + ((5 - leverage) / 4) * (iw - INSET * 2);
   const y = (perceived: number) =>
-    PAD.t + INSET + ((5 - perceived) / 4) * (ih - INSET * 2);
+    pad.t + INSET + ((5 - perceived) / 4) * (ih - INSET * 2);
 
-  const midX = PAD.l + iw / 2;
-  const midY = PAD.t + ih / 2;
+  const midX = pad.l + iw / 2;
+  const midY = pad.t + ih / 2;
 
-  const clampX = (v: number) => Math.min(PAD.l + iw - 6, Math.max(PAD.l + 6, v));
-  const clampY = (v: number) => Math.min(PAD.t + ih - 6, Math.max(PAD.t + 6, v));
+  const edge = compact ? 4 : 6;
+  const clampX = (v: number) => Math.min(pad.l + iw - edge, Math.max(pad.l + edge, v));
+  const clampY = (v: number) => Math.min(pad.t + ih - edge, Math.max(pad.t + edge, v));
 
   // Jitter identical coordinates apart deterministically — a 1–5 grid collides
   // constantly, and overlapping dots read as one benefit rather than six.
@@ -99,34 +116,37 @@ export default function MixMap({
     overflow, because the list is laid out rather than positioned.
   */
   const labelled = placed.filter((p) => p.highlighted);
-  const labelX = PAD.l + iw + 10;
-  const q = compact ? 13 : 9;
+  const labelX = pad.l + iw + 10;
+  // Same on-page size in both, because the viewBox now differs rather than the type.
+  const q = compact ? 8 : 9;
+  const dot = compact ? 3 : 4.5;
+  const dotHi = compact ? 5 : 7;
 
   return (
     <figure className="m-0">
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 0 ${w} ${h}`}
         className="w-full h-auto"
         role="img"
         aria-label="Benefits plotted by employer cost against the value employees attribute to them"
       >
-        <rect x={PAD.l} y={PAD.t} width={iw} height={ih} fill="#F0EDE6" />
+        <rect x={pad.l} y={pad.t} width={iw} height={ih} fill="#F0EDE6" />
 
         {/* quadrant dividers */}
-        <line x1={midX} y1={PAD.t} x2={midX} y2={PAD.t + ih} stroke="#DDD9D0" strokeWidth="1" />
-        <line x1={PAD.l} y1={midY} x2={PAD.l + iw} y2={midY} stroke="#DDD9D0" strokeWidth="1" />
+        <line x1={midX} y1={pad.t} x2={midX} y2={pad.t + ih} stroke="#DDD9D0" strokeWidth="1" />
+        <line x1={pad.l} y1={midY} x2={pad.l + iw} y2={midY} stroke="#DDD9D0" strokeWidth="1" />
 
         {/* quadrant labels — set quietly; they orient, they don't decorate */}
-        <text x={PAD.l + 12} y={PAD.t + 20} className="mm-q" fill="#1E5B38">
+        <text x={pad.l + 12} y={pad.t + 20} className="mm-q" fill="#1E5B38">
           CHEAP · VALUED
         </text>
-        <text x={PAD.l + iw - 12} y={PAD.t + 20} textAnchor="end" className="mm-q" fill="#5C3F10">
+        <text x={pad.l + iw - 12} y={pad.t + 20} textAnchor="end" className="mm-q" fill="#5C3F10">
           COSTLY · VALUED
         </text>
-        <text x={PAD.l + 12} y={PAD.t + ih - 10} className="mm-q" fill="#706C63">
+        <text x={pad.l + 12} y={pad.t + ih - 10} className="mm-q" fill="#706C63">
           CHEAP · UNNOTICED
         </text>
-        <text x={PAD.l + iw - 12} y={PAD.t + ih - 10} textAnchor="end" className="mm-q" fill="#7A1F18">
+        <text x={pad.l + iw - 12} y={pad.t + ih - 10} textAnchor="end" className="mm-q" fill="#7A1F18">
           COSTLY · UNNOTICED
         </text>
 
@@ -145,7 +165,7 @@ export default function MixMap({
               <circle
                 cx={p.cx}
                 cy={p.cy}
-                r={p.highlighted ? 7 : 4.5}
+                r={p.highlighted ? dotHi : dot}
                 fill={fill}
                 fillOpacity={p.highlighted ? 1 : stakes ? 0.5 : 0.75}
                 stroke={p.highlighted ? "#1C2431" : "none"}
@@ -158,7 +178,7 @@ export default function MixMap({
 
         {/* leader lines to a stacked list — see the note above */}
         {!compact && labelled.map((p, i) => {
-          const ly = PAD.t + 18 + i * 20;
+          const ly = pad.t + 18 + i * 20;
           return (
             <g key={`lab-${p.benefit}`}>
               <path
@@ -177,11 +197,11 @@ export default function MixMap({
         {/* axes */}
         {!compact && (
           <>
-            <text x={PAD.l + iw / 2} y={H - 18} textAnchor="middle" className="mm-a">
+            <text x={pad.l + iw / 2} y={h - 18} textAnchor="middle" className="mm-a">
               COST TO THE EMPLOYER →
             </text>
             <text
-              x={-(PAD.t + ih / 2)}
+              x={-(pad.t + ih / 2)}
               y={18}
               textAnchor="middle"
               transform="rotate(-90)"
