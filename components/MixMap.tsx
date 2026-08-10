@@ -31,10 +31,23 @@ const H = 460;
 // overflowing the frame and colliding with each other.
 const PAD = { t: 34, r: 210, b: 56, l: 64 };
 
-export default function MixMap({ points }: { points: MixPoint[] }) {
+export default function MixMap({
+  points,
+  compact = false,
+}: {
+  points: MixPoint[];
+  /**
+   * Thumbnail for the cover page. Same geometry, no label column, no legend,
+   * no axis text — at that size the shape is the message and everything else
+   * is noise the reader will meet properly two pages later.
+   */
+  compact?: boolean;
+}) {
   if (!points.length) return null;
 
-  const iw = W - PAD.l - PAD.r;
+  // Compact drops the label gutter, so the plot reclaims that width.
+  const padR = compact ? 24 : PAD.r;
+  const iw = W - PAD.l - padR;
   const ih = H - PAD.t - PAD.b;
 
   /*
@@ -87,6 +100,7 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
   */
   const labelled = placed.filter((p) => p.highlighted);
   const labelX = PAD.l + iw + 10;
+  const q = compact ? 13 : 9;
 
   return (
     <figure className="m-0">
@@ -143,7 +157,7 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
         })}
 
         {/* leader lines to a stacked list — see the note above */}
-        {labelled.map((p, i) => {
+        {!compact && labelled.map((p, i) => {
           const ly = PAD.t + 18 + i * 20;
           return (
             <g key={`lab-${p.benefit}`}>
@@ -161,26 +175,31 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
         })}
 
         {/* axes */}
-        <text x={PAD.l + iw / 2} y={H - 18} textAnchor="middle" className="mm-a">
-          COST TO THE EMPLOYER →
-        </text>
-        <text
-          x={-(PAD.t + ih / 2)}
-          y={18}
-          textAnchor="middle"
-          transform="rotate(-90)"
-          className="mm-a"
-        >
-          VALUE EMPLOYEES ATTRIBUTE →
-        </text>
+        {!compact && (
+          <>
+            <text x={PAD.l + iw / 2} y={H - 18} textAnchor="middle" className="mm-a">
+              COST TO THE EMPLOYER →
+            </text>
+            <text
+              x={-(PAD.t + ih / 2)}
+              y={18}
+              textAnchor="middle"
+              transform="rotate(-90)"
+              className="mm-a"
+            >
+              VALUE EMPLOYEES ATTRIBUTE →
+            </text>
+          </>
+        )}
 
         <style>{`
-          .mm-q { font-family: 'DM Mono', ui-monospace, monospace; font-size: 9px; letter-spacing: 0.12em; }
+          .mm-q { font-family: 'DM Mono', ui-monospace, monospace; font-size: ${q}px; letter-spacing: 0.12em; }
           .mm-l { font-family: 'DM Sans', system-ui, sans-serif; font-size: 11px; }
           .mm-a { font-family: 'DM Mono', ui-monospace, monospace; font-size: 9px; letter-spacing: 0.14em; fill: #706C63; }
         `}</style>
       </svg>
 
+      {!compact && (
       <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
         {[
           ["#2463EB", "Worth a conversation"],
@@ -197,12 +216,16 @@ export default function MixMap({ points }: { points: MixPoint[] }) {
         ))}
       </figcaption>
 
+      )}
+
+      {!compact && (
       <p className="mt-3 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
         Positions come from our library&rsquo;s scoring of each benefit, not from
         your spend — we don&rsquo;t know your costs yet. Read it as where these
         options sit in general, and the gap between that and your own portfolio
         as the thing worth an hour.
       </p>
+      )}
     </figure>
   );
 }

@@ -2,6 +2,7 @@
 
 import RadarChart, { type RadarAxis } from "@/components/RadarChart";
 import MixMap from "@/components/MixMap";
+import ReportCover from "@/components/ReportCover";
 import { CATEGORICAL, SEMANTIC } from "@/lib/modules/research/data/tokens";
 import { openingQuestions } from "@/lib/modules/research/report";
 import type { AssembledReport, SectionId } from "@/lib/modules/research/report";
@@ -255,6 +256,11 @@ export default function ReportRender({
       )}
 
       {/* ── Scorecard ────────────────────────────────────────────── */}
+      {/* Page one: at a glance, and where everything is.
+          Client view only — the admin preview has the orientation panel above
+          it, which answers the same question with different content. */}
+      {showWithheld && <ReportCover report={report} radarAxes={radarAxes} />}
+
       {/* ── questions ──
           Deterministic, derived from the axis scores. No model call: a
           generated question would reintroduce the fabrication risk this
