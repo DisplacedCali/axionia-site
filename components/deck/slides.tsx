@@ -13,19 +13,23 @@ import DeckFlow from "./DeckFlow";
  *
  * ── Shape of the argument ──
  *
- * Cover, ONE problem slide, then the pivot, then four slides of method, then
- * what it costs and when to call. The version this replaced spent five slides
- * establishing that the review is broken before saying what we do about it,
- * and a reader who already believes the premise had to sit through all of it.
- * Problem framing earns attention; it doesn't hold it.
+ * Cover, ONE problem slide, the pivot into what's missing, then the product,
+ * then price and when to call. Eight slides.
+ *
+ * The version before this spent five slides establishing that the benefit
+ * review is broken before anything said what Axionia does, and then described
+ * the method in static slides — Meridian's $180 → $54, the portfolio overlap —
+ * without ever showing the thing that produces them. Those two slides are now
+ * screens inside the walkthrough, where they arrive with the product around
+ * them instead of as assertions.
  */
 
 /*
-  Four failures, not six. Each one now sets up a later slide — isolation sets
-  up the portfolio, averaging sets up Meridian's transfer adjustment, strategy
-  sets up the weights, interest sets up "we didn't place any of it". The two
-  that were cut ("reviewed, not evaluated", "and no baseline") restated the
-  headline and had nothing downstream pointing back at them.
+  Four failures, not six. Each one now sets up something later — isolation sets
+  up the portfolio half of the walkthrough, averaging sets up population fit,
+  strategy sets up the weights slide, interest sets up "we didn't place any of
+  it". The two that were cut ("reviewed, not evaluated", "and no baseline")
+  restated the headline with nothing downstream pointing back at them.
 */
 const REVIEW_GAPS = [
   ["Judged in isolation", "Each program is approved on its own merits, in its own meeting. Nobody asks whether the fourth overlaps the first three — so savings are counted twice and no one owns the arithmetic."],
@@ -201,10 +205,8 @@ export function buildSlides(custom: DeckCustom = {}) {
   /* ── 01 · the problem ──
      Two slides became one. The silos framing and the failure list were making
      the same argument twice, and the second slide carried six items in a
-     two-column grid that nobody read past the third. What went: the vendor
-     quote, which now opens Meridian where it does real work, and one of the
-     two Mercer figures — a second statistic from the same survey adds a number
-     without adding a source. */
+     two-column grid that nobody read past the third. The vendor quote that
+     used to sit here now opens the walkthrough, where it does real work. */
   <div className="dk-navy dk-pad" key="s1">
     <div className="dk-eyebrow dk-eyebrow-l">The problem</div>
     <h2 className="dk-h2 dk-h2-l">
@@ -292,145 +294,91 @@ export function buildSlides(custom: DeckCustom = {}) {
     </blockquote>
   </div>,
 
-  /* ── 03 · meridian ── */
+  /* ── 03 · the walkthrough ──
+     This slide replaces two. Meridian's $180 → $54 and the portfolio
+     double-count were static slides that asserted what the product does
+     without ever showing it, and they said the same numbers the walkthrough
+     now says with the product around them.
+
+     The pivot at screen 10 — that was one vendor, Meridian has eight — is the
+     structural move the deck was missing entirely. Everything before it is a
+     decision; everything after it is a strategy, and the difference between
+     those two is the difference between a report and an engagement.
+
+     The illustrative line under it is deliberately ONE line rather than a
+     badge on each screen. Twelve badges make a product walkthrough read as a
+     roadmap, and a roadmap doesn't sell anything — but the deck is a PDF that
+     travels, so it cannot silently claim a benchmark cohort that doesn't exist
+     yet. See the header comment in DeckFlow.tsx. */
   <div key="s3">
-    <div className="dk-eyebrow">Worked example</div>
+    <div className="dk-eyebrow">Axionia Insight</div>
     <h2 className="dk-h2">
-      How a $180 claim becomes
+      One vendor, taken apart.
       <br />
-      a <em>$54 expectation.</em>
+      <em>Then all eight at once.</em>
     </h2>
     <p className="dk-sub dk-sub-tight">
-      Meridian Manufacturing, 820 covered lives, light manufacturing. Their broker
-      recommends a virtual MSK program at $180 PMPM in claimed savings. It may be
-      the best evidence that exists for that program — and it still can&rsquo;t
-      tell you whether the same dollar does more somewhere else. Nothing below
-      assumes bad faith. The study is real; it was produced under conditions that
-      aren&rsquo;t Meridian&rsquo;s.
+      Meridian Manufacturing: 820 covered lives, light manufacturing, fourteen
+      days from an MSK renewal their broker wants signed. Nine screens on the
+      program in front of them — then the same framework across everything else
+      they already run, which is the view nobody in the chain can assemble.
     </p>
 
-    <div className="dk-mer">
-      <div className="dk-mer-c">
-        <div className="dk-mer-k dk-amber">Vendor claim, unadjusted</div>
-        <div className="dk-mer-n dk-amber">$180</div>
-        <div className="dk-mer-d">
-          PMPM as published. Sits at the 97th percentile of the modelled range —
-          around 3% of scenarios reach it.
-        </div>
-      </div>
-      <div className="dk-mer-c">
-        <div className="dk-mer-k dk-blue">Expected case</div>
-        <div className="dk-mer-n dk-blue">$54</div>
-        <div className="dk-mer-d">
-          PMPM after adjustment. The number we stand behind, carried as a $30–78
-          range rather than a point.
-        </div>
-      </div>
-      <div className="dk-mer-c">
-        <div className="dk-mer-k dk-green-d">Recommendation</div>
-        <div className="dk-mer-n dk-green">Proceed</div>
-        <div className="dk-mer-d">
-          On restructured terms — base fee on enrolment, shared savings unlocked at
-          verified engagement.
-        </div>
-      </div>
-    </div>
+    <DeckFlow />
 
-    <div className="dk-adj">
-      <div className="dk-adj-r">
-        <span>Selection bias in the study population</span>
-        <span>−35%</span>
+    <div className="dk-grid-2 dk-tight">
+      <div className="dk-note-blue">
+        <div className="dk-led-h dk-blue">Where free stops</div>
+        The free Portfolio Score is the first two screens and a designed mix — a
+        real deliverable, no call attached. Everything past it is the paid
+        engagement, and most people stop at the score. That&rsquo;s a fine place
+        to stop.
       </div>
-      <div className="dk-adj-r">
-        <span>Overlap with programs Meridian already runs</span>
-        <span>−20%</span>
-      </div>
-      <div className="dk-adj-r">
-        <span>Transfer to Meridian&rsquo;s covered population</span>
-        <span>×0.58</span>
-      </div>
-      <div className="dk-adj-r is-total">
-        <span>Each adjustment shown separately, sourced, and adjustable by your team</span>
-        <span>$54 PMPM</span>
+      <div className="dk-note-gray">
+        <div className="dk-led-h">Why it doesn&rsquo;t end at the report</div>
+        Renewals stagger, vendors revise their claims, mandates move, and the
+        workforce you designed for last year isn&rsquo;t the one you have now.
+        Screens twelve and thirteen are the reason the relationship continues
+        after the analysis lands.
       </div>
     </div>
 
     <p className="dk-fine">
-      None of those adjustments appears in the vendor&rsquo;s materials, and none
-      of them is a criticism of the vendor — no vendor is positioned to make them,
-      because each one requires knowing what else this employer already runs.
-      Illustrative example, composite employer profile.
+      Illustrative throughout. Meridian is a composite employer and every figure
+      on these screens is an example rather than a client result. Simulation,
+      sensitivity, peer benchmarking, the vendor landscape and continuous
+      monitoring are in build.
     </p>
   </div>,
 
-  /* ── 04 · the portfolio ──
-     "Portfolio" appeared seven times in this deck and nothing ever rendered
-     one. A single-vendor walkthrough proves the method; it does not prove the
-     thesis, which is about what happens when you hold all of them at once.
-
-     The numbers are the same illustrative stack the site uses, so the deck and
-     axionia.com tell one story. Amber is the unadjusted claim per the brand
-     tokens — their number, not wrong, just unverified. */
-  <div key="s4">
-    <div className="dk-eyebrow">The portfolio</div>
-    <h2 className="dk-h2">
-      One program repriced is useful.
-      <br />
-      <em>Nine on one scale is the point.</em>
-    </h2>
-    <p className="dk-sub">
-      An avoided surgery can only be avoided once. When the MSK vendor and the
-      navigation vendor both count it, the arithmetic across a portfolio quietly
-      exceeds the spend available to save — and because each program was
-      approved in its own meeting, nobody is positioned to notice.
-    </p>
-
-    <div className="dk-adj">
-      <div className="dk-adj-r">
-        <span>Claimed across the active stack</span>
-        <span className="dk-amber">58 PMPM</span>
-      </div>
-      <div className="dk-adj-r">
-        <span>Once overlapping claims are separated</span>
-        <span className="dk-green-d">47 PMPM</span>
-      </div>
-      <div className="dk-adj-r is-total">
-        <span>Counted twice — roughly a fifth of everything claimed</span>
-        <span>11 PMPM</span>
-      </div>
-    </div>
-
-    <p className="dk-fine">
-      Every vendor here is reporting its own results correctly. The overlap only
-      exists once you own all of them, which is not a fact any one of them is in
-      a position to know. Illustrative stack, composite employer profile.
-    </p>
-  </div>,
-
-  /* ── 05 · weights ──
+  /* ── 04 · weights ──
      Was two slides: the objective menu, then the three employers. They made one
      point and the join between them was the weakest transition in the deck —
-     the first slide asked the question and the second answered it two minutes
-     later, by which time the deck had also spent a whole headline on "why there
-     is no universal right answer", which is the same sentence again.
+     the first posed the question and the second answered it two minutes later,
+     by which time a headline had also been spent on "why there is no universal
+     right answer", which is the same sentence again.
+
+     It sits AFTER the walkthrough on purpose. A reader who has just watched one
+     evidence score drive eight recommendations arrives at this slide already
+     holding the objection it answers: how can a single score serve employers
+     who want different things? Asked first, it's abstract. Asked here, it's the
+     next question.
 
      The four-family grid moved to /platform. On a slide it listed thirteen
-     objectives and demonstrated none of them; the employer cards below show the
-     weights doing work, which is the only part a buyer needs here. */
-  <div key="s5">
-    <div className="dk-eyebrow">Before the analysis runs</div>
+     objectives and demonstrated none of them. */
+  <div key="s4">
+    <div className="dk-eyebrow">The one thing you set</div>
     <h2 className="dk-h2">
-      You set what it&rsquo;s for.
+      You decide what it&rsquo;s for.
       <br />
       <em>We score the evidence either way.</em>
     </h2>
     <p className="dk-sub dk-sub-tight">
-      An employer holding margin and an employer winning a hiring market are not
-      making the same decision, even about the same program. So the first thing we
-      ask is what this portfolio is for — {OBJECTIVE_NAMES.length} objectives
-      across {OBJECTIVES.length} families, weighted by you. Below: one evidence
-      score of 56, three sets of weights. The scoring is ours and it doesn&rsquo;t
-      move.
+      Everything you just saw ran against Meridian&rsquo;s weights: cost 65,
+      absence 20. An employer competing for talent gets the same evidence and a
+      different answer — which is not a weakness in the model, it&rsquo;s the
+      only honest way to hold one. Below: one evidence score of 56, three sets of
+      weights. The scoring is ours and it doesn&rsquo;t move.
     </p>
 
     <div className="dk-obj-strip">
@@ -468,51 +416,7 @@ export function buildSlides(custom: DeckCustom = {}) {
     </div>
   </div>,
 
-  /* ── 06 · the walkthrough ──
-     The deck could describe the method and never showed the product. The
-     pre-port HTML deck had a click-through demo and the port dropped it, so
-     for several months the argument arrived with no evidence that anything had
-     been built.
-
-     Absorbs the old "what you receive" slide: three phases with availability
-     pills said what lands without ever showing it, and a list of deliverables
-     next to a walkthrough of the same deliverables is the list being redundant.
-     What survives is the commercial boundary and the cadence, as the two notes
-     underneath — both are things a buyer needs and neither is visible in a
-     product screen. */
-  <div key="s6">
-    <div className="dk-eyebrow">How it runs</div>
-    <h2 className="dk-h2">
-      Set it up once.
-      <br />
-      <em>Then it keeps going.</em>
-    </h2>
-    <p className="dk-sub dk-sub-tight">
-      Four steps from the intake form to a report you can take into a renewal
-      meeting, on documents you already own. Sixty to ninety seconds of analysis
-      between step three and step four.
-    </p>
-
-    <DeckFlow />
-
-    <div className="dk-grid-2 dk-tight">
-      <div className="dk-note-blue">
-        <div className="dk-led-h dk-blue">Where free stops</div>
-        The Portfolio Score is free, with no call attached and no obligation
-        afterwards. Everything past it is the paid engagement. Most people stop at
-        the score, and that&rsquo;s a fine place to stop.
-      </div>
-      <div className="dk-note-gray">
-        <div className="dk-led-h">And then it keeps going</div>
-        Renewals stagger, vendors revise their claims, mandates move, and the
-        workforce you designed for last year isn&rsquo;t the one you have now. A
-        quarterly refresh and an annual strategy review land across the
-        engagement, not on day one — which is also how you&rsquo;d consume them.
-      </div>
-    </div>
-  </div>,
-
-  /* ── 07 · what else the money buys ──
+  /* ── 05 · what else the money buys ──
      The deck used to end its argument at "we check things". That undersells
      the firm and it also implicates the buyer's past decisions, because an
      audit frame always does. This is the other half.
@@ -520,7 +424,7 @@ export function buildSlides(custom: DeckCustom = {}) {
      Stated as RANK, never as dollar equivalence — /methodology commits
      publicly to not pricing retention, and this slide must not quietly break
      that. See lib/objectives.ts. */
-  <div className="dk-navy dk-pad" key="s7">
+  <div className="dk-navy dk-pad" key="s5">
     <div className="dk-eyebrow dk-eyebrow-l">And then the harder half</div>
     <h2 className="dk-h2 dk-h2-l">
       Knowing what it&rsquo;s worth is the start.
@@ -530,7 +434,8 @@ export function buildSlides(custom: DeckCustom = {}) {
     <p className="dk-sub dk-sub-l">
       Repricing a claim tells you the real size of the budget. It doesn&rsquo;t
       tell you whether the budget is pointed at the right things. Those are two
-      different jobs, and the second is where the money is.
+      different jobs, and the second is where the money is — it&rsquo;s why the
+      unbrokered fitness stipend outranked four programs somebody sold Meridian.
     </p>
 
     <div className="dk-grid-2 dk-tight">
@@ -579,8 +484,8 @@ export function buildSlides(custom: DeckCustom = {}) {
     </blockquote>
   </div>,
 
-  /* ── 08 · commercial ── */
-  <div className="dk-navy dk-pad" key="s8">
+  /* ── 06 · commercial ── */
+  <div className="dk-navy dk-pad" key="s6">
     <div className="dk-eyebrow dk-eyebrow-l">Commercial shape</div>
     <h2 className="dk-h2 dk-h2-l">
       Priced against the portfolio,
@@ -628,16 +533,16 @@ export function buildSlides(custom: DeckCustom = {}) {
     </div>
   </div>,
 
-  /* ── 09 · when to partner ──
+  /* ── 07 · when to partner ──
      The three questions stayed; the frame around them didn't. "We're not here
      to sell you something today" is a sales line about not selling, and
      closing on "we expose the entire model" makes a slogan out of a claim the
-     product already demonstrates four slides earlier.
+     walkthrough already demonstrated screen by screen.
 
      Qualifying reads better than closing, and it's consistent with
      /who-its-for, which carries an explicit not-a-fit list. Saying who
      shouldn't buy this is the most credible thing on the slide. */
-  <div className="dk-navy dk-pad" key="s9">
+  <div className="dk-navy dk-pad" key="s7">
     <div className="dk-eyebrow dk-eyebrow-l">When to partner with Axionia</div>
     <h2 className="dk-h2 dk-h2-l">
       Not every employer needs this.

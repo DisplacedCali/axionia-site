@@ -96,9 +96,16 @@
   display: none; overflow-y: auto;
 }
 .dk-slide.is-on { display: block; }
+/* `safe center` and not `center`. A centred flex column whose content is taller
+   than the box overflows in BOTH directions, and the overflow above the start
+   edge is unreachable — .dk-slide scrolls, but you cannot scroll to negative.
+   So a slide that grows past the viewport loses its heading off the top with no
+   way to see it. `safe` falls back to flex-start exactly when that would happen,
+   which is the only case where centring was wrong anyway. */
 .dk-inner {
   max-width: 1040px; margin: 0 auto; padding: 40px 32px 48px;
-  min-height: 100%; display: flex; flex-direction: column; justify-content: center;
+  min-height: 100%; display: flex; flex-direction: column;
+  justify-content: safe center;
 }
 
 /* ── nav ── */
@@ -255,6 +262,10 @@
   margin-left: 10px; font-family: var(--dk-mono); font-size: 9.5px;
   letter-spacing: 0.06em; color: var(--dk-cool);
 }
+.dk-flow-dots { margin-left: auto; display: flex; gap: 4px; }
+.dk-flow-d { width: 5px; height: 5px; border-radius: 50%; border: none; padding: 0; cursor: pointer; background: var(--dk-stone); }
+.dk-flow-d.is-on { background: var(--dk-blue); transform: scale(1.4); }
+
 .dk-flow-tabs { display: flex; border-bottom: 1px solid var(--dk-border); }
 .dk-flow-tab {
   flex: 1; display: flex; align-items: baseline; gap: 7px; justify-content: center;
@@ -269,7 +280,13 @@
 .dk-flow-tab-n { font-family: var(--dk-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--dk-cool); }
 .dk-flow-tab.is-on .dk-flow-tab-n { color: var(--dk-blue); }
 
-.dk-flow-body { padding: 18px 20px; }
+/* A floor, not a height. Thirteen screens vary a lot — the assumptions table is
+   short and population fit is tall — and without a floor the shell resizes on
+   every click, which reads as the page reloading. Tune this against a projector
+   rather than a laptop: it is the single number that decides whether the demo
+   slide fits one screen. */
+.dk-flow-body { padding: 16px 20px; min-height: 385px; }
+.dk-flow-e { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: var(--dk-blue); margin-bottom: 7px; }
 .dk-flow-t { font-family: var(--dk-serif); font-size: 22px; line-height: 1.25; margin-bottom: 7px; }
 .dk-flow-s { font-size: 12.5px; line-height: 1.65; color: var(--dk-gray); max-width: 660px; margin-bottom: 14px; }
 .dk-flow-rows { border-top: 1px solid var(--dk-border); }
@@ -296,22 +313,156 @@
 .dk-flow-btn.is-primary:hover:not(:disabled) { background: var(--dk-blue); border-color: var(--dk-blue); }
 .dk-flow-btn:disabled { opacity: .3; cursor: default; }
 
+/* ── Insight screens ───────────────────────────────────────────────────────
+   Everything below is inside .dk-flow and therefore screen-only. The printed
+   storyboard carries these numbers as plain rows instead, which is why none
+   of it needs a print variant.
+*/
+.dk-i-svg { width: 100%; height: auto; display: block; margin-bottom: 12px; }
+
+.dk-i-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.dk-i-stat-k { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--dk-cool); margin-bottom: 4px; }
+.dk-i-stat-v { font-family: var(--dk-serif); font-size: 20px; line-height: 1.15; }
+
+.dk-i-banner { border-left: 2px solid var(--dk-amber); background: var(--dk-amber-l); padding: 12px 15px; }
+.dk-i-banner-k { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dk-amber); margin-bottom: 5px; }
+.dk-i-banner-v { font-size: 13.5px; line-height: 1.6; color: var(--dk-navy); }
+.dk-i-banner-v strong { font-weight: 500; }
+
+.dk-i-scores { margin-bottom: 12px; }
+.dk-i-score { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
+.dk-i-score-k { flex: 0 0 170px; font-size: 12.5px; color: var(--dk-gray); }
+.dk-i-score-t { flex: 1; height: 6px; background: var(--dk-base2); display: block; }
+.dk-i-score-b { display: block; height: 100%; }
+.dk-i-score-b.is-hi { background: var(--dk-green); }
+.dk-i-score-b.is-mid { background: var(--dk-amber); }
+.dk-i-score-b.is-lo { background: #B03A2E; }
+.dk-i-score-v { flex: 0 0 30px; text-align: right; font-family: var(--dk-mono); font-size: 11px; }
+.dk-i-composite { display: flex; align-items: baseline; gap: 14px; background: var(--dk-navy); padding: 12px 16px; }
+.dk-i-composite-n { font-family: var(--dk-serif); font-size: 28px; color: #fff; }
+.dk-i-composite-l { font-size: 12.5px; color: rgba(255,255,255,0.62); }
+
+.dk-i-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.dk-i-tri { border: 1px solid var(--dk-border); padding: 12px 14px; }
+.dk-i-tri.is-exp { border: 1.5px solid var(--dk-blue); background: var(--dk-blue-l); }
+.dk-i-tri-k { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dk-cool); margin-bottom: 5px; }
+.dk-i-tri.is-exp .dk-i-tri-k { color: var(--dk-blue); }
+.dk-i-tri-n { font-family: var(--dk-serif); font-size: 30px; line-height: 1; margin-bottom: 5px; }
+.dk-i-tri.is-exp .dk-i-tri-n { color: var(--dk-blue); }
+.dk-i-tri-d { font-size: 11px; color: var(--dk-gray); }
+
+.dk-i-find { border: 1px solid var(--dk-border); background: var(--dk-base2); padding: 11px 14px; }
+.dk-i-find.is-amber { border-color: #D4A55A; background: var(--dk-amber-l); }
+.dk-i-find.is-green { border-color: #8ADAAB; background: #EDF9F1; }
+.dk-i-find-k { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dk-blue); margin-bottom: 4px; }
+.dk-i-find.is-amber .dk-i-find-k { color: var(--dk-amber); }
+.dk-i-find.is-green .dk-i-find-k { color: var(--dk-green-d); }
+.dk-i-find-n { font-family: var(--dk-serif); font-size: 24px; line-height: 1; margin-bottom: 5px; }
+.dk-i-find-v { font-size: 12px; line-height: 1.6; color: var(--dk-gray); }
+.dk-i-find-v strong { color: var(--dk-navy); font-weight: 500; }
+.dk-i-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.dk-i-rec { background: var(--dk-base2); padding: 10px 14px; font-size: 12px; line-height: 1.65; color: var(--dk-gray); }
+.dk-i-rec .dk-i-find-k { display: block; }
+
+.dk-i-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.dk-i-table th { text-align: left; font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dk-cool); padding: 0 0 8px; border-bottom: 1px solid var(--dk-border); }
+.dk-i-table td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--dk-border); color: var(--dk-gray); }
+.dk-i-ours { color: var(--dk-blue) !important; font-family: var(--dk-mono); font-size: 11.5px; }
+.dk-i-theirs { color: var(--dk-amber) !important; font-family: var(--dk-mono); font-size: 11.5px; }
+
+.dk-i-pct { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+.dk-i-pct-c { border: 1px solid var(--dk-border); padding: 8px 11px; }
+.dk-i-pct-c.is-on { border: 1.5px solid var(--dk-blue); background: var(--dk-blue-l); }
+.dk-i-pct-k { font-family: var(--dk-mono); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dk-cool); margin-bottom: 3px; }
+.dk-i-pct-v { font-family: var(--dk-serif); font-size: 22px; line-height: 1; }
+.dk-i-pct-c.is-on .dk-i-pct-v { color: var(--dk-blue); }
+
+.dk-i-fit { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 12px; }
+.dk-i-fit-h { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--dk-cool); margin-bottom: 7px; }
+.dk-i-fit-h.is-ours { color: var(--dk-blue); }
+.dk-i-fit-r { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid var(--dk-border); }
+.dk-i-fit-r span:first-child { color: var(--dk-gray); }
+.dk-i-fit-r span:last-child { color: var(--dk-navy); }
+.dk-i-fit-r .is-warn { color: var(--dk-amber); }
+.dk-i-fit-r .is-good { color: var(--dk-green-d); }
+.dk-i-fit-r .is-bad { color: #B03A2E; }
+
+.dk-i-heat { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+.dk-i-heat th { font-family: var(--dk-mono); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dk-cool); padding: 0 3px 7px; text-align: center; font-weight: 400; }
+.dk-i-heat th:first-child { text-align: left; padding-left: 0; min-width: 150px; }
+.dk-i-heat th.is-score { color: var(--dk-blue); }
+.dk-i-heat td { padding: 5px 3px; text-align: center; border-top: 1px solid var(--dk-border); font-family: var(--dk-mono); font-size: 10.5px; }
+.dk-i-heat td:first-child { text-align: left; padding-left: 0; font-family: var(--dk-sans); font-size: 12px; color: var(--dk-navy); }
+.dk-i-heat-v { display: block; font-family: var(--dk-mono); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--dk-cool); margin-top: 1px; }
+.dk-i-heat td.is-score { font-size: 12px; color: var(--dk-blue); font-weight: 500; }
+.dk-i-cell.is-hi { background: #C8EED8; }
+.dk-i-cell.is-mid { background: #FDE9C0; }
+.dk-i-cell.is-lo { background: #F9D0CC; }
+.dk-i-legend { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 10.5px; color: var(--dk-gray); }
+.dk-i-legend span { display: flex; align-items: center; gap: 5px; }
+.dk-i-legend i { width: 11px; height: 11px; display: block; }
+.dk-i-legend i.is-hi { background: #C8EED8; }
+.dk-i-legend i.is-mid { background: #FDE9C0; }
+.dk-i-legend i.is-lo { background: #F9D0CC; }
+.dk-i-legend-note { margin-left: auto; font-style: italic; color: var(--dk-blue); }
+
+.dk-i-rank { margin-bottom: 12px; }
+.dk-i-rank-r { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--dk-border); }
+.dk-i-rank-s { flex: 0 0 30px; font-family: var(--dk-mono); font-size: 12px; color: var(--dk-blue); }
+.dk-i-rank-n { flex: 1; font-size: 12.5px; color: var(--dk-navy); }
+.dk-i-rank-w { display: block; font-size: 11px; color: var(--dk-gray); margin-top: 1px; }
+.dk-i-rank-c { flex: 0 0 54px; text-align: right; font-family: var(--dk-mono); font-size: 11px; color: var(--dk-gray); }
+.dk-i-act { flex: 0 0 92px; text-align: center; font-family: var(--dk-mono); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.09em; padding: 3px 5px; border: 1px solid; }
+.dk-i-act.is-expand { color: var(--dk-green-d); border-color: var(--dk-green); background: #EDF9F1; }
+.dk-i-act.is-keep { color: var(--dk-gray); border-color: var(--dk-stone); }
+.dk-i-act.is-reneg { color: var(--dk-amber-d); border-color: #D4A55A; background: var(--dk-amber-l); }
+.dk-i-act.is-cut { color: #8C2E24; border-color: #E8A49E; background: #FBEEEC; }
+
+.dk-i-cfo { background: var(--dk-navy); padding: 13px 16px; }
+.dk-i-cfo-k { font-family: var(--dk-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dk-teal); margin-bottom: 8px; }
+.dk-i-cfo-g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.dk-i-cfo-l { font-size: 10.5px; color: rgba(255,255,255,0.45); margin-bottom: 2px; }
+.dk-i-cfo-v { font-family: var(--dk-serif); font-size: 22px; line-height: 1; color: #fff; }
+.dk-i-cfo-v.is-green { color: #7BE0A8; }
+.dk-i-cfo-v.is-amber { color: #F0C77A; }
+.dk-i-cfo-v.is-red { color: #F19A92; }
+
+.dk-i-cats { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.dk-i-cats > span { font-family: var(--dk-mono); font-size: 9.5px; padding: 4px 11px; border: 1px solid var(--dk-border); color: var(--dk-gray); }
+.dk-i-cats > span.is-on { background: var(--dk-navy); border-color: var(--dk-navy); color: #fff; }
+.dk-i-cats-key { margin-left: auto; display: flex; align-items: center; gap: 6px; border: none !important; font-size: 10px !important; color: var(--dk-gray); padding: 0 !important; }
+.dk-i-cats-key i { width: 8px; height: 8px; border-radius: 50%; display: block; margin-left: 6px; }
+
+.dk-i-feed { margin-bottom: 10px; }
+.dk-i-feed-r { border-left: 2px solid var(--dk-stone); padding: 8px 0 8px 12px; margin-bottom: 7px; }
+.dk-i-feed-r.is-amber { border-color: var(--dk-amber); }
+.dk-i-feed-r.is-green { border-color: var(--dk-green); }
+.dk-i-feed-r.is-blue { border-color: var(--dk-blue); }
+.dk-i-feed-h { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--dk-navy); margin-bottom: 3px; }
+.dk-i-feed-t { font-family: var(--dk-mono); font-size: 9.5px; color: var(--dk-cool); }
+.dk-i-feed-v { font-size: 11.5px; line-height: 1.6; color: var(--dk-gray); }
+
 /* The storyboard. Hidden on screen; the print block below is what turns it on. */
 .dk-board { display: none; }
-.dk-board-c { border: 1px solid var(--dk-border); padding: 12px 14px; break-inside: avoid; page-break-inside: avoid; }
-.dk-board-n { font-family: var(--dk-mono); font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dk-blue); margin-bottom: 6px; }
-.dk-board-t { font-family: var(--dk-serif); font-size: 14pt; line-height: 1.2; margin-bottom: 5px; }
-.dk-board-s { font-size: 8.5pt; line-height: 1.55; color: var(--dk-gray); margin-bottom: 8px; }
-.dk-board-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-top: 1px solid var(--dk-border); font-size: 8pt; line-height: 1.4; }
-.dk-board-row span:first-child { font-family: var(--dk-mono); font-size: 7pt; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dk-cool); flex-shrink: 0; }
+.dk-board-c { border: 1px solid var(--dk-border); padding: 8px 10px; break-inside: avoid; page-break-inside: avoid; }
+.dk-board-n { font-family: var(--dk-mono); font-size: 7pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dk-blue); margin-bottom: 4px; }
+.dk-board-t { font-family: var(--dk-serif); font-size: 11pt; line-height: 1.15; margin-bottom: 4px; }
+.dk-board-s { font-size: 7pt; line-height: 1.45; color: var(--dk-gray); margin-bottom: 6px; }
+.dk-board-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-top: 1px solid var(--dk-border); font-size: 6.5pt; line-height: 1.35; }
+.dk-board-row span:first-child { font-family: var(--dk-mono); font-size: 6pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dk-cool); flex-shrink: 0; }
 .dk-board-row span:last-child { text-align: right; color: var(--dk-navy); }
 
 @media print {
   .dk-flow { display: none !important; }
-  /* Two fixed columns, NOT a media-query breakpoint: `md:` and auto-fit both
-     resolve against the print viewport, which can fall below 768px and stack
-     four cards down two pages. */
-  .dk-board { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  /* Three fixed columns, NOT a media-query breakpoint: `md:` and auto-fit both
+     resolve against the print viewport, which can fall below 768px and would
+     stack thirteen cards down four pages.
+
+     break-inside on the CARD and not on the board: the board is taller than a
+     page and asking it not to split is a request the engine ignores, then
+     splits it at a line nobody chose. Asking each card not to split is a
+     request that fits. */
+  .dk-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 }
 
 /* ── ask ── */
