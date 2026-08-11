@@ -21,7 +21,19 @@ import { mintDownloadGrant, downloadGrantsEnabled } from "@/lib/deckDownload";
  */
 
 type Contact = { name?: string; email?: string; org?: string };
-export type DeckSlug = "buyer" | "founders";
+export type DeckSlug = "buyer" | "founders" | "investor";
+
+/**
+ * Where each deck lives. A map rather than a ternary chain: the ternary was
+ * already "founders or else buyer", so adding a third deck to it would have
+ * silently routed investor downloads at the public buyer deck — a wrong URL
+ * that returns 200 and shows the wrong document.
+ */
+const DECK_PATH: Record<DeckSlug, string> = {
+  buyer: "/deck",
+  founders: "/deck/founders",
+  investor: "/deck/investor",
+};
 
 const clean = (s: string | undefined, max: number) => {
   const v = (s ?? "").trim();
@@ -174,7 +186,7 @@ export async function requestDeckDownload(args: {
   if (!token) return { ok: false, error: "Could not create a download link." };
 
   const site = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
-  const path = args.deck === "founders" ? "/deck/founders" : "/deck";
+  const path = DECK_PATH[args.deck];
   const url = `${site}${path}?dl=${token}`;
 
   // Recorded before the send, so a mail failure doesn't lose the lead.

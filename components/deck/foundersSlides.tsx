@@ -11,6 +11,24 @@
  * entire product. A founding member is buying influence over an unfinished
  * roadmap, and pretending otherwise would both insult them and make the offer
  * incoherent — you cannot sell a council seat on a finished product.
+ *
+ * ── Continuity is load-bearing here, because this deck is second ──
+ *
+ * Every "you just saw" in this file is a claim about what the buyer deck
+ * showed, so a change over there silently makes a sentence here false. Two were
+ * false and one was worse than false:
+ *
+ * - The buyer deck no longer walks Meridian as a static slide. It runs a
+ *   thirteen-screen product walkthrough that goes past the single vendor into
+ *   the whole portfolio, so "the Meridian numbers" undersold what the room had
+ *   just been shown.
+ * - The three-phase deliverables grid is gone from the buyer deck, which is
+ *   where the nine deliverables behind "5 / 9" were visible. The count is still
+ *   true and still published, but it now needs to say where.
+ * - The buyer deck closes by offering the free Portfolio Score. This deck
+ *   opened by offering a free full analysis of a live decision. Two different
+ *   free things, ten minutes apart, and the second quietly devalues the first.
+ *   They are now one ladder rather than two offers.
  */
 
 const SEAT = [
@@ -20,7 +38,7 @@ const SEAT = [
   ],
   [
     "A council seat, and a vote",
-    "You see the roadmap before it's built and you vote on the order. Nine of the deliverables are published with their release sequence; founding members decide which of the unbuilt ones moves first.",
+    "You see the roadmap before it's built and you vote on the order. All nine deliverables are published with their release sequence at axionia.com/platform/outputs; founding members decide which of the unbuilt ones moves first.",
   ],
   [
     "Quarterly working sessions",
@@ -84,9 +102,9 @@ export const FOUNDERS_SLIDES = [
       <em>This is the commercial side of it.</em>
     </h2>
     <p className="dk-sub">
-      So we won&rsquo;t re-argue selection bias or walk the Meridian numbers
-      again. What&rsquo;s worth establishing first is what already exists,
-      because it changes what the number on the next slide is buying.
+      So we won&rsquo;t re-argue selection bias or walk back through the
+      Meridian portfolio. What&rsquo;s worth establishing first is what already
+      exists, because it changes what the number on the next slide is buying.
     </p>
     <div className="dk-mer">
       <div className="dk-mer-c">
@@ -94,7 +112,8 @@ export const FOUNDERS_SLIDES = [
         <div className="dk-mer-n dk-blue">5 / 9</div>
         <div className="dk-mer-d">
           Deliverables live, including the full analysis: portfolio score, vendor
-          teardown, scenario and optimisation.
+          teardown, scenario and optimisation. All nine and their sequence are
+          published at axionia.com/platform/outputs.
         </div>
       </div>
       <div className="dk-mer-c">
@@ -118,9 +137,10 @@ export const FOUNDERS_SLIDES = [
     <div className="dk-callout">
       <strong>The method isn&rsquo;t a prototype.</strong> The scoring, the
       attribution framework, the benefit library and the report layer are built
-      and in use — the Meridian analysis you just saw came out of them, not out
-      of a slide. What the roadmap adds is cadence and reach: the monthly signal,
-      the annual strategy review, self-serve document intake.
+      and in use — the Meridian walkthrough you just saw runs on them, not on a
+      slide. The screens marked in build are the cadence and reach: simulation,
+      peer benchmarking, the vendor landscape, continuous monitoring. Those are
+      what a seat votes on the order of.
     </div>
   </div>,
 
@@ -130,13 +150,15 @@ export const FOUNDERS_SLIDES = [
     <h2 className="dk-h2">
       Four things, <em>all of them in writing.</em>
     </h2>
+    {/* Was .dk-obj-fam with two inline overrides fighting it — a card built for
+        the objectives grid, which no longer exists on any deck. Borrowing a
+        class and then cancelling half of it is how a deck stops tracking the
+        tokens. Its own class now. */}
     <div className="dk-grid-2 dk-tight">
       {SEAT.map(([k, v]) => (
-        <div className="dk-obj-fam" key={k}>
-          <div className="dk-obj-h">{k}</div>
-          <div className="dk-obj-note" style={{ fontStyle: "normal", paddingTop: 0 }}>
-            {v}
-          </div>
+        <div className="dk-seat" key={k}>
+          <div className="dk-seat-k">{k}</div>
+          <div className="dk-seat-v">{v}</div>
         </div>
       ))}
     </div>
@@ -243,24 +265,17 @@ export const FOUNDERS_SLIDES = [
       </div>
       <div>
         <div className="dk-led-h">Why the number is ten</div>
-        <p style={{ fontSize: 14, lineHeight: 1.75, color: "var(--dk-gray)" }}>
+        <p className="dk-prose">
           Ten is enough to represent real variety in workforce composition and
           industry, and few enough that every member&rsquo;s vote visibly moves
           the roadmap rather than being averaged into an advisory board.
         </p>
-        <p
-          style={{
-            fontSize: 14,
-            lineHeight: 1.75,
-            color: "var(--dk-gray)",
-            marginTop: 12,
-          }}
-        >
+        <p className="dk-prose">
           It is also the number we can genuinely serve at this depth. Quarterly
           working sessions with forty employers would be a webinar, and a
           webinar is not what you&rsquo;d be buying.
         </p>
-        <div className="dk-callout" style={{ marginTop: 16 }}>
+        <div className="dk-callout">
           <strong>What we get.</strong> Real decisions with real deadlines, and
           being told honestly when we&rsquo;re wrong. Every engagement also
           sharpens the benchmark the next one is scored against — including
@@ -285,9 +300,12 @@ export const FOUNDERS_SLIDES = [
         <div>
           <div className="dk-ask-t">We run it before you commit to anything</div>
           <div className="dk-ask-d">
-            A live decision, analysed in full, with the whole model open to you.
-            No charge and no obligation. If the work isn&rsquo;t good you&rsquo;ll
-            know inside a week, and that is the cheapest possible way to find out.
+            The Portfolio Score is free to anyone and always will be. This is the
+            step past it: one live decision taken through the full engagement —
+            vendor teardown, overlap separated, the mix we&rsquo;d design
+            instead — with the whole model open to you, at no charge and no
+            obligation. If the work isn&rsquo;t good you&rsquo;ll know inside a
+            week, and that is the cheapest possible way to find out.
           </div>
         </div>
       </div>
@@ -312,9 +330,26 @@ export const FOUNDERS_SLIDES = [
         </div>
       </div>
     </div>
-    <blockquote className="dk-quote dk-quote-l">
-      We tell you what we think — but we expose the entire model.
-    </blockquote>
+    {/*
+      This closed on "we tell you what we think — but we expose the entire
+      model", which was already the buyer deck's closing line before it was cut
+      for being a slogan. It is worse here than it was there: the slide above it
+      has just promised independence with a contractual remedy attached, and
+      following an enforceable term with a motto is a step down in register at
+      the exact moment the register is the product.
+
+      What replaces it is the same commitment with the consequence named.
+    */}
+    <div className="dk-partner">
+      <div className="dk-gap-k">The standard we&rsquo;re holding ourselves to</div>
+      <div className="dk-gap-v">
+        Every assumption in every analysis is visible and yours to move, and
+        every correction is recorded with a reason and reversible. If we ever
+        take a dollar from a vendor whose program we evaluate for you, you are
+        released and refunded. That is what independence means when it has a
+        remedy attached, and it is the only version worth $250,000.
+      </div>
+    </div>
     <div className="dk-site">axionia.com · Confidential</div>
   </div>,
 ];

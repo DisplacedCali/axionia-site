@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
-import { logDeckView, logDeckPrint, requestDeckDownload } from "@/app/deck/actions";
+import {
+  logDeckView,
+  logDeckPrint,
+  requestDeckDownload,
+  type DeckSlug,
+} from "@/app/deck/actions";
 
 /**
  * Presentation shell.
@@ -21,7 +26,7 @@ type Props = {
   slides: ReactNode[];
   /** Resolved from the session server-side. Never trusted from the client. */
   signedIn: boolean;
-  deck?: "buyer" | "founders";
+  deck?: DeckSlug;
   /**
    * Set only after a share-link signature has verified on the server. A
    * recipient who arrived by signed link is already identified, so the print
@@ -321,7 +326,7 @@ function PrintGate({
   onPrinted,
   onClose,
 }: {
-  deck: "buyer" | "founders";
+  deck: DeckSlug;
   linkLabel: string | null;
   grantName: string | null;
   grantEmail: string | null;

@@ -46,13 +46,13 @@ export default async function AdminDecks() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 mb-14">
+      <div className="grid md:grid-cols-3 gap-6 mb-14">
         <div className="border border-border p-7">
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-3">
             Buyer deck
           </div>
           <h2 className="font-serif text-2xl leading-snug mb-2">
-            Ten slides, public link
+            Eight slides, public link
           </h2>
           <p className="text-[14px] leading-[1.7] text-gray-warm mb-5">
             Open to anyone with the URL, but noindex and absent from nav, footer
@@ -85,13 +85,79 @@ export default async function AdminDecks() {
             Present →
           </Link>
         </div>
+
+        {/*
+          Two offers, one company. The founders deck sells ten seats at $250K as
+          prepaid service and explicitly not a raise; this one sells equity at a
+          priced round. Only one of them is going to happen, and until that's
+          decided both exist — so the cards say what each is rather than leaving
+          the difference to memory at the moment a link is being minted.
+        */}
+        <div className="border border-navy p-7">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-3">
+            Investor deck · $1.0M
+          </div>
+          <h2 className="font-serif text-2xl leading-snug mb-2">
+            Thirteen slides, gated
+          </h2>
+          <p className="text-[14px] leading-[1.7] text-gray-warm mb-5">
+            Priced round at $6.0M pre. Same gate as founders, but a separate
+            signing key — revoking a leaked investor link leaves the founding
+            members&rsquo; links working, and neither opens the other&rsquo;s deck.
+          </p>
+          <Link
+            href="/deck/investor"
+            className="inline-block px-5 py-2.5 border border-navy text-navy font-mono text-[10px] uppercase tracking-[0.12em] hover:bg-navy hover:text-base transition-colors"
+          >
+            Present →
+          </Link>
+        </div>
       </div>
 
-      <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
-        Share a founders link
-      </h2>
-      <div className="border border-border p-7 mb-14">
-        <ShareLinkForm enabled={linksEnabled()} />
+      {/*
+        Buyer sits apart from the other two, and the copy has to carry why.
+        A founders or investor link IS the access — no link, no page. A buyer
+        link grants nothing: /deck is public either way, and all the link does
+        is put a name on the view. Presented as three identical forms, the next
+        person to use this page would reasonably assume /deck had been closed.
+      */}
+      <div className="mb-14">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+          Share a buyer link
+        </h2>
+        <div className="border border-border p-7">
+          <p className="text-[14px] leading-[1.7] text-gray-warm mb-5 max-w-measure">
+            <strong className="font-medium text-navy">
+              This labels a view. It doesn&rsquo;t gate one.
+            </strong>{" "}
+            /deck stays public and the plain URL keeps working — a link just
+            attaches a name, so an open shows up below as that person instead of
+            as &ldquo;Anonymous&rdquo;. Signed, so the name can&rsquo;t be
+            changed by editing the URL, and worth using because the download gate
+            only learns who someone is once they&rsquo;ve already decided they
+            want the PDF.
+          </p>
+          <ShareLinkForm enabled={linksEnabled("buyer")} deck="buyer" />
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 mb-14">
+        <div>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+            Share a founders link
+          </h2>
+          <div className="border border-border p-7">
+            <ShareLinkForm enabled={linksEnabled("founders")} deck="founders" />
+          </div>
+        </div>
+        <div>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+            Share an investor link
+          </h2>
+          <div className="border border-border p-7">
+            <ShareLinkForm enabled={linksEnabled("investor")} deck="investor" />
+          </div>
+        </div>
       </div>
 
       <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">

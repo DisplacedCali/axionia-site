@@ -217,7 +217,12 @@ export function adminNewLead(args: {
  * nurture email, and the deck itself does the persuading.
  */
 export function deckDownloadLink(name: string, url: string, deck: string) {
-  const label = deck === "founders" ? "founders deck" : "buyer deck";
+  const label =
+    deck === "founders"
+      ? "founders deck"
+      : deck === "investor"
+      ? "investor deck"
+      : "buyer deck";
   return {
     subject: `Your Axionia ${label}`,
     html: shell(

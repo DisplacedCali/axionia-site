@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyDownloadGrant, watermarkLine } from "@/lib/deckDownload";
+import { verifyDeckLink } from "@/lib/deckLinks";
 import DeckShell from "@/components/deck/DeckShell";
 import { buildSlides } from "@/components/deck/slides";
 import { mergeCustom, type DeckCustom } from "@/lib/deck/custom";
@@ -30,7 +31,7 @@ export const metadata = {
 export default async function DeckPage({
   searchParams,
 }: {
-  searchParams: { dl?: string; v?: string };
+  searchParams: { dl?: string; v?: string; k?: string };
 }) {
   const supabase = createClient();
   const {
@@ -79,10 +80,28 @@ export default async function DeckPage({
   const grant = searchParams.dl ? verifyDownloadGrant("buyer", searchParams.dl) : null;
   const watermark = grant?.ok ? watermarkLine(grant.identity) : null;
 
+  /*
+    A share link, which on this deck LABELS rather than gates.
+
+    /deck is public and stays public — that decision is in the header above and
+    nothing here changes it. What a link buys is attribution: an anonymous view
+    of a public URL tells you a deck travelled and nothing about to whom, and
+    until now the only way to learn a name was the download gate, which asks
+    someone to identify themselves before they've decided they care.
+
+    So the failure branch is the opposite of the founders and investor decks. A
+    missing, forged or expired `k` falls through to the ordinary unlabelled
+    deck. Nothing is withheld and nothing 404s, because there is nothing here to
+    withhold — signing it only means the name in the log can't be invented by
+    whoever edited the URL.
+  */
+  const link = searchParams.k ? verifyDeckLink(searchParams.k, "buyer") : null;
+
   return (
     <DeckShell
       slides={buildSlides(custom)}
       signedIn={Boolean(user)}
+      linkLabel={link?.ok ? link.label : null}
       watermark={watermark}
       grantName={grant?.ok ? grant.identity.name : null}
       grantEmail={grant?.ok ? grant.identity.email : null}

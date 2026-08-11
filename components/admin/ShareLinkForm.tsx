@@ -2,15 +2,27 @@
 
 import { useState, useTransition } from "react";
 import { createShareLink } from "@/app/admin/decks/actions";
+import type { LinkedDeck } from "@/lib/deckLinks";
 
 /**
- * Mints a per-recipient founders-deck link.
+ * Mints a per-recipient link for one deck.
  *
  * One link per recipient rather than one shared link, because a forwarded link
  * still reports whose copy travelled — which is most of the point of logging
- * this deck at all.
+ * these decks at all.
+ *
+ * The `deck` prop also namespaces the field ids. Three of these render on
+ * /admin/decks, and duplicate ids would point every <label htmlFor> at
+ * whichever input the browser found first — so clicking "Recipient" under the
+ * investor form would focus the buyer one.
  */
-export default function ShareLinkForm({ enabled }: { enabled: boolean }) {
+export default function ShareLinkForm({
+  enabled,
+  deck = "founders",
+}: {
+  enabled: boolean;
+  deck?: LinkedDeck;
+}) {
   const [label, setLabel] = useState("");
   const [days, setDays] = useState(30);
   const [url, setUrl] = useState<string | null>(null);
@@ -24,7 +36,7 @@ export default function ShareLinkForm({ enabled }: { enabled: boolean }) {
     setUrl(null);
     setCopied(false);
     start(async () => {
-      const res = await createShareLink(label, days);
+      const res = await createShareLink(label, days, deck);
       if (!res.ok) setErr(res.error);
       else setUrl(res.url);
     });
@@ -39,9 +51,19 @@ export default function ShareLinkForm({ enabled }: { enabled: boolean }) {
         <p className="mt-1.5 text-[14px] leading-[1.7] text-gray-warm">
           Set <code className="font-mono text-[13px]">DECK_LINK_SECRET</code> to a
           random string of at least 24 characters, in Vercel and in{" "}
-          <code className="font-mono text-[13px]">.env.local</code>. Until then the
-          founders deck is reachable only from a staff session — which still works
-          for presenting, just not for leaving behind.
+          <code className="font-mono text-[13px]">.env.local</code>.{" "}
+          {deck === "buyer" ? (
+            <>
+              Until then <code className="font-mono text-[13px]">/deck</code>{" "}
+              works exactly as it does today — you just can&rsquo;t attach a name
+              to a view, so opens stay anonymous until someone asks for the PDF.
+            </>
+          ) : (
+            <>
+              Until then the {deck} deck is reachable only from a staff session —
+              which still works for presenting, just not for leaving behind.
+            </>
+          )}
         </p>
       </div>
     );
@@ -52,13 +74,13 @@ export default function ShareLinkForm({ enabled }: { enabled: boolean }) {
       <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[220px]">
           <label
-            htmlFor="lbl"
+            htmlFor={`lbl-${deck}`}
             className="block font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm mb-2"
           >
             Recipient
           </label>
           <input
-            id="lbl"
+            id={`lbl-${deck}`}
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Meridian Manufacturing — J. Alvarez"
@@ -67,13 +89,13 @@ export default function ShareLinkForm({ enabled }: { enabled: boolean }) {
         </div>
         <div>
           <label
-            htmlFor="exp"
+            htmlFor={`exp-${deck}`}
             className="block font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm mb-2"
           >
             Expires
           </label>
           <select
-            id="exp"
+            id={`exp-${deck}`}
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
             className="border border-border bg-white/50 px-3 py-2.5 text-[14px] focus:outline-none focus:border-navy"
