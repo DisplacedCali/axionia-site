@@ -4,6 +4,8 @@ import { requireStaff } from "@/lib/auth";
 import { linksEnabled } from "@/lib/deckLinks";
 import { Section } from "@/components/ui";
 import ShareLinkForm from "@/components/admin/ShareLinkForm";
+import FinancialModel from "@/components/admin/FinancialModel";
+import { listModelVersions, type ModelVersion } from "./model-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,25 @@ export default async function AdminDecks() {
 
   const rows = events ?? [];
   const prints = rows.filter((r) => r.event === "print").length;
+
+  /*
+    A missing storage bucket must not take the decks page down with it.
+
+    listModelVersions throws on a read error rather than returning [], because
+    an empty folder and a failed read look identical downstream and empty looks
+    like the model was deleted. That's the right behaviour for the function and
+    the wrong behaviour for this page, which exists to show deck activity — so
+    the error is caught here and rendered as a message beside the section it
+    belongs to. Same principle as /admin/companies: read the error, say which
+    thing is missing, don't let a subsystem's absence read as data loss.
+  */
+  let versions: ModelVersion[] = [];
+  let modelError: string | null = null;
+  try {
+    versions = await listModelVersions();
+  } catch (e) {
+    modelError = e instanceof Error ? e.message : "Could not read the model folder.";
+  }
 
   return (
     <Section className="pt-12 pb-24">
@@ -158,6 +179,28 @@ export default async function AdminDecks() {
             <ShareLinkForm enabled={linksEnabled("investor")} deck="investor" />
           </div>
         </div>
+      </div>
+
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
+        Financial model
+      </h2>
+      <div className="border border-border p-7 mb-14">
+        {modelError ? (
+          <div className="border-l-2 border-caution bg-amber-light px-5 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-caution">
+              Model folder unreadable
+            </p>
+            <p className="mt-1.5 text-[14px] leading-[1.7] text-gray-warm">
+              {modelError}
+              <br />
+              The <code className="font-mono text-[13px]">reports</code> bucket
+              is the same one report artifacts use, so if that&rsquo;s working
+              this is a permissions problem rather than a missing bucket.
+            </p>
+          </div>
+        ) : (
+          <FinancialModel versions={versions} />
+        )}
       </div>
 
       <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
