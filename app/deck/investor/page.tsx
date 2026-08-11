@@ -61,11 +61,25 @@ export default async function InvestorDeck({
   if (!isStaff && !link.ok) notFound();
 
   return (
+    /*
+      downloadable={false} — this deck does not leave as a file.
+
+      A deterrent, not a control, and worth being clear-eyed about: a screenshot
+      defeats it in one keystroke and nothing here pretends otherwise. What it
+      does is stop the accidental forward being the path of least resistance,
+      and route the deliberate one through a request — at which point the copy
+      that travels is watermarked, made out to somebody, and logged.
+
+      The print output says exactly that and offers to send one. The likeliest
+      person pressing Ctrl+P is an investor who wants to read it properly, and
+      the right answer to that is a PDF by return, not friction.
+    */
     <DeckShell
       slides={INVESTOR_SLIDES}
       signedIn={isStaff}
       deck="investor"
       linkLabel={link.ok ? link.label : null}
+      downloadable={false}
     />
   );
 }

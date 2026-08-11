@@ -1,4 +1,5 @@
 import DeckFlow from "./DeckFlow";
+import InvestorReturn from "./InvestorReturn";
 
 /**
  * The investor deck. Pre-seed, $1.0M at $6.0M pre-money.
@@ -94,44 +95,47 @@ const PHASES = [
   },
 ];
 
+/*
+  The company's outcome under each scenario. The investor's outcome is derived
+  from these in InvestorReturn.tsx rather than restated here — two hand-written
+  copies of a cap table drift, and the one that drifts is the one nobody
+  recomputes after the model changes.
+
+  "Milestone soft / clears" became a plain description of the event for the same
+  reason the lede above it did.
+*/
 const SCENARIOS = [
   {
     tag: "Bear",
-    cond: "Milestone soft, no further raise",
+    cond: "Data doesn't sell · no further raise",
     name: "The floor",
-    lede: "Compounds from cash flow alone — no institutional capital beyond this raise.",
     feature: false,
     rows: [
       ["Year 7 revenue", "$24.0M"],
       ["Year 7 net income", "$11.4M"],
-      ["EBIT-positive from", "Year 2"],
-      ["Founder ownership", "85.7%"],
+      ["Capital raised after this", "None"],
     ],
   },
   {
     tag: "Base",
-    cond: "Milestone clears",
+    cond: "Data sells · ~$15M Series A",
     name: "The plan",
-    lede: "A ~$15M Series A, priced off proof, funds the step into the four-engine build.",
     feature: true,
     rows: [
       ["Year 7 revenue", "$48.0M"],
       ["Year 7 net income", "$15.6M"],
-      ["EBIT-positive from", "Year 2"],
-      ["Founder ownership", "62.3%"],
+      ["Capital raised after this", "$15.0M at $40M pre"],
     ],
   },
   {
     tag: "Bull",
-    cond: "Milestone clears strong",
+    cond: "Data sells strongly",
     name: "The optionality",
-    lede: "Shown for completeness. Not baked into the valuation being asked for today.",
     feature: false,
     rows: [
       ["Year 7 revenue", "$85.0M"],
       ["Year 7 net income", "$33.5M"],
-      ["EBIT-positive from", "Year 2"],
-      ["Founder ownership", "54.0%"],
+      ["Capital raised after this", "Series A, then more"],
     ],
   },
 ];
@@ -506,8 +510,27 @@ export const INVESTOR_SLIDES = [
     <p className="dk-sub dk-sub-tight">
       The methodology isn&rsquo;t theoretical. It comes from two decades of
       building and selling analytical models across payer, provider, pharma and
-      consulting.
+      consulting — and from five exits watched from the inside, none of them as
+      the founder, which is a different and more useful vantage point for a
+      company whose product is analytical judgment.
     </p>
+
+    <div className="dk-exits">
+      <div className="dk-exits-k">Exits participated in</div>
+      {[
+        ["Enclarity", "LexisNexis Risk Solutions", "2013"],
+        ["MMS", "Genoa Healthcare", "—"],
+        ["Genoa Healthcare", "Optum", "2018"],
+        ["Quartet Health", "NeuroFlow", "2025"],
+        ["ETS", "Employee number two", "—"],
+      ].map(([who, to, when]) => (
+        <div className="dk-exits-r" key={who}>
+          <span className="dk-exits-n">{who}</span>
+          <span className="dk-exits-a">{to}</span>
+          <span className="dk-exits-y">{when}</span>
+        </div>
+      ))}
+    </div>
 
     <div className="dk-bio">
       <div className="dk-bio-who">
@@ -624,31 +647,23 @@ export const INVESTOR_SLIDES = [
       <br />
       the <em>disciplined one.</em>
     </h2>
+    {/* "Divergence starts only after a single falsifiable milestone" was the
+        academic register creeping in. The idea is the best one in the deck and
+        it survives; what changed is that it now names the event in the language
+        someone would use out loud. */}
     <p className="dk-sub dk-sub-tight">
       All three share an identical Year 1–3 build, funded entirely by the $1M
       raised now. Nothing in this ask assumes channel or data revenue before it
-      is proven. Divergence starts only after a single falsifiable milestone: a
-      third party pays for the benchmark data.
+      is proven. The three only separate after one thing happens or doesn&rsquo;t:
+      somebody outside this company pays for the benchmark data.
     </p>
 
-    <div className="dk-ramp">
-      <div className="dk-ramp-k">Base case revenue ramp</div>
-      {[
-        ["Year 3", "$4.4M"],
-        ["Year 4", "$11.2M"],
-        ["Year 7", "$48.0M"],
-      ].map(([k, v]) => (
-        <div className="dk-ramp-c" key={k}>
-          <span className="dk-ramp-l">{k}</span>
-          <span className="dk-ramp-v">{v}</span>
-        </div>
-      ))}
-      <div className="dk-ramp-c is-note">
-        <span className="dk-ramp-l">Year 3 → 4 growth</span>
-        <span className="dk-ramp-v">~154%</span>
-      </div>
-    </div>
-
+    {/* The company's side, compact and all three at once — the headline says
+        "three scenarios" and a slide where only one is visible at a time makes
+        that headline a lie. Founder ownership and the EBIT-positive year came
+        out of these cards: the first moved into the block below where it reads
+        as an alignment note, and the second is identical across all three, so
+        stating it once in the callout is the honest presentation of it. */}
     <div className="dk-grid-3">
       {SCENARIOS.map((s) => (
         <div className={`dk-scn ${s.feature ? "is-feature" : ""}`} key={s.tag}>
@@ -658,7 +673,6 @@ export const INVESTOR_SLIDES = [
             <div className="dk-scn-c">{s.cond}</div>
           </div>
           <div className="dk-scn-b">
-            <div className="dk-scn-lede">{s.lede}</div>
             {s.rows.map(([k, v]) => (
               <div className="dk-scn-r" key={k}>
                 <span>{k}</span>
@@ -670,12 +684,20 @@ export const INVESTOR_SLIDES = [
       ))}
     </div>
 
+    {/* Return on capital, which this slide did not have.
+        It showed founder ownership under all three scenarios and never once
+        showed the investor's — the one number the person reading it is
+        actually solving for. Everything in the block is arithmetic on figures
+        already stated here, except the exit multiple, which the reader sets.
+        See the header in InvestorReturn.tsx for why the default is 5×. */}
+    <InvestorReturn />
+
     <div className="dk-callout">
       <strong>Why Base is the conservative case.</strong> It is not the
       optimistic scenario — it is the one we are asking investors to underwrite
       precisely because it depends on the least. It assumes zero channel or data
-      revenue until a specific falsifiable milestone proves the model, rather
-      than a hopeful trajectory. And{" "}
+      revenue until somebody outside the company pays for the benchmark data,
+      rather than assuming a trajectory. And{" "}
       <strong>all three turn EBIT-positive by Year 2</strong>: profitability
       isn&rsquo;t the upside case here, it is the floor. Bull exists to show the
       ceiling and is not what the valuation assumes.
@@ -695,7 +717,18 @@ export const INVESTOR_SLIDES = [
       benchmarks.
     </p>
 
-    <div className="dk-grid-2 dk-tight">
+    {/* Three across, not four in a 2×2.
+        The fourth card was the benchmark-data trigger, which is the strongest
+        idea on the slide and was sitting in a quarter tile looking like an
+        afterthought. It is now the band underneath, at full width.
+
+        The founder card no longer claims repeat-founder status. The old copy
+        cited "strong repeat founders command $8–10M caps" as the comparison,
+        which implies a thing that isn't true of Tom and would be checked. Five
+        exits from the inside is both accurate and, for a company whose product
+        is analytical judgment, the more relevant credential — the operator who
+        built the models is a different bet from the founder who sold twice. */}
+    <div className="dk-grid-3 dk-tight">
       <div className="dk-gap">
         <div className="dk-gap-k">Priced against the market</div>
         <div className="dk-gap-v">
@@ -705,11 +738,13 @@ export const INVESTOR_SLIDES = [
         </div>
       </div>
       <div className="dk-gap">
-        <div className="dk-gap-k">Priced against the founder</div>
+        <div className="dk-gap-k">Priced against the operator</div>
         <div className="dk-gap-v">
-          2026 data has strong repeat founders commanding $8–10M caps on pedigree
-          alone. Twenty years in healthcare analytics, a Yale MBA and $500M+ in
-          underwritten risk products puts $6.0M on the conservative side of that.
+          Not a repeat founder — an operator through{" "}
+          <strong>five exits from the inside</strong>: Enclarity to LexisNexis,
+          MMS to Genoa, Genoa to Optum, Quartet to NeuroFlow, and employee two at
+          ETS. Twenty years of healthcare analytics, a Yale MBA and $500M+ in
+          underwritten risk products.
         </div>
       </div>
       <div className="dk-gap">
@@ -717,16 +752,39 @@ export const INVESTOR_SLIDES = [
         <div className="dk-gap-v">
           A working research pipeline and live discovery engagements, not just a
           deck. 2026 pre-seed investors increasingly expect a functional product
-          at this stage, and there is one.
+          at this stage, and there is one — you just clicked through it.
         </div>
       </div>
-      <div className="dk-gap">
-        <div className="dk-gap-k">The trigger for the next round</div>
-        <div className="dk-gap-v">
-          A single falsifiable event: a third party pays for the benchmark data.
-          That is the evidence a revenue multiple alone cannot capture, and it is
-          what the Series A is priced off.
+    </div>
+
+    <div className="dk-trigger">
+      <div className="dk-trigger-k">What triggers the next round</div>
+      <div className="dk-trigger-v">
+        One event, and it can fail:{" "}
+        <strong>somebody outside this company pays for the benchmark data.</strong>{" "}
+        Until that happens the plan is Bear and no more capital is raised. When
+        it happens, the Series A is priced off proof rather than off a
+        projection — which is the evidence a revenue multiple alone cannot
+        capture, and the reason the markup below is arithmetic rather than an
+        assertion.
+      </div>
+    </div>
+
+    <div className="dk-ramp">
+      <div className="dk-ramp-k">Base case revenue ramp</div>
+      {[
+        ["Year 3", "$4.4M"],
+        ["Year 4", "$11.2M"],
+        ["Year 7", "$48.0M"],
+      ].map(([k, v]) => (
+        <div className="dk-ramp-c" key={k}>
+          <span className="dk-ramp-l">{k}</span>
+          <span className="dk-ramp-v">{v}</span>
         </div>
+      ))}
+      <div className="dk-ramp-c is-note">
+        <span className="dk-ramp-l">Year 3 → 4 growth</span>
+        <span className="dk-ramp-v">~154%</span>
       </div>
     </div>
 
@@ -758,10 +816,10 @@ export const INVESTOR_SLIDES = [
     </div>
 
     <p className="dk-fine">
-      The path, priced: seed at $1.0M on $6.0M pre / $7.0M post. Series A at the
-      milestone, ~$15.0M on $40.0M pre / $55.0M post — landing almost exactly on
-      the 2026 Series A post-money median. Every number here is sourced rather
-      than asserted; full comps available on request.
+      The path, priced: seed at $1.0M on $6.0M pre / $7.0M post. Series A when
+      the data sells, ~$15.0M on $40.0M pre / $55.0M post — landing almost
+      exactly on the 2026 Series A post-money median. Every number here is
+      sourced rather than asserted; full comps available on request.
     </p>
   </div>,
 

@@ -46,6 +46,17 @@ type Props = {
   /** Identity inside a verified download grant — prefills the print confirm. */
   grantName?: string | null;
   grantEmail?: string | null;
+  /**
+   * Whether this deck leaves as a file.
+   *
+   * False removes the Download button and makes Ctrl+P produce one page saying
+   * to ask for a copy. It is a deterrent, not a control — a screenshot still
+   * works and nothing here pretends otherwise. What it buys is that the
+   * accidental forward stops being the path of least resistance, and that a
+   * copy which does travel travelled because somebody asked, which means it
+   * carries a watermark and a name.
+   */
+  downloadable?: boolean;
 };
 
 export default function DeckShell({
@@ -56,6 +67,7 @@ export default function DeckShell({
   watermark = null,
   grantName = null,
   grantEmail = null,
+  downloadable = true,
 }: Props) {
   const [i, setI] = useState(0);
   const [gate, setGate] = useState(false);
@@ -206,7 +218,12 @@ export default function DeckShell({
   }, [total, toggleFullscreen]);
 
   return (
-    <div ref={shell} className={`dk${presenting ? " dk-presenting" : ""}`}>
+    <div
+      ref={shell}
+      className={`dk${presenting ? " dk-presenting" : ""}${
+        downloadable ? "" : " dk-noprint"
+      }`}
+    >
       <header className="dk-bar">
         <div className="dk-brand">
           <svg width="21" height="21" viewBox="0 0 40 40" fill="none" aria-hidden="true">
@@ -234,9 +251,11 @@ export default function DeckShell({
           >
             {presenting ? "Exit full screen" : "Present"}
           </button>
-          <button onClick={onPrintClick} className="dk-btn">
-            Download PDF
-          </button>
+          {downloadable && (
+            <button onClick={onPrintClick} className="dk-btn">
+              Download PDF
+            </button>
+          )}
           {/* The way out. `dk` covers the viewport and replaces the site nav,
               so without this the only exit is the browser back button — and a
               deck opened from a signed link has no history to go back to. */}
@@ -300,6 +319,40 @@ export default function DeckShell({
         that visibly distrusts its reader is a worse document.
       */}
       {watermark && <div className="dk-watermark">{watermark}</div>}
+
+      {/*
+        What comes out of Ctrl+P when the deck isn't distributed as a file.
+        Rendered always and revealed only by the print stylesheet — building it
+        on demand would mean it doesn't exist at the moment the browser is
+        already laying out the page.
+
+        It asks rather than accuses. The likeliest person pressing Ctrl+P is an
+        investor who wants to read it on a plane, and the answer to that is a
+        watermarked copy by return, not a scolding.
+      */}
+      {!downloadable && (
+        <div className="dk-printnote">
+          <div className="dk-printnote-in">
+            <div className="dk-printnote-k">Axionia — Investor Overview</div>
+            <h1 className="dk-printnote-h">
+              This one isn&rsquo;t distributed as a file.
+            </h1>
+            <p className="dk-printnote-p">
+              The investor overview carries a priced round and a seven-year
+              model, so it lives at a link rather than in an attachment — that
+              way we know which copy is which.
+            </p>
+            <p className="dk-printnote-p">
+              If you want it as a PDF to read properly or to share with a
+              partner, just ask and we&rsquo;ll send one made out to you. Nobody
+              is going to make that difficult.
+            </p>
+            <p className="dk-printnote-c">
+              Thomas Dow · thomas@axionia.com · axionia.com
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* No onDone: the gate no longer hands over the file. It emails a link,
           and printing happens on the next visit with ?dl= — which is the
