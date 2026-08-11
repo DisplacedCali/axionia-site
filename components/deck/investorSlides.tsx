@@ -95,50 +95,43 @@ const PHASES = [
   },
 ];
 
-/*
-  The company's outcome under each scenario. The investor's outcome is derived
-  from these in InvestorReturn.tsx rather than restated here — two hand-written
-  copies of a cap table drift, and the one that drifts is the one nobody
-  recomputes after the model changes.
+/**
+ * What the $1.0M buys — the slide the deck doesn't have yet.
+ *
+ * The word "$1.0M" appears fourteen times across these thirteen slides and not
+ * once does anything say what it purchases or how long it lasts. That is the
+ * first question after "how much", and it currently has no answer.
+ *
+ * ── Why this is a function returning null rather than a table of guesses ──
+ *
+ * The allocation is Tom's model and nobody else's. A plausible-looking split
+ * invented here would be indistinguishable from a real one on the page and
+ * would be read aloud to somebody writing a cheque — the same failure the
+ * benefit library bans, with worse consequences. So the gap is recorded rather
+ * than filled, and the slide is CONDITIONAL: while this returns null the deck
+ * renders thirteen slides exactly as before. It cannot half-ship, and there is
+ * no placeholder to forget.
+ *
+ * To turn it on, return the object. Five things are needed:
+ *
+ *   months     — how long $1.0M lasts, alone, at planned burn
+ *   allocation — three or four rows of [area, amount, what it buys]
+ *   proves     — what is demonstrably true when the money is spent
+ *   floor      — what happens if Phase 1 revenue misses (it funds itself, or
+ *                the runway shortens to N months)
+ *   ownership  — whether any of it is earmarked for a hire, since "2–4 analysts"
+ *                currently first appears in Phase 2 with no funding attached
+ */
+type UseOfFunds = {
+  months: number;
+  allocation: { area: string; amount: string; buys: string }[];
+  proves: string[];
+  floor: string;
+};
 
-  "Milestone soft / clears" became a plain description of the event for the same
-  reason the lede above it did.
-*/
-const SCENARIOS = [
-  {
-    tag: "Bear",
-    cond: "Data doesn't sell · no further raise",
-    name: "The floor",
-    feature: false,
-    rows: [
-      ["Year 7 revenue", "$24.0M"],
-      ["Year 7 net income", "$11.4M"],
-      ["Capital raised after this", "None"],
-    ],
-  },
-  {
-    tag: "Base",
-    cond: "Data sells · ~$15M Series A",
-    name: "The plan",
-    feature: true,
-    rows: [
-      ["Year 7 revenue", "$48.0M"],
-      ["Year 7 net income", "$15.6M"],
-      ["Capital raised after this", "$15.0M at $40M pre"],
-    ],
-  },
-  {
-    tag: "Bull",
-    cond: "Data sells strongly",
-    name: "The optionality",
-    feature: false,
-    rows: [
-      ["Year 7 revenue", "$85.0M"],
-      ["Year 7 net income", "$33.5M"],
-      ["Capital raised after this", "Series A, then more"],
-    ],
-  },
-];
+function useOfFunds(): UseOfFunds | null {
+  return null;
+}
 
 const CAREER = [
   ["2025–now", "SVP Analytics", "WIN · Greenwich, CT"],
@@ -147,6 +140,8 @@ const CAREER = [
   ["2014–2017", "Director, Healthcare Advisory Services", "PwC"],
   ["2007–2011", "Sr. Fraud Detection Statistician → Principal Analytics", "OptumInsight"],
 ];
+
+const FUNDS = useOfFunds();
 
 export const INVESTOR_SLIDES = [
   /* ── 00 · cover ── */
@@ -634,6 +629,54 @@ export const INVESTOR_SLIDES = [
     </div>
   </div>,
 
+  /* ── 09b · use of funds (only once the numbers exist) ──
+     Sits here on purpose: after the business model has said what the company
+     does with revenue, before the financial slide asks the reader to value it.
+     The money question gets answered before the return question is asked. */
+  ...(FUNDS
+    ? [
+        <div key="i9b">
+          <div className="dk-eyebrow">Use of funds</div>
+          <h2 className="dk-h2">
+            What the $1.0M buys,
+            <br />
+            and <em>how long it lasts.</em>
+          </h2>
+          <p className="dk-sub dk-sub-tight">
+            {FUNDS.months} months on this raise alone, against a Phase 1 that is
+            already generating revenue. The point of the money is not survival —
+            it is reaching the evidence that prices the next round, or reaching
+            profitability without one.
+          </p>
+
+          <div className="dk-tam">
+            {FUNDS.allocation.map((a) => (
+              <div className="dk-tam-r" key={a.area}>
+                <div className="dk-tam-k">
+                  <span className="dk-tam-lbl">{a.area}</span>
+                  <span className="dk-tam-n">{a.amount}</span>
+                </div>
+                <div className="dk-tam-v">{a.buys}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="dk-grid-2 dk-tight">
+            <div className="dk-note-blue">
+              <div className="dk-led-h dk-blue">What&rsquo;s true when it&rsquo;s spent</div>
+              {FUNDS.proves.map((p) => (
+                <div key={p}>{p}</div>
+              ))}
+            </div>
+            <div className="dk-note-gray">
+              <div className="dk-led-h">If Phase 1 revenue misses</div>
+              {FUNDS.floor}
+            </div>
+          </div>
+        </div>,
+      ]
+    : []),
+
   /* ── 10 · financial backup ──
      The Year 3 and Year 4 revenue strip is new. The valuation slide computes
      multiples off $4.4M and $11.2M, and neither number appeared anywhere in
@@ -658,49 +701,49 @@ export const INVESTOR_SLIDES = [
       somebody outside this company pays for the benchmark data.
     </p>
 
-    {/* The company's side, compact and all three at once — the headline says
-        "three scenarios" and a slide where only one is visible at a time makes
-        that headline a lie. Founder ownership and the EBIT-positive year came
-        out of these cards: the first moved into the block below where it reads
-        as an alignment note, and the second is identical across all three, so
-        stating it once in the callout is the honest presentation of it. */}
-    <div className="dk-grid-3">
-      {SCENARIOS.map((s) => (
-        <div className={`dk-scn ${s.feature ? "is-feature" : ""}`} key={s.tag}>
-          <div className="dk-scn-h">
-            <div className="dk-scn-tag">{s.tag}</div>
-            <div className="dk-scn-n">{s.name}</div>
-            <div className="dk-scn-c">{s.cond}</div>
-          </div>
-          <div className="dk-scn-b">
-            {s.rows.map(([k, v]) => (
-              <div className="dk-scn-r" key={k}>
-                <span>{k}</span>
-                <span>{v}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    {/* Scenario cards AND return on capital, from one component.
 
-    {/* Return on capital, which this slide did not have.
-        It showed founder ownership under all three scenarios and never once
-        showed the investor's — the one number the person reading it is
-        actually solving for. Everything in the block is arithmetic on figures
-        already stated here, except the exit multiple, which the reader sets.
-        See the header in InvestorReturn.tsx for why the default is 5×. */}
+        Two things were wrong before. The slide showed founder ownership under
+        all three scenarios and never once showed the investor's — the number
+        the person reading it is actually solving for. And the cards were static
+        markup here while a second Bear/Base/Bull tab strip lived inside the
+        block below, so one choice had two controls and the visible one did
+        nothing.
+
+        The cards now own the selection, which also means the scenario data
+        lives in exactly one place. Everything derived from it is arithmetic on
+        figures the deck already states, except the exit multiple, which the
+        reader sets — see the header in InvestorReturn.tsx for why 5× is the
+        default and why the range stops at 8×. */}
     <InvestorReturn />
 
+    {/* The Series A reframed as optional.
+
+        The deck presented it as a milestone-triggered necessity while the model
+        underneath said every scenario is EBIT-positive from Year 2 — including
+        Bear, which raises nothing further. Those two statements were in the
+        same deck and quietly contradicted each other, which is what made the
+        gate read as arbitrary: a hurdle to clear rather than a choice to make.
+
+        Stated as a choice it does more work. It is the thing that makes Bear
+        credible instead of sad, and "we don't have to raise again" is a
+        stronger sentence at pre-seed than any use of proceeds. */}
     <div className="dk-callout">
       <strong>Why Base is the conservative case.</strong> It is not the
       optimistic scenario — it is the one we are asking investors to underwrite
       precisely because it depends on the least. It assumes zero channel or data
       revenue until somebody outside the company pays for the benchmark data,
-      rather than assuming a trajectory. And{" "}
-      <strong>all three turn EBIT-positive by Year 2</strong>: profitability
-      isn&rsquo;t the upside case here, it is the floor. Bull exists to show the
-      ceiling and is not what the valuation assumes.
+      rather than assuming a trajectory. Bull exists to show the ceiling and is
+      not what the valuation assumes.
+      <br />
+      <br />
+      <strong>And the Series A is optional, not required.</strong> All three
+      cases turn EBIT-positive by Year 2, Bear included — so this round is not
+      buying runway to the next one, it is buying the bridge to profitability.
+      We raise again if the benchmark data sells, because at that point capital
+      buys something it could not buy before. If it doesn&rsquo;t, we don&rsquo;t,
+      and you own {"14.29%"} of a company throwing off $11.4M a year. That is
+      the floor, and a floor is different from a failure case.
     </div>
   </div>,
 
@@ -760,13 +803,14 @@ export const INVESTOR_SLIDES = [
     <div className="dk-trigger">
       <div className="dk-trigger-k">What triggers the next round</div>
       <div className="dk-trigger-v">
-        One event, and it can fail:{" "}
+        One event, and it is allowed to fail:{" "}
         <strong>somebody outside this company pays for the benchmark data.</strong>{" "}
-        Until that happens the plan is Bear and no more capital is raised. When
-        it happens, the Series A is priced off proof rather than off a
-        projection — which is the evidence a revenue multiple alone cannot
-        capture, and the reason the markup below is arithmetic rather than an
-        assertion.
+        Until it does, no further capital is raised and the company runs Bear —
+        profitable from Year 2, undiluted, smaller on purpose. When it does, the
+        Series A becomes worth taking, and it is priced off proof rather than
+        off a projection. That is the evidence a revenue multiple alone
+        can&rsquo;t capture, and the reason the markup below is arithmetic
+        rather than an assertion.
       </div>
     </div>
 

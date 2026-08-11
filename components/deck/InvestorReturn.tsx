@@ -53,6 +53,9 @@ type Scenario = {
   retention: number;
   revenue: number; // Year 7, $M
   netIncome: number; // Year 7, $M
+  raised: string;
+  /** The one being underwritten. Marked, and distinct from being selected. */
+  plan?: boolean;
   note: string;
 };
 
@@ -64,7 +67,8 @@ const SCENARIOS: readonly Scenario[] = [
     retention: 1,
     revenue: 24.0,
     netIncome: 11.4,
-    note: "Nothing dilutes you, because nothing is raised. The company compounds from its own cash flow and stays small on purpose.",
+    raised: "None",
+    note: "Nothing dilutes you, because nothing is raised. This is not the failure case — it is EBIT-positive from Year 2 like the other two, and it is the case that makes the Series A a choice rather than a requirement.",
   },
   {
     tag: "Base",
@@ -73,6 +77,8 @@ const SCENARIOS: readonly Scenario[] = [
     retention: 40 / 55,
     revenue: 48.0,
     netIncome: 15.6,
+    raised: "$15.0M at $40M pre",
+    plan: true,
     note: "The Series A dilutes you by roughly a quarter and roughly doubles the company. On exit value that trade is clearly worth taking; on your share of net income it very nearly isn't — which is worth seeing rather than hiding.",
   },
   {
@@ -82,6 +88,7 @@ const SCENARIOS: readonly Scenario[] = [
     retention: 0.63,
     revenue: 85.0,
     netIncome: 33.5,
+    raised: "Series A, then more",
     note: "More capital, more dilution, a materially larger company. Shown for completeness — this is not what the valuation being asked for today assumes.",
   },
 ];
@@ -116,20 +123,58 @@ export default function InvestorReturn() {
 
   return (
     <>
+      {/*
+        The scenario cards ARE the control.
+
+        They used to be a static grid on the slide with a second Bear/Base/Bull
+        tab strip inside this block, which is two controls for one choice and no
+        indication that the top one did anything. Clicking the thing you are
+        reading is the obvious gesture; a tab row below it is the one you have
+        to be told about.
+
+        Selection and "the plan" are deliberately different marks. Base is what
+        is being underwritten whether or not it is the card currently open, and
+        collapsing the two would mean clicking Bull silently reassigns which
+        scenario the round is priced off.
+      */}
+      <div className="dk-grid-3 dk-scn-pick" data-deck-keys="local" role="group" aria-label="Scenario">
+        {SCENARIOS.map((x, n) => (
+          <button
+            key={x.tag}
+            className={`dk-scn ${n === i ? "is-on" : ""}`}
+            onClick={() => setI(n)}
+            aria-pressed={n === i}
+          >
+            <span className="dk-scn-h">
+              <span className="dk-scn-tag">
+                {x.tag}
+                {x.plan && <em className="dk-scn-plan">Underwritten</em>}
+              </span>
+              <span className="dk-scn-n">{x.name}</span>
+              <span className="dk-scn-c">{x.cond}</span>
+            </span>
+            <span className="dk-scn-b">
+              <span className="dk-scn-r">
+                <span>Year 7 revenue</span>
+                <span>${x.revenue.toFixed(1)}M</span>
+              </span>
+              <span className="dk-scn-r">
+                <span>Year 7 net income</span>
+                <span>${x.netIncome.toFixed(1)}M</span>
+              </span>
+              <span className="dk-scn-r">
+                <span>Capital raised after this</span>
+                <span>{x.raised}</span>
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+
       <div className="dk-roc" data-deck-keys="local">
         <div className="dk-roc-bar">
-          <div className="dk-roc-tabs" role="tablist" aria-label="Scenario">
-            {SCENARIOS.map((x, n) => (
-              <button
-                key={x.tag}
-                role="tab"
-                aria-selected={n === i}
-                className={`dk-roc-tab ${n === i ? "is-on" : ""}`}
-                onClick={() => setI(n)}
-              >
-                {x.tag}
-              </button>
-            ))}
+          <div className="dk-roc-sel">
+            What <strong>{s.tag}</strong> means for your $1.0M
           </div>
           <div className="dk-roc-mult">
             <span className="dk-roc-mult-l">Exit multiple</span>
@@ -144,10 +189,6 @@ export default function InvestorReturn() {
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="dk-roc-cond">
-          <strong>{s.name}</strong> — {s.cond}
         </div>
 
         <div className="dk-roc-grid">
