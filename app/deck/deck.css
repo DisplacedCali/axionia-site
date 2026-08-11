@@ -181,6 +181,14 @@
 .dk-obj-m { display: block; font-size: 11px; line-height: 1.5; color: var(--dk-cool); margin-top: 2px; }
 .dk-obj-note { margin-top: auto; padding-top: 10px; font-size: 11px; line-height: 1.6; color: var(--dk-gray); font-style: italic; }
 
+/* The objective menu, compressed to a strip. The full four-family grid moved to
+   /platform: on a slide it was a table of contents for a screen the reader
+   never sees, and the three employer cards below make the same point with an
+   answer attached. */
+.dk-obj-strip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; margin-bottom: 18px; }
+.dk-obj-strip span { font-family: var(--dk-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dk-blue); }
+.dk-obj-strip em { font-style: normal; font-family: var(--dk-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--dk-cool); }
+
 .dk-callout { margin-top: 18px; background: var(--dk-base2); border: 1px solid var(--dk-border); padding: 15px 18px; font-size: 13.5px; line-height: 1.7; }
 .dk-callout strong { font-weight: 500; }
 
@@ -231,6 +239,80 @@
 .dk-pill.is-road { color: var(--dk-cool); border-color: var(--dk-stone); }
 .dk-note-blue { border-left: 2px solid var(--dk-blue); padding-left: 14px; font-size: 13px; line-height: 1.7; color: var(--dk-gray); }
 .dk-note-gray { border-left: 2px solid var(--dk-stone); padding-left: 14px; font-size: 13px; line-height: 1.7; color: var(--dk-gray); }
+
+/* ── flow walkthrough ──────────────────────────────────────────────────────
+   Two renderings of one array. `.dk-flow` is the click-through and exists only
+   on screen; `.dk-board` is the storyboard and exists only in print. See the
+   header comment in DeckFlow.tsx for why both are needed.
+*/
+.dk-flow { border: 1px solid var(--dk-border); background: #fff; }
+.dk-flow-chrome {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; background: var(--dk-base2); border-bottom: 1px solid var(--dk-border);
+}
+.dk-flow-tl { width: 7px; height: 7px; border-radius: 50%; background: var(--dk-stone); }
+.dk-flow-url {
+  margin-left: 10px; font-family: var(--dk-mono); font-size: 9.5px;
+  letter-spacing: 0.06em; color: var(--dk-cool);
+}
+.dk-flow-tabs { display: flex; border-bottom: 1px solid var(--dk-border); }
+.dk-flow-tab {
+  flex: 1; display: flex; align-items: baseline; gap: 7px; justify-content: center;
+  padding: 9px 8px; cursor: pointer; background: transparent;
+  border: none; border-right: 1px solid var(--dk-border); border-bottom: 2px solid transparent;
+  font-family: var(--dk-sans); font-size: 12px; color: var(--dk-gray);
+  transition: color .18s, border-color .18s, background .18s;
+}
+.dk-flow-tab:last-child { border-right: none; }
+.dk-flow-tab:hover { background: var(--dk-base); }
+.dk-flow-tab.is-on { color: var(--dk-navy); border-bottom-color: var(--dk-blue); background: var(--dk-blue-l); }
+.dk-flow-tab-n { font-family: var(--dk-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--dk-cool); }
+.dk-flow-tab.is-on .dk-flow-tab-n { color: var(--dk-blue); }
+
+.dk-flow-body { padding: 18px 20px; }
+.dk-flow-t { font-family: var(--dk-serif); font-size: 22px; line-height: 1.25; margin-bottom: 7px; }
+.dk-flow-s { font-size: 12.5px; line-height: 1.65; color: var(--dk-gray); max-width: 660px; margin-bottom: 14px; }
+.dk-flow-rows { border-top: 1px solid var(--dk-border); }
+.dk-flow-row {
+  display: flex; justify-content: space-between; gap: 16px;
+  padding: 8px 0; border-bottom: 1px solid var(--dk-border);
+}
+.dk-flow-k { font-family: var(--dk-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dk-cool); padding-top: 2px; flex-shrink: 0; }
+.dk-flow-v { font-size: 12.5px; line-height: 1.5; color: var(--dk-navy); text-align: right; }
+.dk-flow-note { margin-top: 12px; font-size: 11.5px; line-height: 1.6; color: var(--dk-gray); font-style: italic; }
+
+.dk-flow-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border-top: 1px solid var(--dk-border); background: var(--dk-base2);
+}
+.dk-flow-count { font-family: var(--dk-mono); font-size: 10px; letter-spacing: 0.12em; color: var(--dk-cool); }
+.dk-flow-btn {
+  font-family: var(--dk-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.11em;
+  padding: 7px 12px; cursor: pointer; background: transparent;
+  border: 1px solid var(--dk-navy); color: var(--dk-navy); transition: background .18s, color .18s;
+}
+.dk-flow-btn:hover:not(:disabled) { background: var(--dk-navy); color: var(--dk-base); }
+.dk-flow-btn.is-primary { background: var(--dk-navy); color: var(--dk-base); }
+.dk-flow-btn.is-primary:hover:not(:disabled) { background: var(--dk-blue); border-color: var(--dk-blue); }
+.dk-flow-btn:disabled { opacity: .3; cursor: default; }
+
+/* The storyboard. Hidden on screen; the print block below is what turns it on. */
+.dk-board { display: none; }
+.dk-board-c { border: 1px solid var(--dk-border); padding: 12px 14px; break-inside: avoid; page-break-inside: avoid; }
+.dk-board-n { font-family: var(--dk-mono); font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dk-blue); margin-bottom: 6px; }
+.dk-board-t { font-family: var(--dk-serif); font-size: 14pt; line-height: 1.2; margin-bottom: 5px; }
+.dk-board-s { font-size: 8.5pt; line-height: 1.55; color: var(--dk-gray); margin-bottom: 8px; }
+.dk-board-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-top: 1px solid var(--dk-border); font-size: 8pt; line-height: 1.4; }
+.dk-board-row span:first-child { font-family: var(--dk-mono); font-size: 7pt; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dk-cool); flex-shrink: 0; }
+.dk-board-row span:last-child { text-align: right; color: var(--dk-navy); }
+
+@media print {
+  .dk-flow { display: none !important; }
+  /* Two fixed columns, NOT a media-query breakpoint: `md:` and auto-fit both
+     resolve against the print viewport, which can fall below 768px and stack
+     four cards down two pages. */
+  .dk-board { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+}
 
 /* ── ask ── */
 .dk-asks { margin-top: 20px; }

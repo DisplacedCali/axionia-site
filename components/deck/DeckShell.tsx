@@ -150,6 +150,16 @@ export default function DeckShell({
       const el = document.activeElement;
       if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
 
+      /*
+        Nor while focus is inside a slide that drives itself. The walkthrough
+        on the flow slide has its own Back/Next, and both the arrows and the
+        space bar reach here first — so clicking Next and then pressing space
+        advanced the SLIDE while the demo stood still. Opting out is the
+        component's own declaration rather than a list of selectors kept here,
+        because the shell shouldn't need to know what any slide contains.
+      */
+      if (el && el.closest('[data-deck-keys="local"]')) return;
+
       switch (e.key) {
         case "ArrowRight":
         case "ArrowDown":

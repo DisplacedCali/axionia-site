@@ -1,5 +1,6 @@
-import { OBJECTIVES } from "@/lib/objectives";
+import { OBJECTIVES, OBJECTIVE_NAMES } from "@/lib/objectives";
 import type { DeckCustom } from "@/lib/deck/custom";
+import DeckFlow from "./DeckFlow";
 
 /**
  * Buyer deck content.
@@ -9,15 +10,28 @@ import type { DeckCustom } from "@/lib/deck/custom";
  * behind, green = savings or a recommendation, red = risk. The previous deck
  * spent red on the conservative scenario; a low case is the bottom of a range,
  * not a risk, and burning red on it makes the reserved meaning unreadable.
+ *
+ * ── Shape of the argument ──
+ *
+ * Cover, ONE problem slide, then the pivot, then four slides of method, then
+ * what it costs and when to call. The version this replaced spent five slides
+ * establishing that the review is broken before saying what we do about it,
+ * and a reader who already believes the premise had to sit through all of it.
+ * Problem framing earns attention; it doesn't hold it.
  */
 
+/*
+  Four failures, not six. Each one now sets up a later slide — isolation sets
+  up the portfolio, averaging sets up Meridian's transfer adjustment, strategy
+  sets up the weights, interest sets up "we didn't place any of it". The two
+  that were cut ("reviewed, not evaluated", "and no baseline") restated the
+  headline and had nothing downstream pointing back at them.
+*/
 const REVIEW_GAPS = [
-  ["Reviewed, not evaluated", "Reading an ROI study and assessing one are different skills. Judging whether an effect survives its own study design takes training most people in the chain were never expected to have."],
   ["Judged in isolation", "Each program is approved on its own merits, in its own meeting. Nobody asks whether the fourth overlaps the first three — so savings are counted twice and no one owns the arithmetic."],
-  ["Averaged, not specific", "Results are quoted against a broad national base rather than your covered population. Your age mix, injury patterns, geography and care-seeking behaviour decide whether any of it transfers."],
+  ["Averaged, not specific", "Results are quoted against a broad national base rather than your covered population. Your age mix, the work your people actually do, where they live and how readily they seek care all decide whether any of it transfers to you."],
   ["Disconnected from strategy", "A recommendation can be defensible in benefits terms and still pull against the strategy it exists to serve. Those two conversations usually happen in different rooms."],
   ["Not disinterested", "Preference, familiarity and relationship shape which options reach the table at all. Most of that is ordinary human judgment rather than bad faith — which is exactly why it goes unexamined."],
-  ["And no baseline", "Without an independent measure taken before the decision, there is nothing to check the outcome against afterwards. The absence compounds every year it continues."],
 ];
 
 const EMPLOYERS = [
@@ -125,7 +139,12 @@ export function buildSlides(custom: DeckCustom = {}) {
   const ctx = custom.context;
 
   return [
-  /* ── 00 · cover ── */
+  /* ── 00 · cover ──
+     "None of them was compared" was the old second line, and comparison takes
+     a plural object — you compare things WITH each other, so a singular "none
+     of them" left the sentence reaching for something that wasn't there.
+     Changing the subject rather than the verb fixes the grammar and states the
+     actual thesis, which is that the unit nobody examines is the portfolio. */
   <div className="dk-navy dk-cover" key="s0">
     <span className="dk-orb dk-orb-a" />
     <span className="dk-orb dk-orb-b" />
@@ -137,7 +156,7 @@ export function buildSlides(custom: DeckCustom = {}) {
         <h1 className="dk-h1">
           Every program was approved.
           <br />
-          <em>None of them was compared.</em>
+          <em>The portfolio never was.</em>
         </h1>
       )}
       <p className="dk-sub dk-sub-l">
@@ -179,57 +198,26 @@ export function buildSlides(custom: DeckCustom = {}) {
       ]
     : []),
 
-  /* ── 01 · the problem ── */
-  <div key="s1">
-    <div className="dk-eyebrow">The problem</div>
-    <h2 className="dk-h2">
+  /* ── 01 · the problem ──
+     Two slides became one. The silos framing and the failure list were making
+     the same argument twice, and the second slide carried six items in a
+     two-column grid that nobody read past the third. What went: the vendor
+     quote, which now opens Meridian where it does real work, and one of the
+     two Mercer figures — a second statistic from the same survey adds a number
+     without adding a source. */
+  <div className="dk-navy dk-pad" key="s1">
+    <div className="dk-eyebrow dk-eyebrow-l">The problem</div>
+    <h2 className="dk-h2 dk-h2-l">
       The decisions are big.
       <br />
       The evidence is <em>locked in silos.</em>
     </h2>
-    <p className="dk-sub">
-      Brokers, carriers, consultants, internal committees, finance — a program is
-      looked at by all of them before it&rsquo;s approved. Every one of those
-      reviews is reasonable on its own terms. What none of them can do is weigh
-      it against everything else competing for the same money.
-    </p>
-    <blockquote className="dk-quote">
-      A vendor shows you their MSK program saves $180 per member per month. It
-      may be the best evidence that exists for that program. It still
-      can&rsquo;t tell you whether the same dollar does more in behavioural
-      health, in navigation, or somewhere nobody sells you anything at all.
-    </blockquote>
-    <div className="dk-grid-2">
-      <div className="dk-stat">
-        <div className="dk-stat-n">Majority</div>
-        <div className="dk-stat-l">
-          Of CFOs cannot confirm their long-term benefit cost strategies are
-          actually saving money
-        </div>
-        <div className="dk-stat-s">Mercer, CFO Perspective on Health, 2024</div>
-      </div>
-      <div className="dk-stat">
-        <div className="dk-stat-n">~1 in 5</div>
-        <div className="dk-stat-l">
-          CFOs are not satisfied with their level of input into benefit decisions
-        </div>
-        <div className="dk-stat-s">Mercer, CFO Perspective on Health, 2024</div>
-      </div>
-    </div>
-  </div>,
-
-  /* ── 02 · the five gaps ── */
-  <div className="dk-navy dk-pad" key="s2">
-    <div className="dk-eyebrow dk-eyebrow-l">Where the review fails</div>
-    <h2 className="dk-h2 dk-h2-l">
-      Six ways a well-attended review
-      <br />
-      <em>still isn&rsquo;t a check.</em>
-    </h2>
     <p className="dk-sub dk-sub-l">
-      None of these requires anyone to be careless or dishonest. They are failures
-      of method, not of effort — which is why they persist in rooms full of
-      competent people.
+      Brokers, carriers, consultants, internal committees, finance — a program is
+      looked at by all of them before it&rsquo;s approved, and every one of those
+      reviews is reasonable on its own terms. None of them is positioned to weigh
+      it against everything else competing for the same money. Four failures
+      follow, and not one of them requires anybody to be careless or dishonest.
     </p>
     <div className="dk-grid-2 dk-tight">
       {REVIEW_GAPS.map(([k, v]) => (
@@ -239,10 +227,21 @@ export function buildSlides(custom: DeckCustom = {}) {
         </div>
       ))}
     </div>
+    <div className="dk-partner">
+      <div className="dk-gap-k">The people paying for it know</div>
+      <div className="dk-gap-v">
+        The <strong>majority of CFOs cannot confirm</strong> that their long-term
+        benefit cost strategies are actually saving money — and roughly one in
+        five say they aren&rsquo;t satisfied with their own level of input into
+        the decision.
+        <br />
+        <span className="dk-fine">Mercer, CFO Perspective on Health, 2024</span>
+      </div>
+    </div>
   </div>,
 
-  /* ── 03 · category gap ── */
-  <div key="s3">
+  /* ── 02 · category gap ── */
+  <div key="s2">
     <div className="dk-eyebrow">The intelligence gap</div>
     <h2 className="dk-h2">
       Every other major spend has
@@ -293,83 +292,8 @@ export function buildSlides(custom: DeckCustom = {}) {
     </blockquote>
   </div>,
 
-  /* ── 04 · objectives ── */
-  <div key="s4">
-    <div className="dk-eyebrow">Before the analysis runs</div>
-    <h2 className="dk-h2">
-      Tell us what you&rsquo;re optimising for.
-      <br />
-      <em>We&rsquo;ll show our work either way.</em>
-    </h2>
-    <p className="dk-sub">
-      An employer buying to hold margin and an employer buying to win a hiring
-      market are not making the same decision, even when they&rsquo;re looking at
-      the same program. So the first thing we ask is what this portfolio is for.
-    </p>
-
-    <div className="dk-obj">
-      {OBJECTIVES.map((f) => (
-        <div className="dk-obj-fam" key={f.family}>
-          <div className="dk-obj-h">{f.family}</div>
-          {f.items.map((it) => (
-            <div className="dk-obj-i" key={it.name}>
-              <span className="dk-obj-n">{it.name}</span>
-              <span className="dk-obj-m">{it.measure}</span>
-            </div>
-          ))}
-          <div className="dk-obj-note">{f.note}</div>
-        </div>
-      ))}
-    </div>
-
-    <div className="dk-callout">
-      <strong>We don&rsquo;t score the objective — only the evidence.</strong>{" "}
-      Whether equity, cost or retention should lead is a question about what your
-      organisation is for, and it isn&rsquo;t ours to answer. What we guarantee is
-      that the weights are written down, visible in the output, and applied the
-      same way whatever you choose. Two employers can get opposite recommendations
-      from identical analysis and both be right.
-    </div>
-  </div>,
-
-  /* ── 05 · three employers ── */
-  <div key="s5">
-    <div className="dk-eyebrow">Why there is no universal right answer</div>
-    <h2 className="dk-h2">
-      The same benefit. Three employers.
-      <br />
-      <em>Three different conclusions.</em>
-    </h2>
-    <p className="dk-sub dk-sub-tight">
-      One evidence score of 56. Three sets of weights. The scoring is ours and it
-      doesn&rsquo;t move — the weights are yours.
-    </p>
-
-    <div className="dk-grid-3">
-      {EMPLOYERS.map((e) => (
-        <div className={`dk-emp ${e.feature ? "is-feature" : ""}`} key={e.tag}>
-          <div className="dk-emp-h">
-            <div className="dk-emp-tag">{e.tag}</div>
-            <div className="dk-emp-n">{e.name}</div>
-            <div className="dk-emp-s">{e.size}</div>
-          </div>
-          <div className="dk-emp-b">
-            <Weights rows={e.weights} />
-            <div className={`dk-emp-out dk-out-${e.tone}`}>{e.out}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <div className="dk-callout">
-      Headcount doesn&rsquo;t decide any of this — 820 lives and 26,000 lives are
-      the same analysis, differently weighted. What changes at scale is how
-      it&rsquo;s deployed, not whether it applies.
-    </div>
-  </div>,
-
-  /* ── 06 · meridian ── */
-  <div key="s6">
+  /* ── 03 · meridian ── */
+  <div key="s3">
     <div className="dk-eyebrow">Worked example</div>
     <h2 className="dk-h2">
       How a $180 claim becomes
@@ -378,9 +302,11 @@ export function buildSlides(custom: DeckCustom = {}) {
     </h2>
     <p className="dk-sub dk-sub-tight">
       Meridian Manufacturing, 820 covered lives, light manufacturing. Their broker
-      recommends a virtual MSK program at $180 PMPM in claimed savings. Nothing
-      below assumes bad faith — the vendor&rsquo;s study is real. It was produced
-      under conditions that aren&rsquo;t Meridian&rsquo;s.
+      recommends a virtual MSK program at $180 PMPM in claimed savings. It may be
+      the best evidence that exists for that program — and it still can&rsquo;t
+      tell you whether the same dollar does more somewhere else. Nothing below
+      assumes bad faith. The study is real; it was produced under conditions that
+      aren&rsquo;t Meridian&rsquo;s.
     </p>
 
     <div className="dk-mer">
@@ -437,7 +363,7 @@ export function buildSlides(custom: DeckCustom = {}) {
     </p>
   </div>,
 
-  /* ── 06b · the portfolio ──
+  /* ── 04 · the portfolio ──
      "Portfolio" appeared seven times in this deck and nothing ever rendered
      one. A single-vendor walkthrough proves the method; it does not prove the
      thesis, which is about what happens when you hold all of them at once.
@@ -445,7 +371,7 @@ export function buildSlides(custom: DeckCustom = {}) {
      The numbers are the same illustrative stack the site uses, so the deck and
      axionia.com tell one story. Amber is the unadjusted claim per the brand
      tokens — their number, not wrong, just unverified. */
-  <div key="s6b">
+  <div key="s4">
     <div className="dk-eyebrow">The portfolio</div>
     <h2 className="dk-h2">
       One program repriced is useful.
@@ -481,7 +407,112 @@ export function buildSlides(custom: DeckCustom = {}) {
     </p>
   </div>,
 
-  /* ── 06c · what else the money buys ──
+  /* ── 05 · weights ──
+     Was two slides: the objective menu, then the three employers. They made one
+     point and the join between them was the weakest transition in the deck —
+     the first slide asked the question and the second answered it two minutes
+     later, by which time the deck had also spent a whole headline on "why there
+     is no universal right answer", which is the same sentence again.
+
+     The four-family grid moved to /platform. On a slide it listed thirteen
+     objectives and demonstrated none of them; the employer cards below show the
+     weights doing work, which is the only part a buyer needs here. */
+  <div key="s5">
+    <div className="dk-eyebrow">Before the analysis runs</div>
+    <h2 className="dk-h2">
+      You set what it&rsquo;s for.
+      <br />
+      <em>We score the evidence either way.</em>
+    </h2>
+    <p className="dk-sub dk-sub-tight">
+      An employer holding margin and an employer winning a hiring market are not
+      making the same decision, even about the same program. So the first thing we
+      ask is what this portfolio is for — {OBJECTIVE_NAMES.length} objectives
+      across {OBJECTIVES.length} families, weighted by you. Below: one evidence
+      score of 56, three sets of weights. The scoring is ours and it doesn&rsquo;t
+      move.
+    </p>
+
+    <div className="dk-obj-strip">
+      {OBJECTIVES.map((f) => (
+        <span key={f.family}>{f.family}</span>
+      ))}
+      <em>{OBJECTIVE_NAMES.length} objectives, weighted by you</em>
+    </div>
+
+    <div className="dk-grid-3">
+      {EMPLOYERS.map((e) => (
+        <div className={`dk-emp ${e.feature ? "is-feature" : ""}`} key={e.tag}>
+          <div className="dk-emp-h">
+            <div className="dk-emp-tag">{e.tag}</div>
+            <div className="dk-emp-n">{e.name}</div>
+            <div className="dk-emp-s">{e.size}</div>
+          </div>
+          <div className="dk-emp-b">
+            <Weights rows={e.weights} />
+            <div className={`dk-emp-out dk-out-${e.tone}`}>{e.out}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="dk-callout">
+      <strong>We don&rsquo;t score the objective — only the evidence.</strong>{" "}
+      Whether equity, cost or retention should lead is a question about what your
+      organisation is for, and it isn&rsquo;t ours to answer. What we guarantee is
+      that the weights are written down, visible in the output, and applied the
+      same way whatever you choose. Two employers can get opposite recommendations
+      from identical analysis and both be right — and headcount decides none of
+      it, since 820 lives and 26,000 lives are the same analysis differently
+      weighted.
+    </div>
+  </div>,
+
+  /* ── 06 · the walkthrough ──
+     The deck could describe the method and never showed the product. The
+     pre-port HTML deck had a click-through demo and the port dropped it, so
+     for several months the argument arrived with no evidence that anything had
+     been built.
+
+     Absorbs the old "what you receive" slide: three phases with availability
+     pills said what lands without ever showing it, and a list of deliverables
+     next to a walkthrough of the same deliverables is the list being redundant.
+     What survives is the commercial boundary and the cadence, as the two notes
+     underneath — both are things a buyer needs and neither is visible in a
+     product screen. */
+  <div key="s6">
+    <div className="dk-eyebrow">How it runs</div>
+    <h2 className="dk-h2">
+      Set it up once.
+      <br />
+      <em>Then it keeps going.</em>
+    </h2>
+    <p className="dk-sub dk-sub-tight">
+      Four steps from the intake form to a report you can take into a renewal
+      meeting, on documents you already own. Sixty to ninety seconds of analysis
+      between step three and step four.
+    </p>
+
+    <DeckFlow />
+
+    <div className="dk-grid-2 dk-tight">
+      <div className="dk-note-blue">
+        <div className="dk-led-h dk-blue">Where free stops</div>
+        The Portfolio Score is free, with no call attached and no obligation
+        afterwards. Everything past it is the paid engagement. Most people stop at
+        the score, and that&rsquo;s a fine place to stop.
+      </div>
+      <div className="dk-note-gray">
+        <div className="dk-led-h">And then it keeps going</div>
+        Renewals stagger, vendors revise their claims, mandates move, and the
+        workforce you designed for last year isn&rsquo;t the one you have now. A
+        quarterly refresh and an annual strategy review land across the
+        engagement, not on day one — which is also how you&rsquo;d consume them.
+      </div>
+    </div>
+  </div>,
+
+  /* ── 07 · what else the money buys ──
      The deck used to end its argument at "we check things". That undersells
      the firm and it also implicates the buyer's past decisions, because an
      audit frame always does. This is the other half.
@@ -489,7 +520,7 @@ export function buildSlides(custom: DeckCustom = {}) {
      Stated as RANK, never as dollar equivalence — /methodology commits
      publicly to not pricing retention, and this slide must not quietly break
      that. See lib/objectives.ts. */
-  <div className="dk-navy dk-pad" key="s6c">
+  <div className="dk-navy dk-pad" key="s7">
     <div className="dk-eyebrow dk-eyebrow-l">And then the harder half</div>
     <h2 className="dk-h2 dk-h2-l">
       Knowing what it&rsquo;s worth is the start.
@@ -548,81 +579,6 @@ export function buildSlides(custom: DeckCustom = {}) {
     </blockquote>
   </div>,
 
-  /* ── 07 · what you receive ── */
-  <div key="s7">
-    <div className="dk-eyebrow">What you receive</div>
-    <h2 className="dk-h2">
-      A report is a moment.
-      <br />
-      A portfolio is <em>a cycle.</em>
-    </h2>
-    <p className="dk-sub dk-sub-tight">
-      Renewals stagger, vendors revise their claims, mandates move, and the
-      workforce you designed for last year isn&rsquo;t the one you have now. Set it
-      up once, analyse it properly, then keep it current.
-    </p>
-
-    <div className="dk-grid-3">
-      {[
-        {
-          n: "01 — SET UP",
-          t: "Once, at the start",
-          items: [
-            ["Profile & benefits mix", "on"],
-            ["Workforce segmentation", "soon"],
-            ["Data & document load", "on"],
-          ],
-        },
-        {
-          n: "02 — ANALYSE",
-          t: "What the numbers say",
-          items: [
-            ["Portfolio score & radar", "on"],
-            ["Vendor claim teardown", "on"],
-            ["Scenario & optimisation", "on"],
-          ],
-        },
-        {
-          n: "03 — STEWARD",
-          t: "Then it keeps going",
-          items: [
-            ["Monthly signal update", "road"],
-            ["Quarterly refresh", "soon"],
-            ["Annual strategy review", "road"],
-          ],
-        },
-      ].map((p) => (
-        <div className="dk-phase" key={p.n}>
-          <div className="dk-phase-n">{p.n}</div>
-          <div className="dk-phase-t">{p.t}</div>
-          {p.items.map(([label, state]) => (
-            <div className="dk-del" key={label}>
-              <span>{label}</span>
-              <span className={`dk-pill is-${state}`}>
-                {state === "on" ? "Available" : state === "soon" ? "Rolling out" : "Roadmap"}
-              </span>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-
-    <div className="dk-grid-2 dk-tight">
-      <div className="dk-note-blue">
-        <div className="dk-led-h dk-blue">Where free stops</div>
-        The Portfolio Score is free, with no call attached and no obligation
-        afterwards. Everything below it is the paid engagement. Most people stop at
-        the score, and that&rsquo;s a fine place to stop.
-      </div>
-      <div className="dk-note-gray">
-        <div className="dk-led-h">On sequencing</div>
-        The stewardship cadence lands across the engagement rather than on day one,
-        which is also how you&rsquo;d consume it — a quarterly refresh has nothing
-        to refresh in month one.
-      </div>
-    </div>
-  </div>,
-
   /* ── 08 · commercial ── */
   <div className="dk-navy dk-pad" key="s8">
     <div className="dk-eyebrow dk-eyebrow-l">Commercial shape</div>
@@ -672,13 +628,21 @@ export function buildSlides(custom: DeckCustom = {}) {
     </div>
   </div>,
 
-  /* ── 09 · the ask ── */
+  /* ── 09 · when to partner ──
+     The three questions stayed; the frame around them didn't. "We're not here
+     to sell you something today" is a sales line about not selling, and
+     closing on "we expose the entire model" makes a slogan out of a claim the
+     product already demonstrates four slides earlier.
+
+     Qualifying reads better than closing, and it's consistent with
+     /who-its-for, which carries an explicit not-a-fit list. Saying who
+     shouldn't buy this is the most credible thing on the slide. */
   <div className="dk-navy dk-pad" key="s9">
-    <div className="dk-eyebrow dk-eyebrow-l">The ask</div>
+    <div className="dk-eyebrow dk-eyebrow-l">When to partner with Axionia</div>
     <h2 className="dk-h2 dk-h2-l">
-      We&rsquo;re not here to sell you something today.
+      Not every employer needs this.
       <br />
-      We&rsquo;re here to ask whether this <em>changes the decision.</em>
+      <em>Three signs that you might.</em>
     </h2>
     <div className="dk-asks">
       {[
@@ -695,9 +659,20 @@ export function buildSlides(custom: DeckCustom = {}) {
         </div>
       ))}
     </div>
-    <blockquote className="dk-quote dk-quote-l">
-      We tell you what we think — but we expose the entire model.
-    </blockquote>
+    <div className="dk-partner">
+      <div className="dk-gap-k">What happens next</div>
+      <div className="dk-gap-v">
+        Start with the free Portfolio Score. It takes a form, not a meeting, and
+        it comes back as a real document. If it&rsquo;s wrong about your
+        portfolio, tell us where — that is a more useful first conversation than
+        a pitch, and it&rsquo;s the one we&rsquo;d rather have.
+      </div>
+    </div>
+    <p className="dk-fine">
+      And if your portfolio is one carrier and nothing bolted onto it, there is
+      nothing here to de-duplicate. We&rsquo;ll tell you that rather than sell
+      you an analysis of it.
+    </p>
     <div className="dk-site">axionia.com</div>
   </div>,
   ];
