@@ -6,7 +6,7 @@ durable record.
 
 **To resume: connect both folders below, then say "read docs/PROJECT_STATE.md".**
 
-Last updated: 2026-08-13
+Last updated: 2026-08-14
 
 ---
 
@@ -40,6 +40,121 @@ truth for everything except brand tokens.
 only in project knowledge. `tailwind.config.ts` and
 `lib/modules/research/data/tokens.ts` both track it; if they disagree with it,
 they're the bug.
+
+---
+
+## The argument — what we believe and why
+
+The rest of this file records what is built. This section records what the
+company claims about itself, because those decisions get re-litigated every few
+months and the operational record has never held them. The methodology-versus-moat
+contradiction below survived a full port from HTML into React purely because it
+was settled in conversation and written down nowhere a reader would look.
+
+**Numbers live in the model, not here.** `axionia_3statement_model.xlsx` is the
+single source; anything stated in a deck should trace to a tab in it. On
+2026-08-14 the deck and the model disagreed in four places, twice in the same
+content after a port, which is a structural problem rather than bad luck.
+
+Each entry says what would change our mind. A decision with no falsifier reads
+as dogma to the next reader, including you.
+
+### The gate
+
+One falsifiable milestone decides the funding path: **has a third party — a
+health plan, a PE diligence team, a reinsurer — paid for the benchmark data by
+the end of Year 3.** Not expressed interest, not a pilot. A signed, invoiced
+contract for the data asset itself.
+
+Years 1–3 are identical in all three scenarios and funded entirely by the $1.0M.
+Divergence starts Year 4. Base takes an $8M Series A; Bear takes nothing and
+still reaches $11.8M revenue and $4.8M net income by Year 7.
+
+*What would change our mind:* if the data only sells bundled with consulting,
+the asset is not separable and the compounding-moat argument weakens badly.
+
+### The methodology is the wedge, not the moat
+
+Settled 2026-08-14. The scoring framework is published on purpose — transparency
+is the trust asset and the product promise. It is copyable, and that is fine.
+
+What is not copyable is the outcome history that says what the weights should
+be, and the fact that a broker cannot sell independent vendor scoring without
+cannibalising the commission revenue that funds it. Earlier decks headlined "the
+methodology is the company" and called the framework "the long-term moat", which
+directly contradicted the defensibility argument two slides later.
+
+*What would change our mind:* a broker or consultancy launching genuinely
+independent scoring and absorbing the conflict. The structural claim would go
+and only calibration would be left.
+
+### Defensibility, in order of strength
+
+1. **Structural independence.** The incumbent is paid by the vendors it would
+   have to score. Economic, not technical — it does not erode as inference gets
+   cheaper.
+2. **The compounding benchmark asset.** Accrues only by doing the work
+   repeatedly, for real clients, over years. Not scrapable.
+3. **Calibration.** The outcome history that says which vendor claims held up.
+
+Explicitly **not** an AI moat. Capability is rented, every 2026 deck asserts one,
+and asserting it invites the discount rather than avoiding it. AI is a tailwind
+and it appears in the model as margin: 12 → 20 clients per delivery analyst from
+Year 3 to Year 7, and gross margin of 69% → 89% across the same span.
+
+### Why Base is the conservative case
+
+Base is not the optimistic scenario — it is the one being underwritten because
+it depends on the least. It assumes zero channel or data revenue until the gate
+clears. Bull shows the ceiling and is not what the round is priced off; its $30M
+Series B is illustrative of a shape, most likely acquisition-shaped, not a plan.
+
+The Series A is a **choice, not a requirement**. All three cases are EBIT-positive
+from Year 2, so this round buys the bridge to profitability rather than runway to
+the next raise. That is what makes Bear a floor instead of a failure case.
+
+### The round
+
+$1.0M at $6.0M pre / $7.0M post — 14.286% to new investors. Series A when the
+data sells, $8M at $29M pre.
+
+The Series A was deliberately cut from $15M to $8M. At $15M the capital sat
+permanently undrawn, because the business self-funds from Year 2. A smaller round
+that is actually deployed produced higher Year 7 revenue *and* less dilution,
+which is the opposite of the intuition and worth being able to say out loud.
+
+The 10% employee pool and 5% partner grant are carved pre-money, so they dilute
+the founder rather than the incoming investor. Founder ownership at Year 7 is
+72.9% / 57.1% / 42.8% across Bear / Base / Bull. Pool *size* drives dilution;
+pool *timing* does not.
+
+### The three decks are three audiences
+
+`/deck` is the buyer deck and public. `/deck/founders` is ten seats at $250K as
+prepaid service, not a raise. `/deck/investor` is the raise, gated.
+
+The investor deck has **no demo, on purpose** (2026-08-14). An investor arrives
+having been walked through `/deck` already, so the walkthrough was the product
+tour twice, at slide 6 of fifteen. The proof-of-product claim lives on the
+valuation slide instead, where it prices the round. If this deck ever needs a
+walkthrough again, import `DeckFlow` — do not write a second cut. That mistake
+has already been made once.
+
+### Open — flagged rather than resolved
+
+- **Revenue per head has no source.** The defensibility slide says 46 analysts
+  deliver $60.6M and that a consultancy at that revenue carries several times
+  the headcount. The second half is an assertion. It needs a real comp or it
+  should come out.
+- **Whether Bull belongs in an investor deck at all.** It is explicitly not what
+  the round is priced off, which raises the question of what it is doing there.
+- **`axionia_investor_deck.html` is still in Claude project knowledge** and was
+  updated 2026-08-14, which makes an artifact this file lists as superseded look
+  current. Either delete it there or label it a standalone leave-behind.
+
+*Inferred rather than stated by Tom, and worth a second look: the ordering of the
+three defensibility claims, and the framing of the methodology as a trust asset.
+Everything else here traces to the model or to a decision made explicitly.*
 
 ---
 

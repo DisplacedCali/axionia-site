@@ -1,4 +1,3 @@
-import DeckFlow from "./DeckFlow";
 import InvestorReturn from "./InvestorReturn";
 
 /**
@@ -12,13 +11,21 @@ import InvestorReturn from "./InvestorReturn";
  * is has already told an investor something. It now renders through deck.css
  * like the other two, so the brand tokens are canonical here as everywhere.
  *
- * ── One deck, one demo ──
+ * ── No demo here, and why ──
  *
- * The original slide 6 carried its own five-screen walkthrough, a shorter and
- * older cut of the one the buyer deck shows. Two demos of one product is two
- * things to keep true. This renders the same DeckFlow component, so an investor
- * sees exactly what a buyer sees — which is also the honest answer to "what
- * does it actually do."
+ * This deck used to render the buyer deck's DeckFlow walkthrough at slide 6.
+ * That was right when the investor deck carried its own older five-screen cut —
+ * one component beats two that drift. It is wrong now for a different reason:
+ * an investor reaches this deck having already been walked through /deck, so
+ * the demo was asking them to sit through the product tour twice, at slide 6 of
+ * fifteen, in the middle of the argument rather than at the end of it.
+ *
+ * The product still has to be shown to exist, because $6.0M pre-money is partly
+ * priced on there being one. That claim now sits on the valuation slide where
+ * it does pricing work, and points at /deck rather than reproducing it. If this
+ * deck ever needs a walkthrough again, import DeckFlow — do not write a second
+ * cut of it. The reason the original was replaced was that it had drifted into
+ * being an older and worse version of the same thing.
  *
  * ── Sourcing ──
  *
@@ -46,8 +53,8 @@ const FIVE = [
 ];
 
 const FOCUS = [
-  ["01", "Scoring framework v1", "The defensible spine. Ten dimensions, transparent weights. It becomes the product logic, the AI reasoning structure and the long-term moat."],
-  ["02", "Two or three example reports", "Composite employers, real market assumptions, real vendor categories, transparent assumptions. Forces structure, clarity and an output standard. You just saw one."],
+  ["01", "Scoring framework v1", "Ten dimensions, transparent weights. It becomes the product logic and the AI reasoning structure — and the instrument that generates the outcome history the moat is actually made of."],
+  ["02", "Two or three example reports", "Composite employers, real market assumptions, real vendor categories, transparent assumptions. Forces structure, clarity and an output standard. One is walkable at axionia.com/deck."],
   ["03", "Customer discovery", "Employers, progressive brokers, consultants. Not pitching software — validating decision workflows and where the pain actually sits."],
   ["04", "Benchmark and intelligence library", "Vendor benchmarks, published studies, PMPM and utilisation assumptions, outcomes literature. The long-term proprietary foundation."],
   ["05", "Lightweight brand and web presence", "Clarity and credibility rather than polished SaaS. Explain the problem, publish the methodology, invite the conversation."],
@@ -518,33 +525,12 @@ export const INVESTOR_SLIDES = [
     </div>
   </div>,
 
-  /* ── 06 · the demo ──
-     The same component the buyer deck renders. The original investor deck
-     carried its own five-screen cut, which was an older and shorter version of
-     this — two demos of one product, drifting apart, and the investor seeing
-     less than the customer does. */
-  <div key="i6">
-    <div className="dk-eyebrow">Live demo — Axionia Insight</div>
-    <h2 className="dk-h2">
-      One vendor, taken apart.
-      <br />
-      <em>Then all eight at once.</em>
-    </h2>
-    <p className="dk-sub dk-sub-tight">
-      Meridian Manufacturing evaluates a virtual MSK program its broker wants
-      signed in fourteen days. This is the same walkthrough a prospective
-      customer sees — there isn&rsquo;t an investor version.
-    </p>
-
-    <DeckFlow />
-
-    <p className="dk-fine">
-      Illustrative throughout. Meridian is a composite employer and every figure
-      on these screens is an example rather than a client result. Simulation,
-      sensitivity, peer benchmarking, the vendor landscape and continuous
-      monitoring are in build.
-    </p>
-  </div>,
+  /* ── 06 was the demo, and is deliberately gone ──
+     See the header. An investor arrives here having already been walked through
+     /deck, so this slide asked them to sit through the product tour a second
+     time, in the middle of the argument. The proof-of-product claim it carried
+     now lives on the valuation slide, where it prices the round instead of
+     interrupting the story. */
 
   /* ── 07 · the founder ── */
   <div key="i7">
@@ -620,14 +606,21 @@ export const INVESTOR_SLIDES = [
   /* ── 08 · current focus ── */
   <div key="i8">
     <div className="dk-eyebrow">Current focus</div>
+    {/* The headline used to read "the methodology is the company", which
+        contradicted the defensibility slide two pages later — that one says the
+        framework is the copyable part and the calibration is not. Both cannot be
+        true, and the defensibility slide is the one that is: the methodology is
+        published on purpose, and what it buys is the outcome history underneath.
+        Restated as sequencing, which is what this slide actually argues. */}
     <h2 className="dk-h2">
       Five priorities. No giant SaaS build.
       <br />
-      <em>The methodology is the company.</em>
+      <em>Proof before platform.</em>
     </h2>
     <p className="dk-sub dk-sub-tight">
       Pre-seed. The immediate objective is demonstrating the methodology, not
-      shipping software.
+      shipping software — because the methodology is what generates the data the
+      company is eventually defended by.
     </p>
     <div className="dk-grid-2">
       {FOCUS.map(([n, k, v]) => (
@@ -937,7 +930,9 @@ export const INVESTOR_SLIDES = [
         <div className="dk-gap-v">
           A working research pipeline and live discovery engagements, not just a
           deck. 2026 pre-seed investors increasingly expect a functional product
-          at this stage, and there is one — you just clicked through it.
+          at this stage, and there is one — the same walkthrough a prospective
+          customer gets, at <strong>axionia.com/deck</strong>, running against
+          the scoring framework rather than mocked up for this conversation.
         </div>
       </div>
     </div>
@@ -1035,7 +1030,7 @@ export const INVESTOR_SLIDES = [
     <div className="dk-asks">
       {[
         ["01", "What the round is", "Pre-seed, concept stage. The thesis is clear, the methodology is built, and the founder has spent twenty years inside the problem. We're looking for partners who see the market and want to help shape what this becomes."],
-        ["02", "What we're not doing", "Building a giant SaaS platform. Hiring ahead of validation. Over-engineering before there are customers. At this stage the methodology is the company, and every dollar goes to proving it."],
+        ["02", "What we're not doing", "Building a giant SaaS platform. Hiring ahead of validation. Over-engineering before there are customers. At this stage every dollar goes to proving the methodology, because that is what produces the data the company is defended by later."],
         ["03", "The $495B question", "Healthcare benefit purchasing is the largest recurring financial decision most mid-market companies make, and it is almost entirely driven by vendor narratives and misaligned incentives. The independent intelligence layer has never existed. We're building it."],
       ].map(([n, t, d]) => (
         <div className="dk-ask" key={n}>
