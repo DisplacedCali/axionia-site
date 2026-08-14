@@ -8,15 +8,25 @@ import { useState } from "react";
  * ── What is derived and what is assumed ──
  *
  * Everything except the exit multiple is arithmetic on numbers the deck already
- * states. $1.0M on a $7.0M post-money is 14.286% at seed. The Series A at $40M
- * pre on $55M post retains 40/55 of that. Run the same retention against the
- * founder's 85.714% and you get 62.34%, which is the 62.3% already printed on
- * this slide — so the derivation is checkable against a number the model
- * produced independently, and it agrees. Bull's retention is backed out of its
- * stated 54.0% founder ownership the same way.
+ * states. $1.0M on a $7.0M post-money is 14.286% at seed. The Series A at $29M
+ * pre on $37M post retains 29/37 of that, giving 11.197% — which is the figure
+ * the model's cap table produces independently, so the derivation is checkable
+ * and it agrees. Bull retains 29/37 then 90/120 through the illustrative Series
+ * B, landing at 8.398%, and that agrees too.
  *
  * The exit multiple is the one input the model does not contain, so it is not
  * asserted. It defaults to 5× and the reader moves it.
+ *
+ * ── Founder ownership now carries the pool and the partner grant ──
+ *
+ * This used to compute the founder's stake as 85.714% diluted only by the
+ * priced rounds, which printed 85.7% / 67.2% / 50.4%. The model's authoritative
+ * table is lower — 72.9% / 57.1% / 42.8% — because a 10% employee pool and a 5%
+ * partner grant are carved pre-money, and pre-money carves dilute the founder
+ * rather than the incoming investor. Overstating it was flattering in the wrong
+ * direction: the honest number is the one that shows the founder absorbing the
+ * cost of the pool, which is the thing an investor wants to be true. The seed
+ * stake is unaffected, which is why only the founder line moves.
  *
  * ── Why 5× is the default ──
  *
@@ -43,7 +53,11 @@ import { useState } from "react";
 const SEED_INVESTED = 1.0; // $M
 const SEED_POST = 7.0; // $M — $1.0M on $6.0M pre
 const SEED_STAKE = SEED_INVESTED / SEED_POST; // 14.286%
-const FOUNDER_AT_SEED = 1 - SEED_STAKE; // 85.714%
+
+/** 10% employee pool + 5% partner grant, both carved pre-money at seed.
+ *  Investors are untouched by a pre-money carve; the founder absorbs all of it. */
+const CARVE = 0.85;
+const FOUNDER_AT_SEED = (1 - SEED_STAKE) * CARVE; // 72.857%
 
 type Scenario = {
   tag: string;
@@ -59,37 +73,46 @@ type Scenario = {
   note: string;
 };
 
+/**
+ * Year-7 revenue and net income are read from the model with the Control toggle
+ * set to each scenario in turn, not scaled off one another. The previous figures
+ * ($24.0M / $48.0M / $85.0M with $11.4M / $15.6M / $33.5M of net income, and a
+ * $15M Series A at $40M pre) came from an earlier cut of the model and every one
+ * of them has moved. Bear in particular fell from $24.0M to $11.8M of revenue,
+ * which is the correction that matters most: it is the number the floor argument
+ * rests on, and the floor argument is the strongest thing on the slide.
+ */
 const SCENARIOS: readonly Scenario[] = [
   {
     tag: "Bear",
     name: "The floor",
     cond: "Benchmark data doesn't sell · no further raise",
     retention: 1,
-    revenue: 24.0,
-    netIncome: 11.4,
+    revenue: 11.8,
+    netIncome: 4.8,
     raised: "None",
     note: "Nothing dilutes you, because nothing is raised. This is not the failure case — it is EBIT-positive from Year 2 like the other two, and it is the case that makes the Series A a choice rather than a requirement.",
   },
   {
     tag: "Base",
     name: "The plan",
-    cond: "Benchmark data sells · ~$15M Series A at $40M pre",
-    retention: 40 / 55,
-    revenue: 48.0,
-    netIncome: 15.6,
-    raised: "$15.0M at $40M pre",
+    cond: "Benchmark data sells · $8M Series A at $29M pre",
+    retention: 29 / 37,
+    revenue: 60.6,
+    netIncome: 25.7,
+    raised: "$8.0M at $29M pre",
     plan: true,
-    note: "The Series A dilutes you by roughly a quarter and roughly doubles the company. On exit value that trade is clearly worth taking; on your share of net income it very nearly isn't — which is worth seeing rather than hiding.",
+    note: "The Series A costs you a fifth of your stake and multiplies the company roughly fivefold against Bear. Unlike the round it replaces — $15M at $40M pre — the trade is now clearly worth taking on both exit value and your share of net income, because the round is smaller and fully deployed rather than parked.",
   },
   {
     tag: "Bull",
     name: "The optionality",
-    cond: "Benchmark data sells strongly · further capital taken",
-    retention: 0.63,
-    revenue: 85.0,
-    netIncome: 33.5,
-    raised: "Series A, then more",
-    note: "More capital, more dilution, a materially larger company. Shown for completeness — this is not what the valuation being asked for today assumes.",
+    cond: "Benchmark data sells strongly · illustrative $30M Series B",
+    retention: (29 / 37) * (90 / 120),
+    revenue: 91.3,
+    netIncome: 38.2,
+    raised: "Series A, then a $30M Series B",
+    note: "More capital, more dilution, a materially larger company. The Series B is illustrative of a shape — a new product line or market, most likely acquisition-shaped — rather than a committed raise, and it is not what the valuation being asked for today assumes.",
   },
 ];
 
@@ -230,7 +253,8 @@ export default function InvestorReturn() {
           </span>
           <span>
             <strong>{pct(d.founder)}</strong> — founder ownership at the same
-            point. No dead equity, and the risk stays with the person taking it
+            point, after the employee pool and partner grant. No dead equity, and
+            the risk stays with the person taking it
           </span>
         </div>
 

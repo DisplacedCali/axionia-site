@@ -53,17 +53,30 @@ const FOCUS = [
   ["05", "Lightweight brand and web presence", "Clarity and credibility rather than polished SaaS. Explain the problem, publish the methodology, invite the conversation."],
 ];
 
+/**
+ * The three phases, restated against the operating model.
+ *
+ * These carried "~$1.2M", "$2M–$5M" and "$10M–$30M+ ARR", which came from an
+ * earlier revenue architecture — four product lines sold as discrete
+ * engagements. The model is built a different way: recurring clients at a $54K
+ * ACV, plus channel, data and decision-event engines that switch on later. Year
+ * 1 is $349K, not $1.2M, and a reader holding the deck and the workbook at once
+ * would have stopped trusting both.
+ *
+ * The targets are now the model's own Year 1, Year 2 and Year 3–4 figures, and
+ * the items say what produces them rather than what they were once sold as.
+ */
 const PHASES = [
   {
     n: "Phase 1 — 0–12 months",
     t: "High-ticket intelligence",
     d: "Consulting-heavy. Software assists delivery.",
-    target: "Target: ~$1.2M revenue",
+    target: "Year 1: $349K revenue · 10 clients",
     items: [
-      "10 intelligence reports @ $50K avg",
-      "3 enterprise projects @ $125K avg",
-      "10 SaaS subscriptions @ $12K ARR",
-      "4 advisory retainers @ $5K/mo",
+      "10 founder-sourced clients at ~$54K ACV",
+      "Partial-year cohorts — 7.8 months active on average",
+      "Founder delivers; no analysts yet",
+      "Benchmark data asset begun",
     ],
     goal: "Cash flow, methodology, reference clients",
   },
@@ -71,12 +84,12 @@ const PHASES = [
     n: "Phase 2 — 12–24 months",
     t: "Platform-enabled consulting",
     d: "Models standardise. Margins expand.",
-    target: "Target: $2M–$5M",
+    target: "Year 2: $1.34M revenue · 33 clients",
     items: [
+      "First quota-carrying BD rep",
       "Standardised ingestion and benchmarking",
       "Scoring and scenario engine productised",
-      "Channel partners: brokers and PE firms",
-      "2–4 analysts hired",
+      "EBIT turns positive",
     ],
     goal: "Flywheel, channel, margin expansion",
   },
@@ -84,10 +97,10 @@ const PHASES = [
     n: "Phase 3 — 24–48 months",
     t: "Decision intelligence platform",
     d: "Software becomes the product.",
-    target: "Target: $10M–$30M+ ARR",
+    target: "Years 3–4: $3.18M → $10.19M",
     items: [
-      "Benchmark data becomes the moat",
-      "Vendor scoring network effects",
+      "Benchmark data sells — the gate clears",
+      "Channel and data engines switch on",
       "Longitudinal outcomes as proprietary IP",
       "Consulting becomes optional and premium",
     ],
@@ -96,31 +109,33 @@ const PHASES = [
 ];
 
 /**
- * What the $1.0M buys — the slide the deck doesn't have yet.
+ * What the $1.0M buys. The gap this recorded is now closed.
  *
- * The word "$1.0M" appears fourteen times across these thirteen slides and not
- * once does anything say what it purchases or how long it lasts. That is the
- * first question after "how much", and it currently has no answer.
+ * This returned null on purpose: the allocation is the model's and nobody
+ * else's, and a plausible-looking split invented here would have been
+ * indistinguishable from a real one on the page and read aloud to somebody
+ * writing a cheque. The three-statement model now exists, so these are its
+ * figures rather than an estimate of them.
  *
- * ── Why this is a function returning null rather than a table of guesses ──
+ * ── What the rows are, precisely ──
  *
- * The allocation is Tom's model and nobody else's. A plausible-looking split
- * invented here would be indistinguishable from a real one on the page and
- * would be read aloud to somebody writing a cheque — the same failure the
- * benefit library bans, with worse consequences. So the gap is recorded rather
- * than filled, and the slide is CONDITIONAL: while this returns null the deck
- * renders thirteen slides exactly as before. It cannot half-ship, and there is
- * no placeholder to forget.
+ * They are the Year 1–3 operating build from the P&L, by category, summed
+ * across the three years. They are NOT a division of the $1.0M into buckets,
+ * because the model does not say that and it would not be true: the three-year
+ * build costs $4.08M against $4.87M of revenue over the same period. The
+ * business pays for most of itself. What the raise buys is the timing — the
+ * ability to carry Year 1's cost before Year 1's revenue arrives, and to hire
+ * the Year 2 rep before that rep has produced anything. The last row says so
+ * explicitly rather than leaving the reader to infer a split that isn't there.
  *
- * To turn it on, return the object. Five things are needed:
+ * ── Why 17 months ──
  *
- *   months     — how long $1.0M lasts, alone, at planned burn
- *   allocation — three or four rows of [area, amount, what it buys]
- *   proves     — what is demonstrably true when the money is spent
- *   floor      — what happens if Phase 1 revenue misses (it funds itself, or
- *                the runway shortens to N months)
- *   ownership  — whether any of it is earmarked for a hire, since "2–4 analysts"
- *                currently first appears in Phase 2 with no funding attached
+ * $1.0M against planned cost with revenue set to zero: Year 1 runs $476K
+ * ($464K operating expense plus $12K delivery), which is twelve months and
+ * leaves $524K; Year 2 runs $1.28M, or $107K a month, which absorbs the rest in
+ * a little under five. That is the pessimistic read and the one worth stating,
+ * because at plan the raise is barely touched — Year 1 operating cash flow is
+ * −$93K and Year 2 is +$151K.
  */
 type UseOfFunds = {
   months: number;
@@ -130,7 +145,44 @@ type UseOfFunds = {
 };
 
 function useOfFunds(): UseOfFunds | null {
-  return null;
+  return {
+    months: 17,
+    allocation: [
+      {
+        area: "Founder and G&A",
+        amount: "$1.36M",
+        buys: "Three years of founder compensation and the overhead underneath it. Held entirely in G&A rather than allocated across delivery, sales and engineering — the conservative classification, and it is why Year 1 and Year 2 gross margin reads high.",
+      },
+      {
+        area: "Product, data engineering and authority",
+        amount: "$845K",
+        buys: "The benchmark library, the scoring engine and the research pipeline. Expensed as incurred rather than capitalised, which understates near-term EBITDA and is the honest treatment of spend whose value is unproven until somebody pays for it.",
+      },
+      {
+        area: "Delivery",
+        amount: "$1.13M",
+        buys: "Analyst headcount as clients arrive, at twelve clients per analyst in Year 3. This scales with the client count, which is what makes it cost of goods rather than research.",
+      },
+      {
+        area: "Sales and marketing",
+        amount: "$745K",
+        buys: "Two quota-carrying BD reps by Year 3, at a fifteen-client annual quota, plus programme spend. The first is hired in Year 2 — ahead of the revenue that justifies him, which is the part the raise actually funds.",
+      },
+      {
+        area: "Funded by revenue over the same period",
+        amount: "$4.87M",
+        buys: "Years 1–3 generate more than the build costs. The raise is not covering the total, it is covering the timing — and after Year 2 the business is funding its own growth.",
+      },
+    ],
+    proves: [
+      "69 clients on recurring subscriptions, retained through Year 3",
+      "EBIT positive from Year 2 — $58K, then $834K in Year 3",
+      "A benchmark library a third party has paid for",
+      "Two BD reps operating at a demonstrated quota, not an assumed one",
+    ],
+    floor:
+      "The raise is what absorbs it. With revenue at zero the $1.0M alone runs 17 months, which is past the point Year 2 would have proven or disproven the sales model. At plan it is barely drawn: Year 1 operating cash flow is −$93K and Year 2 is already positive.",
+  };
 }
 
 const CAREER = [
@@ -629,6 +681,95 @@ export const INVESTOR_SLIDES = [
     </div>
   </div>,
 
+  /* ── 09a · defensibility ──
+     The question this answers is the one a 2026 investor asks out loud and the
+     deck had no page for: why can't Mercer, or a progressive broker, or two
+     capable people with a frontier model, do this next quarter?
+
+     It is deliberately NOT an "AI moat" slide. That claim is close to worthless
+     now — capability is rented, every deck asserts it, and asserting it invites
+     the discount rather than avoiding it. The defensible things here are that
+     the incumbent is paid by the vendors it would have to score, and that a
+     benchmark library only accrues by doing the work repeatedly for real
+     clients. Neither erodes as inference gets cheaper.
+
+     The three figures are the argument's evidence and they are the model's, not
+     illustrations: delivery leverage and gross margin both come from the COGS
+     build, where analyst headcount is derived from client count rather than
+     assumed. Falling cost of analysis is visible in the operating model as
+     margin, which is a stronger claim than any adjective. */
+  <div key="i9a">
+    <div className="dk-eyebrow">Defensibility</div>
+    <h2 className="dk-h2">
+      Why this doesn&rsquo;t
+      <br />
+      get <em>commoditised.</em>
+    </h2>
+    <p className="dk-sub dk-sub-tight">
+      The question is not whether someone else can run the same models. In 2026
+      everyone can. It is whether they can sell the answer — and the channel that
+      owns the customer relationship structurally cannot.
+    </p>
+
+    <div className="dk-grid-3">
+      <div className="dk-phase">
+        <div className="dk-phase-n">01 · STRUCTURAL</div>
+        <div className="dk-phase-t">A broker cannot sell this</div>
+        <div className="dk-foc-v">
+          Independent vendor scoring cannibalises the commission revenue that
+          funds the $15B channel. That constraint is economic rather than
+          technical, so it does not relax as models get cheaper. The incumbent&rsquo;s
+          problem is that it is paid by the vendors being scored.
+        </div>
+      </div>
+      <div className="dk-phase">
+        <div className="dk-phase-n">02 · COMPOUNDING</div>
+        <div className="dk-phase-t">Cheap reasoning raises the value of proprietary inputs</div>
+        <div className="dk-foc-v">
+          When the analysis layer costs nothing, the scarce asset is the input:
+          the benchmark library, the longitudinal outcomes, the de-duplicated
+          attribution history. None of it is scrapable. It accrues only by doing
+          the work repeatedly, for real clients, over years.
+        </div>
+      </div>
+      <div className="dk-phase">
+        <div className="dk-phase-n">03 · CALIBRATED</div>
+        <div className="dk-phase-t">The framework is copyable; the calibration is not</div>
+        <div className="dk-foc-v">
+          Anyone can publish a ten-dimension scoring rubric. What cannot be
+          copied is the outcome history that says what the weights should be —
+          which vendor claims held up, which engagement assumptions proved
+          optimistic, and by how much.
+        </div>
+      </div>
+    </div>
+
+    <div className="dk-ramp">
+      <div className="dk-ramp-k">
+        AI is a tailwind, and it is already in the model
+      </div>
+      <div className="dk-ramp-c">
+        <span className="dk-ramp-l">Clients per analyst, Yr 3 → 7</span>
+        <span className="dk-ramp-v">12 → 20</span>
+      </div>
+      <div className="dk-ramp-c">
+        <span className="dk-ramp-l">Gross margin, Yr 3 → 7</span>
+        <span className="dk-ramp-v">69% → 89%</span>
+      </div>
+      <div className="dk-ramp-c is-note">
+        <span className="dk-ramp-l">Analysts to deliver $60.6M</span>
+        <span className="dk-ramp-v">46</span>
+      </div>
+    </div>
+
+    <div className="dk-callout">
+      <strong>The asymmetry.</strong> Cheaper AI relieves our constraint and not
+      theirs. Every drop in the cost of producing a rigorous, independent
+      analysis widens our margin — and does nothing at all about the fact that
+      the broker is paid by the vendors being evaluated.
+    </div>
+  </div>,
+
   /* ── 09b · use of funds (only once the numbers exist) ──
      Sits here on purpose: after the business model has said what the company
      does with revenue, before the financial slide asks the reader to value it.
@@ -742,8 +883,9 @@ export const INVESTOR_SLIDES = [
       buying runway to the next one, it is buying the bridge to profitability.
       We raise again if the benchmark data sells, because at that point capital
       buys something it could not buy before. If it doesn&rsquo;t, we don&rsquo;t,
-      and you own {"14.29%"} of a company throwing off $11.4M a year. That is
-      the floor, and a floor is different from a failure case.
+      and you own {"14.29%"} of a company earning $4.8M a year on $11.8M of
+      revenue, undiluted. That is the floor, and a floor is different from a
+      failure case.
     </div>
   </div>,
 
@@ -814,12 +956,19 @@ export const INVESTOR_SLIDES = [
       </div>
     </div>
 
+    {/* The ramp and the multiples both moved onto the current model.
+        They were built off $4.4M / $11.2M / $48.0M with ~154% growth and a $40M
+        Series A pre-money, which came from an earlier cut. The figures below are
+        the model's, and the conclusion changed with them: the forward multiple
+        no longer brackets the pre-money, it sits above it. Saying so is worth
+        more than the tidier sentence it replaces — a reader who does the
+        arithmetic finds the same thing, and finding it themselves is worse. */}
     <div className="dk-ramp">
       <div className="dk-ramp-k">Base case revenue ramp</div>
       {[
-        ["Year 3", "$4.4M"],
-        ["Year 4", "$11.2M"],
-        ["Year 7", "$48.0M"],
+        ["Year 3", "$3.18M"],
+        ["Year 4", "$10.19M"],
+        ["Year 7", "$60.6M"],
       ].map(([k, v]) => (
         <div className="dk-ramp-c" key={k}>
           <span className="dk-ramp-l">{k}</span>
@@ -828,7 +977,7 @@ export const INVESTOR_SLIDES = [
       ))}
       <div className="dk-ramp-c is-note">
         <span className="dk-ramp-l">Year 3 → 4 growth</span>
-        <span className="dk-ramp-v">~154%</span>
+        <span className="dk-ramp-v">~221%</span>
       </div>
     </div>
 
@@ -839,31 +988,33 @@ export const INVESTOR_SLIDES = [
         <span>Implied pre-money</span>
       </div>
       <div className="dk-mult-r">
-        <span>Trailing Year-3 revenue ($4.4M)</span>
+        <span>Trailing Year-3 revenue ($3.18M)</span>
         <span>8–10×</span>
-        <span>$35–44M</span>
+        <span>$25–32M</span>
       </div>
       <div className="dk-mult-r">
-        <span>Forward Year-4 revenue ($11.2M)</span>
+        <span>Forward Year-4 revenue ($10.19M)</span>
         <span>3.5–4×</span>
-        <span>$39–45M</span>
+        <span>$36–41M</span>
       </div>
       <div className="dk-mult-r is-total">
         <span>
-          Year-3 → Year-4 growth of ~154% clears the 40% threshold that commands
-          top-of-range multiples. Both methods bracket the modelled Series A
-          pre-money almost exactly.
+          Year-3 → Year-4 growth of ~221% clears the 40% threshold that commands
+          top-of-range multiples. The trailing method brackets the modelled
+          Series A pre-money; the forward method sits above it, which is the
+          direction a round should err in.
         </span>
         <span />
-        <span>$40M</span>
+        <span>$29M</span>
       </div>
     </div>
 
     <p className="dk-fine">
       The path, priced: seed at $1.0M on $6.0M pre / $7.0M post. Series A when
-      the data sells, ~$15.0M on $40.0M pre / $55.0M post — landing almost
-      exactly on the 2026 Series A post-money median. Every number here is
-      sourced rather than asserted; full comps available on request.
+      the data sells, ~$8.0M on $29.0M pre / $37.0M post — deliberately smaller
+      than the 2026 median round, because the business is cash-generative from
+      Year 2 and funds most of its own growth. Every number here is sourced
+      rather than asserted; full comps available on request.
     </p>
   </div>,
 
