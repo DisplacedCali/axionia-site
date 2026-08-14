@@ -122,6 +122,50 @@ costs one wave and the job survives a closed tab.
   event constraint **by discovery, not by name** — 012 declared it inline, and
   a no-op drop would leave the old constraint beside the new one with depth
   quietly never recording.
+- **Deck attribution** — deck opens resolve to an employer or firm (migration
+  037), from four sources recorded in `attribution` so an exact match and a
+  guess never read the same. **`link`**: `mintDeckLink` now signs a company or
+  firm id into the token, so a gated-deck open attributes with certainty — you
+  chose the recipient, it is not an inference. **`session`**: the 014 stitch,
+  via the `session_id` 036 added. **`email`**: the download-gate address
+  through `resolveCompanyByDomain`, which follows a merge. **`ip`**: a third
+  party resolves an address to an organisation and **only the organisation is
+  kept** — dark unless `IP_ORG_LOOKUP` is set, and **do not enable it before
+  `/privacy` has been through counsel**.
+  **There is still no IP column, on purpose.** An IP is a bad count of people
+  in both directions — a firm behind one NAT egress collapses to one reader,
+  CGNAT splits one reader into several — and the case it collapses is the
+  signal worth having. `session_id` counts forwarded opens correctly. 2026
+  reverse-IP match rates are 30–65% and falling, and the failure mode is a
+  stale mapping returning a confident wrong name, not a blank.
+  **The link format is backward compatible**: payload went from `label.exp` to
+  `label.exp.c:<uuid>`, parsed from the right so outstanding links still
+  verify, including labels containing full stops. It rests on the label
+  sanitiser stripping colons — now asserted at mint time, not left as a
+  convention. 23 tests cover legacy tokens, cross-deck rejection and a forged
+  ref.
+  **Fixed while wiring it: the label was client-supplied.** 013 says a label
+  "cannot be set by the caller"; the logging actions took whatever string the
+  browser posted, so any read could be attributed to any name. The token
+  travels now and is re-verified server-side on every event.
+  **The 037 backfill applies nothing** — `deck_attribution_proposals` is a
+  view with a confidence and a basis per match, and the apply statements sit
+  in a comment. A fuzzy match written into an attribution column is invisible
+  the moment it lands.
+- **The inbox filters automated submissions** (`lib/leadAuthenticity.ts`, no
+  migration). Ranking was the wrong instrument: how promising a real inquiry
+  is and whether anybody is there are different questions, and one score
+  buries the quiet real one. Derived at read time, never stored. **A false
+  positive costs a client who thinks they were ignored, so evidence of a
+  person — opened a deck, requested a report — is checked FIRST and returns
+  immediately**, where no accumulation of weak suspicion can outvote it.
+  Filtered rows are one click away under a Filtered tab, each showing which
+  rule caught it; nothing is deleted. Counts reported as "N today · M this
+  week". **`isCorporateDomain` is deliberately NOT a counterweight** — it only
+  means "not free-mail", so throwaway domains qualified and crediting it
+  cancelled the signals for exactly the rows they were written for. A single
+  pitch word decides nothing; two are needed. `lib/inbox.ts` applies the same
+  rule, or the badge and the list disagree about what is waiting.
 - **Site analytics** — `/admin/analytics`, first-party (migration 014).
   Pageviews land in `site_events` via `/api/track`. **No IP is stored anywhere.**
   Location comes from Vercel's edge headers already resolved to country/city, so

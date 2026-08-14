@@ -68,9 +68,24 @@ const sections: { h: string; body: React.ReactNode }[] = [
           address itself is never written down.
         </p>
         <p>
-          <strong>No advertising trackers and no third-party analytics.</strong>{" "}
-          Our analytics are first-party. Nothing you do here is sold, shared
-          with an ad network, or used to follow you elsewhere.
+          <strong>No advertising trackers.</strong> Our analytics are
+          first-party. Nothing you do here is sold, shared with an ad network,
+          or used to follow you elsewhere.
+        </p>
+        <p>
+          <strong>Identifying the organisation you work for.</strong> On the
+          pages where we share documents with prospective clients and
+          investors, we try to work out which organisation a reader belongs to,
+          so that we know whether the people we sent something to have read it.
+          We do this in three ways, and where we can we use the first: the
+          document link we sent you already records who we sent it to; the
+          email address you give us tells us your employer&rsquo;s domain; and
+          for readers we know nothing else about, we may ask a third-party
+          service which organisation an internet connection belongs to. That
+          last method sends your IP address to that service. It is often wrong,
+          and we record how we reached each conclusion so we know not to rely
+          on it. We keep only the answer &mdash; the organisation&rsquo;s name
+          &mdash; and never the address it was derived from.
         </p>
       </>
     ),

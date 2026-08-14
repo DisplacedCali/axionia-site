@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, deckDownloadLink } from "@/lib/email";
 import { mintDownloadGrant, downloadGrantsEnabled } from "@/lib/deckDownload";
 import { getSessionId } from "@/lib/analytics";
+import { verifyDeckLink, type EntityRef } from "@/lib/deckLinks";
+import { resolveAttribution } from "@/lib/deckAttribution";
 
 /**
  * Deck view and print logging.
@@ -58,11 +60,38 @@ type DeckEventKind = "view" | "print" | "progress" | "request";
  */
 const PRE_036 = new Set(["42703", "23514"]);
 
+/**
+ * What a share link says, verified here rather than believed.
+ *
+ * The callers used to pass `linkLabel` — a string the CLIENT held — straight
+ * into the row. Migration 013 states the label "cannot be set by the caller",
+ * and in the schema that was true, but the implementation handed it to the
+ * browser and took it back: anyone could have posted to this action and
+ * attributed their own read to any name they liked, which is a log that lies
+ * about exactly the thing it exists to record.
+ *
+ * So the token travels instead. It is already in the recipient's URL, so
+ * nothing is hidden from them, and the signature is re-checked on every event.
+ * A forged label now requires forging the HMAC, which is what migration 013
+ * always said was the case.
+ *
+ * Failure is silent and unattributed rather than an error. An expired link
+ * still renders the buyer deck — that's the fall-through in /deck — and a read
+ * that happened should be recorded even when we can no longer say whose it is.
+ */
+function fromToken(deck: DeckSlug, token?: string | null) {
+  if (!token) return { label: null as string | null, ref: null as EntityRef | null };
+  const v = verifyDeckLink(token, deck);
+  return v.ok
+    ? { label: v.label, ref: v.ref }
+    : { label: null as string | null, ref: null as EntityRef | null };
+}
+
 async function log(
   event: DeckEventKind,
   deck: DeckSlug,
   contact?: Contact,
-  linkLabel?: string | null,
+  link?: { label: string | null; ref: EntityRef | null },
   depth?: { max: number; total: number }
 ) {
   const supabase = createClient();
@@ -75,14 +104,31 @@ async function log(
   // Best-effort. A logging failure must never take the deck down mid-meeting.
   try {
     const admin = createAdminClient();
+    const sessionId = getSessionId();
+    const email = clean(contact?.email, 200)?.toLowerCase() ?? null;
+
+    /*
+      Not for progress rows. They arrive several times per reader, they group
+      by session for every question anyone asks of them, and resolving each one
+      would mean three extra queries and a possible vendor call per slide read.
+      The view that opened the session already carries the attribution.
+    */
+    const attribution =
+      event === "progress"
+        ? null
+        : await resolveAttribution(admin, {
+            ref: link?.ref ?? null,
+            sessionId,
+            email,
+          });
 
     const base = {
       deck,
       event,
       user_id: user?.id ?? null,
-      link_label: clean(linkLabel ?? undefined, 60),
+      link_label: clean(link?.label ?? undefined, 60),
       contact_name: clean(contact?.name, 120),
-      contact_email: clean(contact?.email, 200)?.toLowerCase() ?? null,
+      contact_email: email,
       contact_org: clean(contact?.org, 160),
       referrer: h.get("referer")?.slice(0, 500) ?? null,
       user_agent: h.get("user-agent")?.slice(0, 400) ?? null,
@@ -90,14 +136,17 @@ async function log(
 
     const { error } = await admin.from("deck_events").insert({
       ...base,
-      session_id: getSessionId(),
+      session_id: sessionId,
       max_slide: depth?.max ?? null,
       total_slides: depth?.total ?? null,
+      ...(attribution ?? {}),
     });
 
     if (error && PRE_036.has(error.code)) {
       // A progress row IS the depth columns, so there is nothing left of it to
       // retry. Anything else is a real event and gets written in the old shape.
+      // Attribution goes too — 037 owns those columns and may not have run
+      // either, and the point of this path is that the event survives.
       if (event === "progress") return;
       const legacy = event === "request" ? { ...base, event: "print" } : base;
       await admin.from("deck_events").insert(legacy);
@@ -109,9 +158,9 @@ async function log(
 
 export async function logDeckView(
   deck: DeckSlug = "buyer",
-  linkLabel?: string | null
+  linkToken?: string | null
 ) {
-  await log("view", deck, undefined, linkLabel);
+  await log("view", deck, undefined, fromToken(deck, linkToken));
 }
 
 /**
@@ -136,7 +185,7 @@ export async function logDeckProgress(
   deck: DeckSlug,
   maxSlide: number,
   totalSlides: number,
-  linkLabel?: string | null
+  linkToken?: string | null
 ) {
   const max = Math.round(maxSlide);
   const total = Math.round(totalSlides);
@@ -145,7 +194,7 @@ export async function logDeckProgress(
   if (!Number.isFinite(max) || !Number.isFinite(total)) return;
   if (max < 1 || total < 1 || max > total || total > 200) return;
 
-  await log("progress", deck, undefined, linkLabel, { max, total });
+  await log("progress", deck, undefined, fromToken(deck, linkToken), { max, total });
 }
 
 /**
@@ -159,16 +208,18 @@ export async function logDeckProgress(
 export async function logDeckPrint(
   contact?: Contact,
   deck: DeckSlug = "buyer",
-  linkLabel?: string | null
+  linkToken?: string | null
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const link = fromToken(deck, linkToken);
+
   // A signed link already names its recipient, so don't make them type it
   // again — we know more about them than a self-reported form would tell us.
-  if (!user && !linkLabel) {
+  if (!user && !link.label) {
     const email = clean(contact?.email, 200);
     // Not validation so much as a typo check — anything past this is accepted.
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
@@ -179,7 +230,7 @@ export async function logDeckPrint(
     }
   }
 
-  await log("print", deck, contact, linkLabel);
+  await log("print", deck, contact, link);
 
   // Anonymous printers are also a lead. Kept separate from the event log:
   // deck_events is an append-only audit trail; leads is a list you work.

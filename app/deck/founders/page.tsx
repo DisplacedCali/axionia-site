@@ -58,6 +58,7 @@ export default async function FoundersDeck({
       signedIn={isStaff}
       deck="founders"
       linkLabel={link.ok ? link.label : null}
+      linkToken={searchParams.k ?? null}
     />
   );
 }

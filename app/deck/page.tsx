@@ -102,6 +102,7 @@ export default async function DeckPage({
       slides={buildSlides(custom)}
       signedIn={Boolean(user)}
       linkLabel={link?.ok ? link.label : null}
+      linkToken={searchParams.k ?? null}
       watermark={watermark}
       grantName={grant?.ok ? grant.identity.name : null}
       grantEmail={grant?.ok ? grant.identity.email : null}

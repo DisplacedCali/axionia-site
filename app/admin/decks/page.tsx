@@ -24,6 +24,7 @@ const BASE_COLS =
   "id, deck, event, created_at, contact_name, contact_email, contact_org, " +
   "link_label, user_id, referrer, user_agent";
 const DEPTH_COLS = `${BASE_COLS}, session_id, max_slide, total_slides`;
+const FULL_COLS = `${DEPTH_COLS}, company_id, firm_id, attribution, org_name`;
 
 function when(ts: string) {
   const h = (Date.now() - new Date(ts).getTime()) / 36e5;
@@ -54,11 +55,43 @@ export default async function AdminDecks() {
       .order("created_at", { ascending: false })
       .limit(5000);
 
-  let events = await read(DEPTH_COLS);
+  /*
+    Widest select first, narrowing on error. Two migrations can each be absent
+    independently — 036 added depth, 037 added attribution — so this walks down
+    rather than branching on a version number nothing records.
+  */
+  let events = await read(FULL_COLS);
+  if (events.error) events = await read(DEPTH_COLS);
   if (events.error) events = await read(BASE_COLS);
 
   const all = (events.data ?? []) as unknown as DeckEventRow[];
   const analytics = analyzeDeckEvents(all, { days: WINDOW_DAYS });
+
+  /*
+    Names for the rollup, resolved here rather than denormalised onto the
+    event. A company that gets renamed should be renamed everywhere it appears
+    — the point-in-time snapshot on the row is the ATTRIBUTION, which must not
+    move, not the label, which should.
+  */
+  const orgNames: Record<string, string> = {};
+  const companyIds = analytics.orgs.filter((o) => o.kind === "company" && o.id).map((o) => o.id!);
+  const firmIds = analytics.orgs.filter((o) => o.kind === "firm" && o.id).map((o) => o.id!);
+
+  const [companyRows, firmRows] = await Promise.all([
+    companyIds.length
+      ? admin.from("companies").select("id, name, domain").in("id", companyIds)
+      : Promise.resolve({ data: [] as any[] }),
+    firmIds.length
+      ? admin.from("firms").select("id, name").in("id", firmIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  for (const c of companyRows.data ?? []) {
+    orgNames[`company:${c.id}`] = c.name || c.domain || "Unknown company";
+  }
+  for (const f of firmRows.data ?? []) {
+    orgNames[`firm:${f.id}`] = f.name || "Unnamed firm";
+  }
 
   /*
     The feed is access only.
@@ -237,7 +270,7 @@ export default async function AdminDecks() {
         )}
       </div>
 
-      <DeckAnalytics data={analytics} days={WINDOW_DAYS} />
+      <DeckAnalytics data={analytics} days={WINDOW_DAYS} orgNames={orgNames} />
 
       <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
         Recent activity

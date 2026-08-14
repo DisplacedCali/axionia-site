@@ -79,6 +79,7 @@ export default async function InvestorDeck({
       signedIn={isStaff}
       deck="investor"
       linkLabel={link.ok ? link.label : null}
+      linkToken={searchParams.k ?? null}
       downloadable={false}
     />
   );

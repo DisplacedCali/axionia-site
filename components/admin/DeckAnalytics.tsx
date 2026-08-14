@@ -1,4 +1,5 @@
-import type { DeckAnalytics as Data, DeckPerson } from "@/lib/deckAnalytics";
+import Link from "next/link";
+import type { DeckAnalytics as Data, DeckPerson, DeckOrg } from "@/lib/deckAnalytics";
 
 /**
  * Deck traction, above the raw log.
@@ -285,12 +286,114 @@ function Bars({ data, empty }: { data: [string, number][]; empty: string }) {
   );
 }
 
+/**
+ * How we know who this is, said in words.
+ *
+ * The whole reason attribution carries a source. "Invidia Capital" from a link
+ * you minted and "Invidia Capital" from a third-party address lookup are the
+ * same string and are not the same claim — published 2026 match rates for the
+ * latter run 30-65%, and its characteristic failure is a confident wrong
+ * answer rather than a blank. Rendering them identically guarantees the guess
+ * gets treated as the fact.
+ */
+const BASIS_COPY: Record<DeckOrg["basis"], { word: string; tone: string }> = {
+  link: { word: "Link you minted", tone: "border-pos text-pos-dark bg-green-light" },
+  session: { word: "Identified here", tone: "border-border text-gray-warm" },
+  email: { word: "Email domain", tone: "border-border text-gray-warm" },
+  ip: { word: "Network guess", tone: "border-caution text-caution-dark bg-amber-light" },
+};
+
+function Orgs({
+  orgs,
+  names,
+  unattributed,
+}: {
+  orgs: DeckOrg[];
+  names: Record<string, string>;
+  unattributed: number;
+}) {
+  if (orgs.length === 0) {
+    return (
+      <p className="px-5 py-8 text-[13px] text-gray-cool">
+        No open has resolved to an employer or firm yet. Mint a share link
+        against a company or firm and every open of it attributes with
+        certainty — no guessing, no address.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {orgs.map((o) => {
+        const label = o.name || names[o.key] || "Unknown";
+        const basis = BASIS_COPY[o.basis];
+        const body = (
+          <>
+            <div className="min-w-0">
+              <div className="text-[14px] text-navy truncate">{label}</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-gray-cool">
+                {o.kind === "unmatched" ? "not in the database" : o.kind}
+              </div>
+            </div>
+
+            <div className="self-center font-mono text-[10px] uppercase tracking-[0.1em] text-gray-warm truncate">
+              {o.decks.map((d) => DECK_NAME[d] ?? d).join(", ")}
+            </div>
+
+            <div className="self-center font-mono text-[11px] text-navy tabular-nums">
+              {o.people} {o.people === 1 ? "person" : "people"}
+              <span className="text-gray-cool"> · {o.opens}</span>
+            </div>
+
+            <div className="self-center">
+              <span
+                className={`font-mono text-[9px] uppercase tracking-[0.1em] px-2 py-0.5 border ${basis.tone}`}
+              >
+                {basis.word}
+              </span>
+            </div>
+
+            <div className="self-center md:text-right font-mono text-[11px] text-gray-cool">
+              {when(o.lastAt)}
+            </div>
+          </>
+        );
+
+        const cls =
+          "grid md:grid-cols-[1.6fr_1fr_0.9fr_1fr_0.6fr] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-b-0";
+
+        // Only a company links through — /admin/firms has no detail route, and
+        // a link that 404s in an admin table is worse than no link.
+        return o.kind === "company" && o.id ? (
+          <Link key={o.key} href={`/admin/companies/${o.id}`} className={`${cls} hover:bg-base-2 transition-colors`}>
+            {body}
+          </Link>
+        ) : (
+          <div key={o.key} className={cls}>
+            {body}
+          </div>
+        );
+      })}
+
+      {unattributed > 0 && (
+        <div className="px-5 py-3 bg-base-2 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm">
+          {unattributed} {unattributed === 1 ? "reader" : "readers"} not resolved
+          to anyone
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function DeckAnalytics({
   data,
   days,
+  orgNames = {},
 }: {
   data: Data;
   days: number;
+  /** org key → display name, joined by the page. */
+  orgNames?: Record<string, string>;
 }) {
   return (
     <>
@@ -325,6 +428,33 @@ export default function DeckAnalytics({
             <code className="font-mono text-[13px]">036_deck_depth.sql</code> in
             the Supabase SQL editor. Until it exists, an open and a full read are
             the same row — every other number on this page is unaffected.
+          </p>
+        </div>
+      )}
+
+      <h2 className="mt-14 mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm">
+        Who they work for
+      </h2>
+      <div className="border border-border mb-4">
+        <div className="hidden md:grid grid-cols-[1.6fr_1fr_0.9fr_1fr_0.6fr] gap-4 px-5 py-3 bg-base-2 border-b border-border font-mono text-[9px] uppercase tracking-[0.12em] text-gray-warm">
+          <span>Employer or firm</span>
+          <span>Deck</span>
+          <span>Readers</span>
+          <span>How we know</span>
+          <span className="text-right">Last</span>
+        </div>
+        <Orgs orgs={data.orgs} names={orgNames} unattributed={data.unattributed} />
+      </div>
+
+      {!data.hasAttribution && (
+        <div className="mb-4 border-l-2 border-caution bg-amber-light px-5 py-4 max-w-measure">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-caution">
+            Attribution not recording
+          </p>
+          <p className="mt-1.5 text-[14px] leading-[1.7] text-gray-warm">
+            Run{" "}
+            <code className="font-mono text-[13px]">037_deck_attribution.sql</code>.
+            Until it exists, opens are logged but not tied to an employer.
           </p>
         </div>
       )}

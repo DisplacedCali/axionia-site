@@ -44,6 +44,34 @@ export interface DeckEventRow {
   session_id?: string | null;
   max_slide?: number | null;
   total_slides?: number | null;
+  /** Present only once 037 has run. */
+  company_id?: string | null;
+  firm_id?: string | null;
+  attribution?: string | null;
+  org_name?: string | null;
+}
+
+/**
+ * An employer or firm that has been reading, and how confidently we know it.
+ *
+ * `basis` is the strongest source across the rows, and it is shown rather than
+ * hidden: a link minted against Invidia and a third-party guess from an IP
+ * both produce a company name in the same column, and a page that renders them
+ * identically will get one of them believed.
+ */
+export interface DeckOrg {
+  key: string;
+  kind: "company" | "firm" | "unmatched";
+  id: string | null;
+  name: string;
+  basis: "link" | "session" | "email" | "ip";
+  people: number;
+  opens: number;
+  prints: number;
+  requests: number;
+  decks: string[];
+  depth: number | null;
+  lastAt: string;
 }
 
 export interface DeckSummary {
@@ -82,6 +110,10 @@ export interface DeckPerson {
   lastAt: string;
   referrer: string | null;
   device: "mobile" | "desktop" | null;
+  companyId: string | null;
+  firmId: string | null;
+  orgName: string | null;
+  basis: string | null;
   /** Why this person is worth looking at now, in words. Empty means nothing yet. */
   reasons: string[];
 }
@@ -92,10 +124,17 @@ export interface DeckAnalytics {
   daily: { label: string; n: number }[];
   referrers: [string, number][];
   devices: [string, number][];
+  orgs: DeckOrg[];
   staffOpens: number;
   totalOpens: number;
   hasDepth: boolean;
+  hasAttribution: boolean;
+  /** External people with no employer resolved at all. */
+  unattributed: number;
 }
+
+/** Hardest evidence first. Mirrors lib/deckAttribution.ts — keep them in step. */
+const BASIS_RANK: Record<string, number> = { link: 4, session: 3, email: 2, ip: 1 };
 
 /** Events that mean somebody reached the deck. `progress` revises a view. */
 const ACCESS = new Set(["view", "print", "request"]);
@@ -137,6 +176,11 @@ interface Identity {
   org: string | null;
   label: string | null;
   staff: boolean;
+  companyId: string | null;
+  firmId: string | null;
+  orgName: string | null;
+  /** Strongest attribution source seen for this person. */
+  basis: string | null;
 }
 
 const blank = (): Identity => ({
@@ -145,6 +189,10 @@ const blank = (): Identity => ({
   org: null,
   label: null,
   staff: false,
+  companyId: null,
+  firmId: null,
+  orgName: null,
+  basis: null,
 });
 
 /** Fill gaps without overwriting. First non-null wins, oldest row first. */
@@ -154,6 +202,24 @@ function absorb(into: Identity, r: DeckEventRow) {
   if (!into.org && r.contact_org) into.org = r.contact_org;
   if (!into.label && r.link_label) into.label = r.link_label;
   if (r.user_id) into.staff = true;
+
+  /*
+    Attribution is taken by STRENGTH, not by recency. One person's rows can
+    carry several sources — an anonymous open resolved from an IP, then the
+    same session later identified by the email they typed at the gate — and
+    the last row written is not the one that knows most. Letting recency win
+    would let a third-party guess overwrite an address they gave us.
+  */
+  const rank = BASIS_RANK[r.attribution ?? ""] ?? 0;
+  if (rank > (BASIS_RANK[into.basis ?? ""] ?? 0)) {
+    into.basis = r.attribution ?? null;
+    if (r.company_id) into.companyId = r.company_id;
+    if (r.firm_id) into.firmId = r.firm_id;
+  }
+  // Firm can arrive on a row that carries no company, and vice versa.
+  if (!into.companyId && r.company_id) into.companyId = r.company_id;
+  if (!into.firmId && r.firm_id) into.firmId = r.firm_id;
+  if (!into.orgName && r.org_name) into.orgName = r.org_name;
 }
 
 export function analyzeDeckEvents(
@@ -311,6 +377,10 @@ export function analyzeDeckEvents(
       lastAt: p.lastAt,
       referrer: p.referrer,
       device: p.device,
+      companyId: p.id.companyId,
+      firmId: p.id.firmId,
+      orgName: p.id.orgName,
+      basis: p.id.basis,
       reasons,
     };
   });
@@ -370,6 +440,71 @@ export function analyzeDeckEvents(
     if (i >= 0 && i < buckets) daily[i].n += 1;
   }
 
+  /*
+    Roll people up to the organisation that will actually decide something.
+
+    Firm first where there is one. A portfolio company reading the investor
+    deck because Invidia sent it to them is Invidia paying attention, and
+    listing the two separately splits one conversation into two rows that each
+    look half as interesting as the thing really is.
+
+    An org resolved only by IP and matching no row we hold still gets a line,
+    keyed by name — "somebody at Meridian Manufacturing opened this" is worth
+    seeing, and inventing a company record from a vendor string is how a guess
+    becomes a permanent fact.
+  */
+  const orgMap = new Map<string, DeckOrg & { _people: Set<string>; _depths: number[] }>();
+
+  for (const p of external) {
+    const kind: DeckOrg["kind"] = p.firmId ? "firm" : p.companyId ? "company" : "unmatched";
+    const id = p.firmId ?? p.companyId ?? null;
+    if (!id && !p.orgName) continue;
+
+    const key = id ? `${kind}:${id}` : `name:${p.orgName!.toLowerCase()}`;
+    let o = orgMap.get(key);
+    if (!o) {
+      o = {
+        key,
+        kind,
+        id,
+        // Resolved to a real row but the name comes from the caller's lookup,
+        // so a placeholder until the page joins it. Never the org string.
+        name: id ? "" : p.orgName!,
+        basis: (p.basis as DeckOrg["basis"]) ?? "ip",
+        people: 0,
+        opens: 0,
+        prints: 0,
+        requests: 0,
+        decks: [],
+        depth: null,
+        lastAt: p.lastAt,
+        _people: new Set(),
+        _depths: [],
+      };
+      orgMap.set(key, o);
+    }
+
+    o._people.add(p.key);
+    o.opens += p.opens;
+    o.prints += p.prints;
+    o.requests += p.requests;
+    for (const d of p.decks) if (!o.decks.includes(d)) o.decks.push(d);
+    if (p.depth !== null) o._depths.push(p.depth);
+    if (p.lastAt > o.lastAt) o.lastAt = p.lastAt;
+    if ((BASIS_RANK[p.basis ?? ""] ?? 0) > (BASIS_RANK[o.basis] ?? 0)) {
+      o.basis = p.basis as DeckOrg["basis"];
+    }
+  }
+
+  const orgs: DeckOrg[] = [...orgMap.values()]
+    .map(({ _people, _depths, ...o }) => ({
+      ...o,
+      people: _people.size,
+      decks: o.decks.sort(),
+      depth: _depths.length ? Math.max(..._depths) : null,
+    }))
+    .sort((a, b) => b.opens - a.opens || b.lastAt.localeCompare(a.lastAt));
+
   const tally = (xs: (string | null)[]) => {
     const m = new Map<string, number>();
     for (const x of xs) if (x) m.set(x, (m.get(x) ?? 0) + 1);
@@ -382,8 +517,11 @@ export function analyzeDeckEvents(
     daily,
     referrers: tally(external.map((p) => p.referrer)),
     devices: tally(external.map((p) => p.device)),
+    orgs,
     staffOpens: all.filter((r) => r.event === "view" && r.user_id).length,
     totalOpens: all.filter((r) => r.event === "view").length,
     hasDepth,
+    hasAttribution: all.some((r) => r.attribution != null),
+    unattributed: external.filter((p) => !p.companyId && !p.firmId && !p.orgName).length,
   };
 }

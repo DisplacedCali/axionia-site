@@ -104,17 +104,82 @@ function sign(payload: string, key: string) {
 }
 
 /**
+ * Who a link was minted for, as an entity rather than a sentence.
+ *
+ * A label is what you typed; a ref is what you meant. "Invidia · Callie"
+ * attributes a deck open to a firm only if somebody later reads the string and
+ * recognises it, which is not a join — so two people typing "Invidia" and
+ * "Invidia Capital" produced two firms that were really one, and neither
+ * pointed at the row that already existed.
+ *
+ * Carried INSIDE the signature for the same reason the label is: it can then be
+ * trusted after verification, and a recipient editing the URL to attribute
+ * their read to somebody else would have to forge the HMAC.
+ */
+export type EntityRef = { kind: "company" | "firm"; id: string };
+
+/**
+ * A company or firm as the mint form sees it.
+ *
+ * Declared here rather than beside the server action that returns it: every
+ * export of a "use server" module must be an async function, and while a type
+ * is erased before that check ever runs, putting it there invites the next
+ * person to add a const beside it. The type has no server dependency anyway.
+ */
+export interface Entity {
+  kind: "company" | "firm";
+  id: string;
+  name: string;
+  domain: string | null;
+  /** 'investor' | 'operator' for a firm; null for a company. */
+  firmKind?: string | null;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const REF_RE = /^([cf]):([0-9a-f-]{36})$/i;
+
+/**
+ * Why appending the ref cannot collide with a label.
+ *
+ * The payload is `label.exp` and becomes `label.exp.c:<uuid>` — parsed from the
+ * right, so an old two-part payload still reads correctly and an outstanding
+ * link keeps working. The whole scheme rests on one property: the ref segment
+ * contains a colon, and `mintDeckLink` has always stripped every character
+ * outside [\w\s.@&'-] from the label, which excludes the colon. A label can
+ * therefore never be mistaken for a ref, whatever anybody types.
+ *
+ * That is a load-bearing dependency between two functions that look unrelated.
+ * If the label sanitiser is ever widened to admit ':', this parse silently
+ * starts reading part of somebody's name as an entity id — hence the assertion
+ * in mintDeckLink rather than a comment asking the next person to remember.
+ */
+function encodeRef(ref: EntityRef): string {
+  return `${ref.kind === "company" ? "c" : "f"}:${ref.id}`;
+}
+
+function decodeRef(seg: string): EntityRef | null {
+  const m = REF_RE.exec(seg);
+  if (!m) return null;
+  if (!UUID.test(m[2])) return null;
+  return { kind: m[1].toLowerCase() === "c" ? "company" : "firm", id: m[2].toLowerCase() };
+}
+
+/**
  * @param label  who this link is for — a name or company, shown to nobody but
  *               recorded on every view.
  * @param days   lifetime. Short by default; a deck link outliving the
  *               conversation it belongs to has no upside.
  * @param deck   which deck the link opens. A token minted for one will not
  *               verify for the other.
+ * @param ref    the company or firm this link attributes to. Optional, because
+ *               links minted before entity attribution existed are still valid
+ *               and still say something true.
  */
 export function mintDeckLink(
   label: string,
   days = 30,
-  deck: LinkedDeck = "founders"
+  deck: LinkedDeck = "founders",
+  ref?: EntityRef | null
 ): string | null {
   const key = secret(deck);
   if (!key) return null;
@@ -122,14 +187,23 @@ export function mintDeckLink(
   const clean = label.trim().slice(0, 60).replace(/[^\w\s.@&'-]/g, "");
   if (!clean) return null;
 
+  // The parse in verifyDeckLink distinguishes a ref from a label by the colon.
+  // If the sanitiser above ever admits one, this fails loudly at mint time
+  // instead of quietly mis-attributing reads for a month.
+  if (clean.includes(":")) return null;
+
+  if (ref && !UUID.test(ref.id)) return null;
+
   const exp = Math.floor(Date.now() / 1000) + days * 86400;
-  const payload = `${clean}${SEP}${exp}`;
+  const payload = ref
+    ? `${clean}${SEP}${exp}${SEP}${encodeRef(ref)}`
+    : `${clean}${SEP}${exp}`;
   const encoded = b64u(Buffer.from(payload, "utf8"));
   return `${encoded}${SEP}${sign(payload, key)}`;
 }
 
 export type LinkCheck =
-  | { ok: true; label: string }
+  | { ok: true; label: string; ref: EntityRef | null }
   | { ok: false; reason: "disabled" | "malformed" | "bad-signature" | "expired" };
 
 export function verifyDeckLink(
@@ -152,12 +226,22 @@ export function verifyDeckLink(
     return { ok: false, reason: "malformed" };
   }
 
-  const idx = payload.lastIndexOf(SEP);
-  if (idx < 1) return { ok: false, reason: "malformed" };
+  /*
+    Parsed from the right, so `label.exp` and `label.exp.ref` both read
+    correctly and every link minted before refs existed keeps verifying. The
+    label may itself contain dots — it always could — which is why this counts
+    in from the end rather than splitting.
+  */
+  const segs = payload.split(SEP);
+  if (segs.length < 2) return { ok: false, reason: "malformed" };
 
-  const label = payload.slice(0, idx);
-  const exp = Number(payload.slice(idx + 1));
-  if (!Number.isFinite(exp)) return { ok: false, reason: "malformed" };
+  const ref = decodeRef(segs[segs.length - 1]);
+  const expAt = ref ? segs.length - 2 : segs.length - 1;
+  if (expAt < 1) return { ok: false, reason: "malformed" };
+
+  const label = segs.slice(0, expAt).join(SEP);
+  const exp = Number(segs[expAt]);
+  if (!label || !Number.isFinite(exp)) return { ok: false, reason: "malformed" };
 
   // Signature BEFORE expiry: an attacker shouldn't learn whether a forged
   // token's embedded date was plausible.
@@ -172,5 +256,5 @@ export function verifyDeckLink(
 
   if (exp * 1000 < Date.now()) return { ok: false, reason: "expired" };
 
-  return { ok: true, label };
+  return { ok: true, label, ref };
 }
