@@ -6,7 +6,7 @@ durable record.
 
 **To resume: connect both folders below, then say "read docs/PROJECT_STATE.md".**
 
-Last updated: 2026-08-06
+Last updated: 2026-08-13
 
 ---
 
@@ -97,6 +97,31 @@ costs one wave and the job survives a closed tab.
   organisation first, unverified, and are also written to `leads` with
   `interest = 'buyer-deck'`. **No IP is recorded** — that's a privacy-policy
   decision, and the site has no policy yet.
+- **Deck traction** — `/admin/decks` counts people, not rows (migration 036).
+  Three faults fixed together. **Depth**: view and print were the only kinds,
+  so one slide read and thirteen read produced identical rows. A `progress`
+  event carries `max_slide` and `total_slides`, flushed from `DeckShell` on a
+  six-second dwell and on `visibilitychange`/`pagehide`; both numbers are
+  stored because deck length changes. **Double-counted downloads**:
+  `requestDeckDownload` wrote a print when somebody *asked* for the emailed
+  link and the print itself wrote a second, so every completed download was
+  reported twice and every unanswered request as a download. `request` is now
+  its own kind, backfilled by an exact discriminator — the request path sets
+  no `user_agent`, and every print through `log()` does. **Three strangers**:
+  one person leaves rows carrying a link label, nothing, and an email, so
+  `lib/deckAnalytics.ts` resolves identity per SESSION first and per row
+  second, and the email typed at the gate retroactively names every slide read
+  before it. Staff opens are excluded from every figure — presenting is not
+  traction — and stated beside the heading rather than dropped silently.
+  `session_id` is **the existing `ax_sid` cookie**, not a new identifier: the
+  deck log was the one table standing outside the 014 stitch, so a deck open
+  now joins to the marketing pages read on the way to it. Still no IP.
+  Both paths degrade: the page falls back to the base column set on error, and
+  the logger retries in the old shape on `42703`/`23514`, so a deploy landing
+  ahead of the SQL editor loses depth rather than the log. `036` drops the
+  event constraint **by discovery, not by name** — 012 declared it inline, and
+  a no-op drop would leave the old constraint beside the new one with depth
+  quietly never recording.
 - **Site analytics** — `/admin/analytics`, first-party (migration 014).
   Pageviews land in `site_events` via `/api/track`. **No IP is stored anywhere.**
   Location comes from Vercel's edge headers already resolved to country/city, so
@@ -386,6 +411,37 @@ costs one wave and the job survives a closed tab.
   reads as eight chores. This is v1 of `docs/PAID_REVIEW_DESIGN.md`, turned on
   for free reports deliberately, so the ledger accumulates and the habit forms
   before a paying client is waiting.
+- **Email delivery is tracked** (migration 033). `email_log` recorded that a
+  send was *attempted* and nothing ever updated the row again, so a 200 from
+  Resend — which means "accepted for delivery" — was written down as though it
+  meant the client had it. That mattered most at the release email: the queue
+  moves on, and a bounce looked identical to a client who hadn't opened their
+  report yet.
+  `/api/webhooks/resend` writes raw events to `email_events`; a trigger rolls
+  them up into `email_log`. **Status only moves forward, by rank** — webhooks
+  arrive out of order routinely and a late `sent` overwriting `delivered` would
+  make the column untrustworthy in the one direction that matters.
+  `complained` outranks everything. Opens and clicks are timestamps and counts,
+  not statuses: an opened email is still delivered, and folding engagement into
+  `status` would let an open mask a later bounce.
+  Signature verification is **hand-rolled against the Svix scheme rather than
+  the `svix` package** — one HMAC, Web Crypto is already in the runtime, and
+  the stack is deliberately thin. Cross-checked against the real library:
+  valid signatures pass, tampered bodies, wrong secrets and stale timestamps
+  fail, and a rotation header carrying two signatures passes on either.
+  Replay safety is `email_events.svix_id unique`, not a unique index on
+  `provider_id` — 033 runs against a live table and an index that fails on
+  legacy data takes the migration down with it.
+  **No IP column**, consistent with 012, 014, 015, 018 and 019. Resend sends a
+  click's IP and user agent; `payload` is stored whole, so making that true of
+  this table too means stripping it on the way in.
+- **`/admin/email`** — the same gap `/admin/inbox` closed for `leads`, still
+  live for `email_log`: a table the product wrote to since migration 002 that
+  no screen ever displayed, readable only from the SQL editor. Trouble first,
+  then everything; skipped sends hidden by default behind an All toggle, since
+  every send is skipped until the API key exists. Each row says what its status
+  *means* rather than just naming it — `sent` and `delivered` are not the same
+  claim and the difference is the whole point of 033.
 - **Objective weighting** — `lib/objectives.ts`, rendered on `/platform` and in
   the deck. Axionia scores the evidence, never the objective; weights reorder
   recommendations and must never be allowed to put a dollar figure on a soft
@@ -396,8 +452,15 @@ costs one wave and the job survives a closed tab.
 - **Resend is still unconfigured.** `RESEND_API_KEY` is absent, so every
   transactional send — including the release email — is skipped and written to
   `email_log` with `status = 'skipped'`. The workflow works; no mail leaves the
-  building. **This is the next piece**, and it's config rather than code. See
-  `docs/EMAIL-SETUP.md`.
+  building. **This is the next piece**, and it is now config only — the code
+  side is done (below). See `docs/EMAIL-SETUP.md`, and note the ordering there:
+  **Turnstile first.** Pointing a fresh sending domain at the signup traffic
+  that was creating unconfirmed accounts is how a new domain lands on a
+  blocklist.
+- **Discovery follow-up email.** Designed, not built. It needs a send path — a
+  server action plus a control on the company hub — and it is deliberately not
+  automatable: the template requires a personal note and a named next step, and
+  a follow-up that could have been sent to anyone gets read that way.
 - **Paid-engagement human review, v2 and v3.** See
   `docs/PAID_REVIEW_DESIGN.md`. v1 is built (below). v2 — the four adjustments
   as ratifiable parameters — **waits for engagement one**: the framework is
@@ -606,7 +669,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`023`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`033`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.

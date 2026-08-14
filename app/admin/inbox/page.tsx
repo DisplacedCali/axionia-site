@@ -80,7 +80,18 @@ export default async function Inbox({
         .limit(50),
       // Cross-reference: the same person turning up twice is the strongest
       // signal available without speaking to them.
-      admin.from("deck_events").select("contact_email").not("contact_email", "is", null),
+      //
+      // Views only. `scoreLead` renders this as "Opened the deck N×", and
+      // migration 036 adds progress rows — a reader who works through thirteen
+      // slides leaves several, so counting every row would report one careful
+      // reader as somebody who opened the deck six times. Prints and requests
+      // are excluded for an older version of the same fault: they were being
+      // counted as opens, and an open is what the sentence says.
+      admin
+        .from("deck_events")
+        .select("contact_email")
+        .eq("event", "view")
+        .not("contact_email", "is", null),
       admin.from("report_requests").select("contact_email"),
     ]);
 

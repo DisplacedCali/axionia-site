@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, deckDownloadLink } from "@/lib/email";
 import { mintDownloadGrant, downloadGrantsEnabled } from "@/lib/deckDownload";
+import { getSessionId } from "@/lib/analytics";
 
 /**
  * Deck view and print logging.
@@ -17,7 +18,10 @@ import { mintDownloadGrant, downloadGrantsEnabled } from "@/lib/deckDownload";
  *    signed in as someone else.
  *
  * 2. No IP is recorded. See migration 012 — that's a privacy-policy decision,
- *    not a technical one, and it hasn't been made yet.
+ *    not a technical one, and it hasn't been made yet. Migration 036 adds a
+ *    session id, which is NOT a new identifier: it's the same opaque ax_sid
+ *    cookie site_events already stores, so this writes down which existing
+ *    session an existing event belonged to and collects nothing new.
  */
 
 type Contact = { name?: string; email?: string; org?: string };
@@ -41,11 +45,25 @@ const clean = (s: string | undefined, max: number) => {
   return v.slice(0, max);
 };
 
+type DeckEventKind = "view" | "print" | "progress" | "request";
+
+/**
+ * Postgres codes that mean migration 036 has not been applied here.
+ *
+ * 42703 is an unknown column — session_id, max_slide, total_slides. 23514 is
+ * the event check constraint refusing 'progress' or 'request'. Both are the
+ * same fact, and neither is a reason to stop logging: the deck predates 036 and
+ * every column it needs is optional. A deployment that ran ahead of the SQL
+ * editor should lose depth, not lose the log.
+ */
+const PRE_036 = new Set(["42703", "23514"]);
+
 async function log(
-  event: "view" | "print",
+  event: DeckEventKind,
   deck: DeckSlug,
   contact?: Contact,
-  linkLabel?: string | null
+  linkLabel?: string | null,
+  depth?: { max: number; total: number }
 ) {
   const supabase = createClient();
   const {
@@ -56,19 +74,34 @@ async function log(
 
   // Best-effort. A logging failure must never take the deck down mid-meeting.
   try {
-    await createAdminClient()
-      .from("deck_events")
-      .insert({
-        deck,
-        event,
-        user_id: user?.id ?? null,
-        link_label: clean(linkLabel ?? undefined, 60),
-        contact_name: clean(contact?.name, 120),
-        contact_email: clean(contact?.email, 200)?.toLowerCase() ?? null,
-        contact_org: clean(contact?.org, 160),
-        referrer: h.get("referer")?.slice(0, 500) ?? null,
-        user_agent: h.get("user-agent")?.slice(0, 400) ?? null,
-      });
+    const admin = createAdminClient();
+
+    const base = {
+      deck,
+      event,
+      user_id: user?.id ?? null,
+      link_label: clean(linkLabel ?? undefined, 60),
+      contact_name: clean(contact?.name, 120),
+      contact_email: clean(contact?.email, 200)?.toLowerCase() ?? null,
+      contact_org: clean(contact?.org, 160),
+      referrer: h.get("referer")?.slice(0, 500) ?? null,
+      user_agent: h.get("user-agent")?.slice(0, 400) ?? null,
+    };
+
+    const { error } = await admin.from("deck_events").insert({
+      ...base,
+      session_id: getSessionId(),
+      max_slide: depth?.max ?? null,
+      total_slides: depth?.total ?? null,
+    });
+
+    if (error && PRE_036.has(error.code)) {
+      // A progress row IS the depth columns, so there is nothing left of it to
+      // retry. Anything else is a real event and gets written in the old shape.
+      if (event === "progress") return;
+      const legacy = event === "request" ? { ...base, event: "print" } : base;
+      await admin.from("deck_events").insert(legacy);
+    }
   } catch {
     /* swallowed on purpose */
   }
@@ -79,6 +112,40 @@ export async function logDeckView(
   linkLabel?: string | null
 ) {
   await log("view", deck, undefined, linkLabel);
+}
+
+/**
+ * How far someone got.
+ *
+ * A separate event rather than an update to the view row, because deck_events
+ * is an append-only audit trail and because updating would mean handing the
+ * client a row id it could then aim at somebody else's row. The reader is
+ * derived at read time as MAX(max_slide) per session, so extra rows cost
+ * storage and nothing else.
+ *
+ * `total` travels with every row because deck length changes. 9/13 before four
+ * slides are cut and 9/13 after are different readings, and a percentage
+ * computed here would throw away the ability to tell them apart later.
+ *
+ * Called from the first slide onward, not only once somebody advances. A deck
+ * that was opened and abandoned on slide one is the most important thing this
+ * measures, and recording depth only for readers who moved would produce a
+ * median describing the people who stayed.
+ */
+export async function logDeckProgress(
+  deck: DeckSlug,
+  maxSlide: number,
+  totalSlides: number,
+  linkLabel?: string | null
+) {
+  const max = Math.round(maxSlide);
+  const total = Math.round(totalSlides);
+  // Nonsense in, nothing out — a client-supplied depth past the end of the deck
+  // would skew every median on the admin page and cost nothing to drop.
+  if (!Number.isFinite(max) || !Number.isFinite(total)) return;
+  if (max < 1 || total < 1 || max > total || total > 200) return;
+
+  await log("progress", deck, undefined, linkLabel, { max, total });
 }
 
 /**
@@ -191,23 +258,30 @@ export async function requestDeckDownload(args: {
 
   // Recorded before the send, so a mail failure doesn't lose the lead.
   try {
-    const admin = createAdminClient();
-    await admin.from("leads").insert({
+    await createAdminClient().from("leads").insert({
       email,
       full_name: name,
       company_name: clean(args.org, 160),
       interest: `${args.deck}-deck`,
     });
-    await admin.from("deck_events").insert({
-      deck: args.deck,
-      event: "print",
-      contact_name: name,
-      contact_email: email,
-      contact_org: clean(args.org, 160),
-    });
   } catch {
     /* a lead we failed to record must not block the download */
   }
+
+  /*
+    'request', not 'print'.
+
+    This row and the row logDeckPrint writes when the emailed link is finally
+    used were both 'print', so one download journey logged two of them: the
+    admin page reported every completed download twice, and reported every
+    request nobody acted on as a download that never happened. Migration 036
+    adds the kind and backfills the existing rows.
+
+    Kept as an event at all — rather than waiting for the print — for the
+    reason in the header: somebody who asks and never clicks still wanted the
+    deck, and that is a thing worth being able to see.
+  */
+  await log("request", args.deck, { name, email, org: args.org });
 
   const mail = deckDownloadLink(name, url, args.deck);
   const res = await sendEmail({

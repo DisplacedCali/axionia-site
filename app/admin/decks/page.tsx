@@ -5,9 +5,25 @@ import { linksEnabled } from "@/lib/deckLinks";
 import { Section } from "@/components/ui";
 import ShareLinkForm from "@/components/admin/ShareLinkForm";
 import FinancialModel from "@/components/admin/FinancialModel";
+import DeckAnalytics from "@/components/admin/DeckAnalytics";
+import { analyzeDeckEvents, type DeckEventRow } from "@/lib/deckAnalytics";
 import { listModelVersions, type ModelVersion } from "./model-actions";
 
 export const dynamic = "force-dynamic";
+
+const WINDOW_DAYS = 30;
+
+/*
+  Two selects, because the depth columns only exist once 036 has run and
+  PostgREST answers an unknown column with an error rather than a null. The
+  fallback is the invariant from /admin/companies applied here: a discarded
+  query error renders as an empty state, and an empty deck log looks like
+  every open we ever recorded was lost.
+*/
+const BASE_COLS =
+  "id, deck, event, created_at, contact_name, contact_email, contact_org, " +
+  "link_label, user_id, referrer, user_agent";
+const DEPTH_COLS = `${BASE_COLS}, session_id, max_slide, total_slides`;
 
 function when(ts: string) {
   const h = (Date.now() - new Date(ts).getTime()) / 36e5;
@@ -28,16 +44,31 @@ export default async function AdminDecks() {
   await requireStaff();
   const admin = createAdminClient();
 
-  const { data: events } = await admin
-    .from("deck_events")
-    .select(
-      "id, deck, event, created_at, contact_name, contact_email, contact_org, link_label, user_id"
-    )
-    .order("created_at", { ascending: false })
-    .limit(60);
+  const since = new Date(Date.now() - WINDOW_DAYS * 864e5).toISOString();
 
-  const rows = events ?? [];
-  const prints = rows.filter((r) => r.event === "print").length;
+  const read = (cols: string) =>
+    admin
+      .from("deck_events")
+      .select(cols)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(5000);
+
+  let events = await read(DEPTH_COLS);
+  if (events.error) events = await read(BASE_COLS);
+
+  const all = (events.data ?? []) as unknown as DeckEventRow[];
+  const analytics = analyzeDeckEvents(all, { days: WINDOW_DAYS });
+
+  /*
+    The feed is access only.
+
+    A progress row revises what a view already recorded — it is not somebody
+    arriving — and once depth is logging they outnumber real events. Left in,
+    the answer to "has anything happened" would be forty rows of the same
+    person still reading.
+  */
+  const rows = all.filter((r) => r.event !== "progress").slice(0, 60);
 
   /*
     A missing storage bucket must not take the decks page down with it.
@@ -63,7 +94,10 @@ export default async function AdminDecks() {
       <div className="mb-10">
         <h1 className="font-serif font-light text-4xl">Decks</h1>
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm">
-          {rows.length} recent events · {prints} downloads
+          {analytics.people.length}{" "}
+          {analytics.people.length === 1 ? "person" : "people"} ·{" "}
+          {analytics.totalOpens - analytics.staffOpens} opens · last{" "}
+          {WINDOW_DAYS} days
         </p>
       </div>
 
@@ -203,6 +237,8 @@ export default async function AdminDecks() {
         )}
       </div>
 
+      <DeckAnalytics data={analytics} days={WINDOW_DAYS} />
+
       <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
         Recent activity
       </h2>
@@ -216,8 +252,8 @@ export default async function AdminDecks() {
 
         {rows.length === 0 ? (
           <p className="px-5 py-8 text-[13px] text-gray-cool">
-            Nothing logged yet. Views and downloads appear here as soon as
-            migration 012 and 013 are applied.
+            Nothing logged in the last {WINDOW_DAYS} days. Views and downloads
+            appear here as soon as migrations 012 and 013 are applied.
           </p>
         ) : (
           rows.map((r) => {
@@ -241,6 +277,8 @@ export default async function AdminDecks() {
                     className={`font-mono text-[9px] uppercase tracking-[0.1em] px-2 py-1 border ${
                       r.event === "print"
                         ? "border-navy bg-navy text-base"
+                        : r.event === "request"
+                        ? "border-caution text-caution-dark bg-amber-light"
                         : "border-border text-gray-warm"
                     }`}
                   >
@@ -265,9 +303,15 @@ export default async function AdminDecks() {
       </div>
 
       <p className="mt-5 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
-        No IP addresses are recorded. That&rsquo;s a privacy-policy decision
-        rather than a technical one, and it hasn&rsquo;t been made yet — see
-        migration 012.
+        No IP addresses are recorded, and <code className="font-mono">/privacy</code>{" "}
+        now commits to that publicly — adding one is a policy change rather than
+        a migration. Depth and the grouping of events into people come from the
+        same first-party session cookie the rest of the site already sets, so
+        clearing cookies genuinely resets it. <strong className="font-medium text-gray-warm">
+        Request</strong> means somebody asked for the emailed link;{" "}
+        <strong className="font-medium text-gray-warm">print</strong> means the
+        file actually left. Before migration 036 both were logged as a print,
+        which double-counted every completed download.
       </p>
     </Section>
   );

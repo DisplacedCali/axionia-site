@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, type ReactNode } from "react"
 import {
   logDeckView,
   logDeckPrint,
+  logDeckProgress,
   requestDeckDownload,
   type DeckSlug,
 } from "@/app/deck/actions";
@@ -21,6 +22,9 @@ import {
  * existed and a projector could show two half-slides at once. There is no
  * scroll position here — the active slide is state.
  */
+
+/** How long a slide has to be sat on before it counts as read. */
+const DWELL = 6000;
 
 type Props = {
   slides: ReactNode[];
@@ -127,6 +131,64 @@ export default function DeckShell({
     logged.current = true;
     logDeckView(deck, linkLabel);
   }, [deck, linkLabel]);
+
+  /*
+    How far they got.
+
+    A view row said someone opened the deck and nothing else, so the person who
+    read the title slide and closed the tab was indistinguishable from the one
+    who read all thirteen — which are the two answers most worth telling apart.
+
+    Sent on a dwell rather than on every arrow press. Flipping through to find a
+    slide is not reading it, and a write per keystroke would fill the log with
+    the noise of somebody scrubbing. DWELL is long enough that a scrub produces
+    one row at the end of it and short enough that a reader who leaves is
+    already recorded.
+
+    `sent` is a high-water mark, so going back and forward again writes nothing.
+    Depth only ever climbs.
+  */
+  const furthest = useRef(1);
+  const sent = useRef(0);
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushDepth = useCallback(() => {
+    if (pending.current) {
+      clearTimeout(pending.current);
+      pending.current = null;
+    }
+    if (furthest.current <= sent.current) return;
+    sent.current = furthest.current;
+    logDeckProgress(deck, furthest.current, total, linkLabel);
+  }, [deck, total, linkLabel]);
+
+  useEffect(() => {
+    if (i + 1 > furthest.current) furthest.current = i + 1;
+    if (pending.current) clearTimeout(pending.current);
+    pending.current = setTimeout(flushDepth, DWELL);
+    return () => {
+      if (pending.current) clearTimeout(pending.current);
+    };
+  }, [i, flushDepth]);
+
+  /*
+    Leaving is the common case and the one a timer misses. `visibilitychange`
+    covers the tab switch and the phone going to sleep, which on mobile is how
+    a session usually ends; `pagehide` covers navigating away. Neither is
+    guaranteed on a hard kill, and that's accepted — the last flushed value is
+    a floor on how far they got, never an overstatement.
+  */
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flushDepth();
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    window.addEventListener("pagehide", flushDepth);
+    return () => {
+      document.removeEventListener("visibilitychange", onHidden);
+      window.removeEventListener("pagehide", flushDepth);
+    };
+  }, [flushDepth]);
 
   const go = useCallback(
     (n: number) => setI((c) => Math.max(0, Math.min(total - 1, n))),
