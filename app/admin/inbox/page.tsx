@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { Section } from "@/components/ui";
 import LeadRow from "@/components/admin/LeadRow";
 import { scoreLead } from "@/lib/leadSignal";
+import { assessLead } from "@/lib/leadAuthenticity";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function Inbox({
   await requireStaff();
   const admin = createAdminClient();
   const showAll = searchParams.show === "all";
+  const showFiltered = searchParams.show === "filtered";
 
   let q = admin
     .from("leads")
@@ -107,6 +109,20 @@ export default async function Inbox({
   const requestsByEmail = countBy(reqRows);
 
   /*
+    How many times each message body appears.
+
+    A bulk submitter sends the same text to every form it finds, and that
+    repetition is the one thing a single row cannot show you. Counted over the
+    whole fetched window rather than per day, because the campaign is the unit,
+    not the calendar.
+  */
+  const messageCounts = new Map<string, number>();
+  for (const l of leads ?? []) {
+    const m = l.message?.trim().toLowerCase();
+    if (m) messageCounts.set(m, (messageCounts.get(m) ?? 0) + 1);
+  }
+
+  /*
     Ranked by signal, not recency.
 
     Recency put "This is amazing!" from a named person at a real company below
@@ -115,27 +131,55 @@ export default async function Inbox({
     with it.
   */
   const scored = (leads ?? [])
-    .map((l) => ({
-      l,
-      signal: scoreLead({
-        email: l.email,
-        fullName: l.full_name,
-        companyName: l.company_name,
-        message: l.message,
-        interest: l.interest,
-        deckOpens: deckOpens.get(l.email.toLowerCase()) ?? 0,
-        requests: requestsByEmail.get(l.email.toLowerCase()) ?? 0,
-      }),
-    }))
+    .map((l) => {
+      const opens = deckOpens.get(l.email.toLowerCase()) ?? 0;
+      const reqs = requestsByEmail.get(l.email.toLowerCase()) ?? 0;
+      return {
+        l,
+        signal: scoreLead({
+          email: l.email,
+          fullName: l.full_name,
+          companyName: l.company_name,
+          message: l.message,
+          interest: l.interest,
+          deckOpens: opens,
+          requests: reqs,
+        }),
+        real: assessLead({
+          email: l.email,
+          fullName: l.full_name,
+          companyName: l.company_name,
+          message: l.message,
+          duplicateMessages: messageCounts.get(l.message?.trim().toLowerCase() ?? "") ?? 0,
+          deckOpens: opens,
+          requests: reqs,
+        }),
+      };
+    })
     .sort(
       (a, b) =>
         b.signal.score - a.signal.score ||
         new Date(b.l.created_at).getTime() - new Date(a.l.created_at).getTime(),
     );
 
-  const rows = scored;
+  /*
+    Filtered out, not marked up.
+
+    A row that stays in the list with a "probably spam" badge still costs a
+    read, and the list existed to be short enough to work through. So junk
+    leaves — but it leaves to a view one click away rather than to nowhere,
+    because the cost of being wrong here is a real person who thinks they were
+    ignored, and that has to stay recoverable without a database query.
+  */
+  const junk = scored.filter((x) => x.real.fake);
+  const rows = showFiltered ? junk : scored.filter((x) => !x.real.fake);
+
+  const ago = (h: number) => Date.now() - h * 36e5;
+  const filteredToday = junk.filter((x) => new Date(x.l.created_at).getTime() > ago(24)).length;
+  const filteredWeek = junk.filter((x) => new Date(x.l.created_at).getTime() > ago(24 * 7)).length;
+
   const hot = scored.filter(
-    (x) => x.signal.heat === "high" && !x.l.handled_at && !x.l.ignored_at,
+    (x) => x.signal.heat === "high" && !x.real.fake && !x.l.handled_at && !x.l.ignored_at,
   );
   const open = (requests ?? []).filter((r) => r.status === "new" || !r.assigned_to);
 
@@ -186,6 +230,20 @@ export default async function Inbox({
           >
             All
           </Link>
+          {/* Only offered when there's something in it — an empty tab invites a
+              click that answers nothing. */}
+          {(junk.length > 0 || showFiltered) && (
+            <Link
+              href="/admin/inbox?show=filtered"
+              className={`px-3 py-1.5 border font-mono text-[10px] uppercase tracking-[0.12em] ${
+                showFiltered
+                  ? "border-navy bg-navy text-base"
+                  : "border-border text-gray-cool hover:border-navy"
+              }`}
+            >
+              Filtered · {junk.length}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -229,31 +287,68 @@ export default async function Inbox({
         </div>
       )}
 
-      <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
-        Inquiries {rows.length > 0 && `· ${rows.length}`}
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-2">
+        {showFiltered ? "Filtered out" : "Inquiries"}
+        {rows.length > 0 && ` · ${rows.length}`}
         <span className="ml-2 normal-case tracking-normal text-gray-cool">
-          ranked by signal, not recency
+          {showFiltered
+            ? "not shown in the working list"
+            : "ranked by signal, not recency"}
         </span>
       </h2>
+
+      {/*
+        The spam report, in one line.
+
+        Deliberately not a panel. The number is worth knowing and is never
+        worth acting on — if it climbs, that is a fact about the internet, not
+        a task — so it gets the weight of a footnote and the link to check the
+        judgement sits inside it.
+      */}
+      {!showFiltered && junk.length > 0 && (
+        <p className="mb-4 text-[12px] text-gray-cool">
+          {filteredToday} filtered today · {filteredWeek} this week ·{" "}
+          <Link href="/admin/inbox?show=filtered" className="text-blue hover:underline">
+            check what was filtered
+          </Link>
+        </p>
+      )}
+
+      {showFiltered && (
+        <p className="mb-4 text-[12px] leading-[1.6] text-gray-cool max-w-measure">
+          Nothing here is deleted, and nothing was judged on the address alone.
+          Anyone who opened a deck or requested a report is never filtered,
+          whatever else they wrote. If somebody real is in this list, tell me
+          which rule caught them &mdash; each row says.
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <div className="border border-border p-10">
           <p className="font-serif text-2xl mb-2">
-            {showAll ? "No inquiries yet." : "Nothing outstanding."}
+            {showFiltered
+              ? "Nothing filtered."
+              : showAll
+              ? "No inquiries yet."
+              : "Nothing outstanding."}
           </p>
           <p className="text-[15px] leading-[1.7] text-gray-warm max-w-measure">
-            {showAll
+            {showFiltered
+              ? "No submission in this window looked automated."
+              : showAll
               ? "Contact-form submissions and founders-deck prints land here."
               : "Every inquiry has been dealt with. Switch to All to see the history."}
           </p>
         </div>
       ) : (
         <div className="border border-border divide-y divide-border">
-          {rows.map(({ l, signal }) => (
+          {rows.map(({ l, signal, real }) => (
             <LeadRow
               key={l.id}
-              heat={signal.heat}
-              signalReasons={signal.reasons}
+              heat={showFiltered ? "cool" : signal.heat}
+              /* In the filtered view the useful sentence is why it was caught,
+                 not how promising it would have been. */
+              signalReasons={showFiltered ? real.reasons : signal.reasons}
               lead={{
                 id: l.id,
                 name: l.full_name,

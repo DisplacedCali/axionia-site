@@ -31,13 +31,18 @@ export interface Suspicion {
 /**
  * Random-string detector.
  *
+ * Exported because `leadAuthenticity` needs the same judgement about a name on
+ * a contact form. One implementation rather than two: a second copy would
+ * drift, and the two would then disagree about the same person depending on
+ * which screen you were looking at.
+ *
  * Real names have vowels in ordinary proportion, one or two words, and
  * consistent case. "WvYttuKSYRdMTRVRId" has none of that. Tuned to be quiet
  * rather than clever — a false positive here costs a real person their
  * account visibility, so it takes several signals agreeing before anything
  * gets flagged.
  */
-function looksGenerated(s: string | null): boolean {
+export function looksGenerated(s: string | null): boolean {
   if (!s) return false;
   const t = s.trim();
   if (t.length < 10 || t.includes(" ")) return false;
