@@ -52,6 +52,11 @@ const groups: NavGroup[] = [
         note: "How the numbers are built",
       },
       {
+        href: "/where-we-fit",
+        label: "Where we fit",
+        note: "What this replaces, and what it doesn't",
+      },
+      {
         href: "/research",
         label: "Research engagements",
         note: "Commissioned independent research",

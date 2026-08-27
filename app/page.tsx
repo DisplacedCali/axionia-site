@@ -24,23 +24,60 @@ export const metadata = {
 
 
 /**
- * The three ways a well-attended review still fails. Written as method
- * failures rather than accusations — none of these require anyone in the
- * chain to be lazy or dishonest, which is both more accurate and the only
- * version an HR leader can forward to their own committee.
+ * Who actually looks at a benefit decision, and what each of them is for.
+ *
+ * This replaced three abstract method failures — reviewed-not-evaluated,
+ * judged-in-isolation, not-disinterested. All three were true and none named
+ * anybody, which meant a reader already carrying Springbuk, or three years
+ * into a Mercer contract, could not tell whether we replace them, sit beside
+ * them, or duplicate them. That is the question a buyer actually has.
+ *
+ * Framed as market design rather than as accusation, and deliberately generous
+ * in the third column. A clean sweep reads as marketing; conceding that
+ * actuarial firms do this properly and that vendor-funded validation produces
+ * real critique is what makes the closing line land.
+ *
+ * Categories, not firms, and no Axionia row. Naming Mercer and Aon as
+ * conflicted on the home page while /for/brokers pitches them as distribution
+ * partners is a conflict we would have to live with; and a table with us alone
+ * in the winning row is a competitive chart, which is the opposite of the
+ * position. The prose underneath carries it instead. Named detail lives on
+ * /where-we-fit.
+ *
+ * The broker row's language is lifted from /for/brokers deliberately — "a gap
+ * in the market rather than in your work" is already the site's line, and two
+ * pages agreeing is worth more than either saying it once.
  */
-const REVIEW_GAPS = [
+const LANDSCAPE = [
   {
-    k: "Reviewed, not evaluated",
-    v: "Reading a vendor's ROI study and assessing one are different skills. Judging whether an effect survives its own study design takes training most people in the chain were never expected to have.",
+    who: "Brokers and consultants",
+    paid: "Commission and overrides from the market",
+    good: "Market access, placement, plan design, service. Most employers should keep theirs.",
+    why: "Across categories there is no common denominator and no independent benchmark to anchor to — a gap in the market rather than in their work.",
   },
   {
-    k: "Judged in isolation",
-    v: "Each program is approved on its own merits, in its own meeting. Nobody is asked whether the fourth one is claiming the same result as the first three — so the same result gets counted twice and nobody owns the arithmetic.",
+    who: "Vendor-funded validation",
+    paid: "The vendor being validated",
+    good: "Real methodology critique, often better than a buyer could do alone.",
+    why: "The buyer isn't the client.",
   },
   {
-    k: "Not disinterested",
-    v: "Preference, familiarity and relationship shape which options get to the table at all. Most of that is ordinary human judgment rather than bad faith, which is exactly why it goes unexamined.",
+    who: "Claims analytics",
+    paid: "You",
+    good: "Showing what actually happened inside your own claims.",
+    why: "Looks backward at what you already bought, one program at a time.",
+  },
+  {
+    who: "Actuarial firms",
+    paid: "You",
+    good: "All of it, properly. The honest answer to \u201cwho else does this\u201d.",
+    why: "Bespoke, six figures, one program at a time, aimed at jumbo employers.",
+  },
+  {
+    who: "Independent assessors",
+    paid: "Philanthropy",
+    good: "Category verdicts nobody can buy.",
+    why: "Category-level, and not about your population.",
   },
 ];
 
@@ -115,47 +152,97 @@ export default function Home() {
           Not "nobody looks at this." Plenty of people look at it. The failure
           is in who's looking and how — which is a more accurate diagnosis and
           a more respectful one, because it doesn't accuse the buyer of
-          negligence for a problem that was built around them. */}
-      <DarkSection>
-        <div className="grid lg:grid-cols-[1fr_1fr] gap-14 items-start">
-          <div>
-            <Reveal>
-              <EyebrowLight>The problem</EyebrowLight>
-              <h2 className="font-serif font-light text-4xl md:text-6xl leading-[1.1] max-w-xl">
-                Fifteen people reviewed it.
-                <br />
-                <em className="italic">None of them checked it.</em>
-              </h2>
-            </Reveal>
-            <Reveal delay={0.15}>
-              <p className="mt-8 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
-                A benefit decision passes through more hands than almost anything
-                else a company buys — brokers, carriers, consultants, internal
-                committees, finance. It isn&rsquo;t that nobody is paying
-                attention. It&rsquo;s that attention and scrutiny aren&rsquo;t
-                the same thing, and almost nobody in that chain is positioned to
-                supply the second one.
-              </p>
-            </Reveal>
-            <Reveal delay={0.22}>
-              <p className="mt-6 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
-                Every one of those reviews is reasonable on its own terms. Added
-                together they still don&rsquo;t constitute a check.
-              </p>
-            </Reveal>
-          </div>
+          negligence for a problem that was built around them.
 
-          <Stagger className="grid gap-7 lg:pt-4">
-            {REVIEW_GAPS.map((g) => (
-              <StaggerItem key={g.k} className="border-t border-white/15 pt-5">
-                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-teal mb-2">
-                  {g.k}
-                </div>
-                <p className="text-[15px] leading-[1.7] text-gray-cool">{g.v}</p>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </div>
+          The headline stayed and the evidence under it changed. It asserted
+          something the table now demonstrates, which is the whole reason this
+          section was the right place for the landscape rather than a ninth
+          section arguing the same thing again. */}
+      <DarkSection>
+        <Reveal>
+          <EyebrowLight>The problem</EyebrowLight>
+          <h2 className="font-serif font-light text-4xl md:text-6xl leading-[1.1] max-w-xl">
+            Fifteen people reviewed it.
+            <br />
+            <em className="italic">None of them checked it.</em>
+          </h2>
+        </Reveal>
+        <Reveal delay={0.15}>
+          <p className="mt-8 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
+            A benefit decision passes through more hands than almost anything
+            else a company buys — brokers, carriers, consultants, internal
+            committees, finance. It isn&rsquo;t that nobody is paying attention.
+            It&rsquo;s that attention and scrutiny aren&rsquo;t the same thing,
+            and almost nobody in that chain is positioned to supply the second
+            one.
+          </p>
+        </Reveal>
+        <Reveal delay={0.2}>
+          <p className="mt-6 max-w-measure text-[16px] leading-[1.75] text-gray-cool">
+            Five kinds of organisation look at benefit decisions. Each is good
+            at something, and most employers need more than one of them. None is
+            built for this particular job.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.25}>
+          <div className="mt-12 -mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr>
+                  {["Who looks", "Who pays them", "What they're good at", "Why it isn't this"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="font-mono text-[9px] font-normal uppercase tracking-[0.14em] text-white/40 align-bottom pb-3 pr-8 border-b border-white/20"
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {LANDSCAPE.map((r) => (
+                  <tr key={r.who} className="align-top">
+                    <td className="py-5 pr-8 border-b border-white/10 text-[15px] leading-snug w-[19%]">
+                      {r.who}
+                    </td>
+                    <td className="py-5 pr-8 border-b border-white/10 font-mono text-[11px] leading-[1.6] tracking-[0.02em] text-teal w-[19%]">
+                      {r.paid}
+                    </td>
+                    <td className="py-5 pr-8 border-b border-white/10 text-[14px] leading-[1.65] text-gray-cool w-[31%]">
+                      {r.good}
+                    </td>
+                    <td className="py-5 border-b border-white/10 text-[14px] leading-[1.65] text-gray-cool w-[31%]">
+                      {r.why}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.3}>
+          <div className="mt-12 border-l-2 border-teal pl-6 max-w-2xl">
+            <p className="text-[16px] leading-[1.75] text-gray-cool">
+              An actuarial firm will do this for a jumbo employer at six figures,
+              one program at a time. Nobody does it for the nine-hundred-person
+              manufacturer, and nobody untangles double-counted value across a
+              whole portfolio at any price.
+            </p>
+            <p className="mt-4 font-serif italic text-xl md:text-2xl leading-snug text-white">
+              This is a job that didn&rsquo;t exist, not a job someone else was
+              doing badly.
+            </p>
+          </div>
+          <div className="mt-8">
+            <GhostButtonLight href="/where-we-fit">
+              Where we fit, in detail
+            </GhostButtonLight>
+          </div>
+        </Reveal>
       </DarkSection>
 
       {/* ─────────────── THE ARITHMETIC ───────────────
