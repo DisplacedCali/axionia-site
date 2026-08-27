@@ -67,9 +67,8 @@ which is the whole promise the site makes.
 
 ```
 expected_PMPM = category_gross
-              × prevalence          // is the condition here?
+              × cost_index          // how much of this is here, and how expensive
               × addressability      // can a program of this shape reach it?
-              × severity_mix        // is it the expensive presentation?
               × (1 − duplication)   // already built: duplicationShare(n)
               × (1 − selection)     // already built: SELECTION_BIAS
               × (engagement / reference_engagement)
@@ -92,45 +91,98 @@ index is shown, because "1.15× prevalence" is meaningless without it.
 
 ## Factors, drivers and sources
 
+### Two indices, not three — resolved 27 August 2026
+
+The draft carried `prevalence` and `severity_mix` separately. Public sources
+cannot separate them, so they collapse into one **`cost_index`**: how much of
+this category is present in this population, and how expensive the presentation
+is, as one number.
+
+The reason is in the sources. MEPS and HCCI publish spend by age band, which
+conflates prevalence and severity by construction — a 55-year-old costs more
+both because more of them have the condition and because their presentation is
+worse, and the published figure does not separate the two. SOII does carry both
+incidence and days-away-from-work, so MSK is partially separable, but one
+category being separable does not justify a model-wide split.
+
+Two indices that can be defended beat three that cannot. They separate when
+client claims data allows it, not before.
+
+### Not every category takes a cost index
+
+A structural distinction the draft missed. The things employers buy are not all
+the same kind of thing:
+
+| Kind | Examples | Takes `cost_index`? | Takes `addressability`? |
+|---|---|---|---|
+| **Condition category** | MSK, behavioral, cardiometabolic, fertility | Yes | Yes |
+| **Delivery mechanism** | Navigation, second opinion, onsite clinic, EAP | **No** — it is not a condition and has no prevalence | Yes, and it is the whole story |
+
+A navigation vendor's value is not driven by how much navigation a population
+has. It is driven entirely by whether the people who need steering can be
+reached, which is why Northrock's clinic finding is an addressability finding
+and not a prevalence one. Applying a cost index to a delivery mechanism would
+be a category error with a number attached.
+
 ### Strong — public, annual, citable, directly on point
 
-**prevalence** — age mix and sex mix from **BLS Current Population Survey** by
-industry and occupation. Ergonomic and chemical exposure from the **BLS Survey
-of Occupational Injuries and Illnesses**, published annually by NAICS, which
-carries musculoskeletal disorder rates directly. Work-context exposure from
-**BLS Occupational Requirements Survey** environmental conditions, or **O\*NET**
-work context (Exposed to Contaminants, Exposed to Hazardous Conditions, Spend
-Time Standing, Spend Time Making Repetitive Motions), scored per occupation.
+**cost_index** — age and sex mix from **BLS Current Population Survey** by
+industry and occupation. Musculoskeletal disorder rates from the **BLS Survey
+of Occupational Injuries and Illnesses**, published annually by NAICS.
 
-ORS is preferred over O\*NET where both cover a field: ORS is BLS-collected,
-O\*NET is incumbent-surveyed. O\*NET's advantage is coverage breadth and that it
-is occupation-keyed, which matches the segment shape better than NAICS does.
+> **SOII measures the workers' compensation channel, not the group health
+> channel.** Work-related musculoskeletal injury is paid by comp; non-work
+> musculoskeletal cost lands on the health plan. SOII is therefore a proxy for
+> a population's musculoskeletal loading, not a measure of its health-plan MSK
+> spend, and it must be described that way. A model that quietly presents an
+> occupational injury rate as a health-plan prevalence rate is doing the exact
+> thing this company exists to catch, and it would not survive one actuary in
+> the room.
+
+Work-context exposure from **BLS Occupational Requirements Survey**
+environmental conditions, or **O\*NET** work context (Exposed to Contaminants,
+Exposed to Hazardous Conditions, Spend Time Standing, Spend Time Making
+Repetitive Motions), scored per occupation. ORS is preferred where both cover a
+field — it is BLS-collected, O\*NET is incumbent-surveyed. O\*NET's advantage is
+breadth and that it is SOC-keyed.
 
 **addressability** — night and alternative shift prevalence by occupation from
 BLS. Site dispersion and remote share from the segments' existing `work`
-dimension, which already carries it. This is the Northrock access finding
-generalised: a program's value is bounded by the share of the affected
-population that can physically reach it.
-
-### Moderate
-
-**severity_mix** — age-band spend curves from MEPS or HCCI. High-cost-claimant
-concentration from `MARKET_STATS.md`, which already carries the stop-loss and
-cell-and-gene figures. This is where the eleven-people-twenty-one-percent
-finding becomes a coefficient rather than an anecdote.
-
-**covered_lives** — coverage-tier distribution from KFF EHBS.
+dimension. This is the Northrock access finding generalised: a program's value
+is bounded by the share of the affected population that can physically reach it.
 
 ### An input, not a coefficient
 
 **covered_lives is a policy variable and it is moving right now.** Disney
 confirmed on 24 August 2026 that spouses with coverage available from their own
 employer come off the plan. A model that bakes covered-lives-per-employee into
-a segment constant is hardcoding something employers are actively re-cutting,
-and would have been wrong about Disney four days ago.
+a constant is hardcoding something employers are actively re-cutting, and would
+have been wrong about Disney four days ago. So it is asked, not assumed.
 
-So it is asked, not assumed. The event that makes the point also makes the case
-for asking, which is a good line for the site as well as a modelling decision.
+---
+
+## Category coverage at v1 — resolved 27 August 2026
+
+**The framework is category-agnostic. Exactly one category is populated at
+launch: musculoskeletal.**
+
+Every other category carries the same structure with its indices at 1.00 and
+the gap stated, which is what the reference-population design is for — an
+unsourced factor does nothing rather than quietly doing something.
+
+MSK is first because it is the only category where the occupation-to-cost link
+is directly published: SOII carries musculoskeletal disorder rates by NAICS,
+annually, and has for decades. It is also the largest point-solution category
+by spend, the Northrock headline, and the demo's default — so the one category
+we can evidence is also the one we most need.
+
+Behavioral and cardiometabolic follow on age, sex and shift structure, which is
+weaker evidence and should be labelled as such when it lands. Fertility waits
+on the pathway problem below. Delivery mechanisms never get a cost index at all.
+
+A model that works on one category with real evidence is worth more than five
+where four are guessed, and it is the only version consistent with the rule in
+CLAUDE.md.
 
 ---
 
@@ -162,77 +214,47 @@ unmeasurable with the data available, counted in neither direction.
 
 ---
 
-## Calibration and falsification
+## Calibration and falsification — resolved 27 August 2026
 
-Without this section the model is a story.
+Three stages, and **the first needs no clients at all.**
 
-When *N* client engagements have observed claims, compare predicted against
-observed PMPM per segment, out of sample. The test is not whether predictions
-are close. It is whether **segment-adjusted predictions beat a flat
-all-industry baseline** on out-of-sample error.
+### Stage 0 — back-test against public data, before the first engagement
 
-*What would change our mind:* if they do not beat the flat baseline, the
-exposure model is decoration and should be deleted rather than tuned. Tuning a
-model that does not beat its own null is how a methodology becomes astrology.
+**MEPS-IC publishes average premiums by industry.** If the model's `cost_index`
+ordering across industries does not correlate with observed MEPS-IC premium
+ordering, the model is wrong on day zero and we find out for free.
 
-*N to be set before the first engagement, not after.* Choosing the threshold
-once results are visible is not a test.
+It is a weak test — premium reflects plan design and firm size as much as
+population, and it is a level rather than a category-specific figure — so
+passing it proves little. But *failing* it is disqualifying, and it costs an
+afternoon. Any model that cannot order industries the way observed premiums
+order them has no business being shown to a client.
 
----
+Run this before anything ships.
 
-## Granularity — resolved 27 August 2026
+### Stage 1 — sign test at eight engagements
 
-**The exposure model does not touch `segments.ts`.** The first draft of this
-spec said to add an `exposure` block to the nine segments. That was wrong, and
-the reason is worth keeping.
+For each engagement, the predicted index is **written down before the claims
+data is opened**. That pre-registration is what makes it a test rather than a
+story told afterwards, and it is the single most important operational
+commitment in this document.
 
-The pipeline already models a workforce as **up to four of its own segments** —
-`runBenefitDesign` reads `ctx.outputs.workforce.segments` as an array and
-matches each one to the library independently, stating `null` rather than
-forcing a match when the library does not cover it. The mix structure exists.
-Northrock's 70/30 production-to-knowledge-core split is representable today.
+At eight, a binomial sign test on whether the segment-adjusted prediction beat
+a flat all-industry baseline. Seven of eight is *p* ≈ 0.035. That is a real
+early signal at a count reachable inside the first year.
 
-So the question was never nine segments against hundreds of occupations. It is
-what the *exposure lookup* keys on, and the answer is that it keys on something
-else entirely, in parallel:
+### Stage 2 — error comparison at twenty-five
 
-```
-model segment (LLM, per company)
-  ├─ matchSegmentToLibrary   → benefit preference     [exists]
-  └─ matchSegmentToOccupation → SOC major group mix   [new]
-```
+Out-of-sample prediction error, segment-adjusted against flat baseline.
 
-Two independent lookups off the same input, each returning null-with-reason
-when uncertain. Symmetric with the matcher that already works.
+*What would change our mind:* if segment-adjusted predictions do not beat the
+flat baseline at Stage 2, the exposure model is decoration and gets **deleted
+rather than tuned**. Tuning a model that cannot beat its own null is how a
+methodology becomes astrology, and it is a failure mode this company is
+supposed to be able to name in other people's work.
 
-**Exposure keys on SOC major group × NAICS sector.** Twenty-three major groups
-in the 2018 Standard Occupational Classification, and NAICS for the employer.
-Both are BLS's own taxonomies, which means every source in the strong tier is
-already published against them — CPS by occupation and industry, SOII by NAICS,
-ORS and O\*NET by SOC.
-
-The objection that raised this question dissolves at that resolution. SEG002
-covers dental hygienists and home health aides, whose ergonomic loads are not
-comparable — but hygienists are **29-xxxx** (Healthcare Practitioners and
-Technical) and home health aides are **31-xxxx** (Healthcare Support). Different
-major groups. The library keeps them together because they want similar
-benefits, which is true; the exposure model separates them because they do not
-carry similar injury risk, which is also true. Both taxonomies are right about
-their own question, and neither has to be bent to accommodate the other.
-
-Company-level exposure is the **headcount-weighted blend** across the model's
-segments, computed per engagement rather than stored.
-
-### Two resolutions, matching the two products
-
-| | Input available | Exposure resolution |
-|---|---|---|
-| **Free report** | Industry, plus free-text role groups | NAICS sector only, with the role-group text used where the occupation matcher is confident |
-| **Paid engagement** | `axionia_intake_2_workforce_profile.xlsx` | SOC major-group mix, headcount-weighted |
-
-The free tier is the same model at coarser resolution, not a crippled version
-of it. That is a materially better thing to be able to say than "the free one
-gives you less," and it is true.
+The thresholds are set here, before the first engagement, deliberately.
+Choosing them once results are visible is not a test.
 
 ---
 
@@ -256,9 +278,8 @@ gives you less," and it is true.
 ## Open decisions
 
 - ~~Segment granularity.~~ Resolved above. The nine segments are not touched.
-- **Category granularity.** `category_gross` is currently one illustrative
-  figure for one category. How many categories does v1 carry — MSK, behavioral,
-  cardiometabolic, navigation, fertility?
-- **Whether prevalence and severity are separable** with the sources available,
-  or collapse into one index until claims data arrives.
-- **N**, above.
+- ~~Category granularity.~~ Resolved: MSK only at v1, framework category-agnostic.
+- ~~Prevalence and severity separable.~~ Resolved: collapsed to one `cost_index`.
+- ~~N.~~ Resolved: Stage 0 back-test now, sign test at 8, error comparison at 25.
+
+**Nothing in this spec is open. It is ready to be built or argued with.**
