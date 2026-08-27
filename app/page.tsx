@@ -13,7 +13,7 @@ import HeroViz from "@/components/HeroViz";
 import RadarPreview from "@/components/RadarPreview";
 import WhoItsFor from "@/components/WhoItsFor";
 import PmpmStack from "@/components/PmpmStack";
-import BenefitOverlap from "@/components/BenefitOverlap";
+import DoubleCountedValue from "@/components/DoubleCountedValue";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 
 export const metadata = {
@@ -36,7 +36,7 @@ const REVIEW_GAPS = [
   },
   {
     k: "Judged in isolation",
-    v: "Each program is approved on its own merits, in its own meeting. Nobody is asked whether the fourth one overlaps the first three — so savings get counted twice and nobody owns the arithmetic.",
+    v: "Each program is approved on its own merits, in its own meeting. Nobody is asked whether the fourth one is claiming the same result as the first three — so the same result gets counted twice and nobody owns the arithmetic.",
   },
   {
     k: "Not disinterested",
@@ -237,43 +237,54 @@ export default function Home() {
         </Reveal>
       </Section>
 
-      {/* ─────────────── THE OVERLAP ───────────────
+      {/* ─────────────── DOUBLE-COUNTED VALUE ───────────────
           The cost side accumulates; the savings side doesn't. This is
-          REVIEW_GAPS #2 ("nobody is asked whether the fourth one overlaps
-          the first three") turned into arithmetic. Placed immediately after
+          REVIEW_GAPS #2 ("nobody is asked whether the fourth one is claiming
+          the same result as the first three") turned into arithmetic. Placed immediately after
           the stack because it's the same population seen from the other
           direction — what you're paying, then what you're actually getting.
 
           Written so a vendor could read it without being insulted: every
-          program here is reporting its own results correctly. The overlap
+          program here is reporting its own results correctly. The duplication
           is a property of owning all five, which is not a fact any one of
           them is in a position to know. */}
       <div className="bg-base-2">
         <Section className="py-16 sm:py-24">
           <Reveal>
             <div className="max-w-2xl mb-12">
-              <Eyebrow>The savings nobody de-duplicates</Eyebrow>
+              <Eyebrow>The value counted more than once</Eyebrow>
               <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
                 Five programs. Five sets of savings.{" "}
-                <em className="italic">One population.</em>
+                <em className="italic">One workforce.</em>
               </h2>
               <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
                 An avoided surgery can only be avoided once. When the MSK vendor
                 and the navigation vendor both count it, the arithmetic across
-                your portfolio quietly exceeds the spend available to save —
+                your portfolio quietly exceeds what was ever there to claim —
                 and because each program was approved in its own meeting,
                 against its own study, nobody is in a position to notice.
               </p>
               <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
                 None of this requires a vendor to overstate anything. Each is
                 reporting what its own program did, correctly, in isolation.
-                The overlap is a property of owning all five at once.
+                Nobody is double-charging you — the same result is being counted
+                more than once, and no single program is positioned to see it
+                happen.
+              </p>
+              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
+                And value was never only claims cost. Every one of these programs
+                also claims time back in the seat, fewer absence days, better
+                productivity — against the same people, in the same year. Those
+                claims are harder to check than a medical trend line, which is
+                exactly why nobody checks them. Sorting out what is genuinely
+                additive is the difference between a number you can take into a
+                renewal and a number you can only repeat.
               </p>
             </div>
           </Reveal>
 
           <Reveal delay={0.1}>
-            <BenefitOverlap />
+            <DoubleCountedValue />
           </Reveal>
         </Section>
       </div>
