@@ -180,28 +180,82 @@ once results are visible is not a test.
 
 ---
 
+## Granularity — resolved 27 August 2026
+
+**The exposure model does not touch `segments.ts`.** The first draft of this
+spec said to add an `exposure` block to the nine segments. That was wrong, and
+the reason is worth keeping.
+
+The pipeline already models a workforce as **up to four of its own segments** —
+`runBenefitDesign` reads `ctx.outputs.workforce.segments` as an array and
+matches each one to the library independently, stating `null` rather than
+forcing a match when the library does not cover it. The mix structure exists.
+Northrock's 70/30 production-to-knowledge-core split is representable today.
+
+So the question was never nine segments against hundreds of occupations. It is
+what the *exposure lookup* keys on, and the answer is that it keys on something
+else entirely, in parallel:
+
+```
+model segment (LLM, per company)
+  ├─ matchSegmentToLibrary   → benefit preference     [exists]
+  └─ matchSegmentToOccupation → SOC major group mix   [new]
+```
+
+Two independent lookups off the same input, each returning null-with-reason
+when uncertain. Symmetric with the matcher that already works.
+
+**Exposure keys on SOC major group × NAICS sector.** Twenty-three major groups
+in the 2018 Standard Occupational Classification, and NAICS for the employer.
+Both are BLS's own taxonomies, which means every source in the strong tier is
+already published against them — CPS by occupation and industry, SOII by NAICS,
+ORS and O\*NET by SOC.
+
+The objection that raised this question dissolves at that resolution. SEG002
+covers dental hygienists and home health aides, whose ergonomic loads are not
+comparable — but hygienists are **29-xxxx** (Healthcare Practitioners and
+Technical) and home health aides are **31-xxxx** (Healthcare Support). Different
+major groups. The library keeps them together because they want similar
+benefits, which is true; the exposure model separates them because they do not
+carry similar injury risk, which is also true. Both taxonomies are right about
+their own question, and neither has to be bent to accommodate the other.
+
+Company-level exposure is the **headcount-weighted blend** across the model's
+segments, computed per engagement rather than stored.
+
+### Two resolutions, matching the two products
+
+| | Input available | Exposure resolution |
+|---|---|---|
+| **Free report** | Industry, plus free-text role groups | NAICS sector only, with the role-group text used where the occupation matcher is confident |
+| **Paid engagement** | `axionia_intake_2_workforce_profile.xlsx` | SOC major-group mix, headcount-weighted |
+
+The free tier is the same model at coarser resolution, not a crippled version
+of it. That is a materially better thing to be able to say than "the free one
+gives you less," and it is true.
+
+---
+
 ## Implementation shape
 
-1. `exposure` block on the `Segment` type, alongside the existing `dimensions`.
-   Nine segments, populated from the strong tier only.
-2. A sources file in the manner of `MARKET_STATS.md` — every field carrying
+1. `matchSegmentToOccupation`, parallel to `matchSegmentToLibrary`. Maps a model
+   segment to a SOC major-group mix, or returns null with a reason.
+2. Exposure tables keyed on SOC major group and NAICS sector, populated from the
+   strong tier only.
+3. A sources file in the manner of `MARKET_STATS.md` — every field carrying
    source, vintage and retrieval date, so an index can be aged and challenged.
-3. `matchSegmentToLibrary` already exists. `ReportDemo`'s four profiles map onto
-   the nine segments and its private taxonomy is deleted.
-4. `CATEGORY_BASELINE` in `ReportDemo` becomes a function of the matched
-   segment rather than a constant. That closes the open item from D3.
-5. Indices are surfaced in the Assumptions tab with their sources, the same way
+4. `ReportDemo`'s four private profiles are deleted. It reads a NAICS sector,
+   which is the resolution its single industry control can honestly support.
+5. `CATEGORY_BASELINE` becomes a function of the exposure blend rather than a
+   constant. That closes the open item from D3.
+6. Indices are surfaced in the Assumptions tab with their sources, the same way
    every other constant in that component already is.
 
 ---
 
 ## Open decisions
 
-- **Segment granularity.** Nine segments against roughly twenty NAICS sectors
-  and hundreds of occupations. Some segments will span very different exposure
-  profiles — SEG002 covers hygienists and home health aides, whose ergonomic
-  loads are not the same. Do segments subdivide, or does exposure attach to an
-  occupation mix *within* a segment?
+- ~~Segment granularity.~~ Resolved above. The nine segments are not touched.
 - **Category granularity.** `category_gross` is currently one illustrative
   figure for one category. How many categories does v1 carry — MSK, behavioral,
   cardiometabolic, navigation, fertility?
