@@ -44,52 +44,6 @@ const REVIEW_GAPS = [
   },
 ];
 
-/**
- * The five principles, plus one that was missing.
- *
- * "Independent Value Assessment" claimed only FINANCIAL independence — no
- * commission, no stake in the vendor. True, and every fee-only advisor says it.
- *
- * The independence that is actually rare is from HISTORY. The broker who placed
- * a program three years ago cannot recommend removing it without indicting
- * their own advice. The benefits leader who championed it is in the same
- * position, and the CFO has now approved it four times. Everyone in the room is
- * implicated in an incumbency. We are the only party with no past
- * recommendation to defend — which is what makes it possible for us to propose
- * a different mix rather than only grade the existing one.
- *
- * That is also the honest relationship between the two halves of this business.
- * The audit is not a separate service from the design; it is what earns the
- * right to do the design. Anyone can propose a benefit mix. Only someone who
- * has independently de-duplicated the current one knows what the budget
- * actually is.
- */
-const principles = [
-  {
-    title: "Independent Value Assessment",
-    body: "We aren't paid more when your costs go up. Our analysis has no stake in which vendor you choose.",
-  },
-  {
-    title: "No Incumbency to Defend",
-    body: "We didn't place your current programs and we have no past recommendation to protect. Everyone else in the room does — which is why the option to do something different so rarely reaches the table.",
-  },
-  {
-    title: "Clarity Over Complexity",
-    body: "Benefit decisions get dressed up in jargon. We translate them into plain economics a CFO and an HR leader can both stand behind.",
-  },
-  {
-    title: "Planning for Uncertainty",
-    body: "We show ranges, not false precision — expected case, best case, worst case, always visible together.",
-  },
-  {
-    title: "Economic Alignment Matters",
-    body: "A benefit strategy should match your actual workforce and talent strategy, not a generic template.",
-  },
-  {
-    title: "Transparency Over Hidden Assumptions",
-    body: "Every number traces back to an assumption you can see, question, and override.",
-  },
-];
 
 export default function Home() {
   return (
@@ -144,12 +98,6 @@ export default function Home() {
                   your current programs, so we have no reason to leave one in
                   place — including options nobody sells you, because they
                   carry no commission and appear in no catalogue.
-                </p>
-                <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
-                  No software to roll out, no data feed to build. You tell us
-                  what you&rsquo;re running and what you&rsquo;re being sold; we
-                  tell you what it&rsquo;s worth and what a better mix looks
-                  like.
                 </p>
               </div>
             </div>
@@ -398,36 +346,6 @@ export default function Home() {
         </Section>
       </div>
 
-      {/* ─────────────── PRINCIPLES ─────────────── */}
-      <Section className="py-16 sm:py-24">
-        <Reveal>
-          <div className="max-w-2xl mb-14">
-            <Eyebrow>What we believe</Eyebrow>
-            <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-              Six principles
-            </h2>
-          </div>
-        </Reveal>
-
-        <Stagger className="grid md:grid-cols-2 gap-x-14 gap-y-12">
-          {principles.map((p, i) => (
-            <StaggerItem key={p.title} className="group relative pl-16">
-              {/* oversized numbering rail */}
-              <span className="absolute left-0 top-0 font-mono text-[13px] text-gray-cool transition-colors duration-300 group-hover:text-blue">
-                0{i + 1}
-              </span>
-              <span className="absolute left-[9px] top-7 bottom-1 w-px bg-border overflow-hidden">
-                <span className="block h-full w-full origin-top scale-y-0 bg-axionia-gradient transition-transform duration-500 ease-out group-hover:scale-y-100" />
-              </span>
-              <h3 className="font-serif text-2xl mb-2.5">{p.title}</h3>
-              <p className="text-[15px] leading-[1.7] text-gray-warm max-w-measure">
-                {p.body}
-              </p>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </Section>
-
       {/* ─────────────── CONVERSION BLOCK ─────────────── */}
       <DarkSection>
         <div className="max-w-3xl">
@@ -449,6 +367,9 @@ export default function Home() {
               <GradientButton href="/request-report">Get your free report</GradientButton>
               <GhostButtonLight href="/contact">Talk to us first</GhostButtonLight>
             </div>
+            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
+              No software to roll out &middot; no data feed to build
+            </p>
           </Reveal>
         </div>
       </DarkSection>
