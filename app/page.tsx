@@ -211,83 +211,80 @@ export default function Home() {
         </div>
       </DarkSection>
 
-      {/* ─────────────── THE STACK ───────────────
-          The abstract market number above, made personal. Every one of these
-          was cheap on the day it was approved, which is exactly why nobody
-          has ever summed them. */}
+      {/* ─────────────── THE ARITHMETIC ───────────────
+          One section, two views. Cost accumulates cleanly; claimed value does
+          not — and the second fact only means anything once you have seen the
+          first. These ran as two full-height sections with two headlines and
+          about 115 words of setup between them, on adjacent bg-base-2 blocks,
+          so they already merged visually without the benefit of having been
+          edited together.
+
+          Deliberately on the plain base rather than base-2: the radar section
+          below is base-2, and two tinted sections in a row is what produced
+          the collapse this merge is fixing.
+
+          Written so a vendor could read it without being insulted — every
+          program here is reporting its own results correctly, and the
+          duplication is a property of owning all five, which is not a fact any
+          one of them is in a position to know. That sentence lives in
+          DoubleCountedValue's own footnote, directly under the chart, rather
+          than here. Saying it in both places was the repetition this merge
+          exists to remove. */}
       <Section className="py-16 sm:py-24">
         <Reveal>
           <div className="max-w-2xl mb-12">
-            <Eyebrow>The stack nobody adds up</Eyebrow>
+            <Eyebrow>The arithmetic nobody does</Eyebrow>
             <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-              A dollar here. Six dollars there.{" "}
-              <em className="italic">Then it&rsquo;s seven figures.</em>
+              The costs add up.{" "}
+              <em className="italic">The savings don&rsquo;t.</em>
             </h2>
             <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
               Point solutions arrive one at a time — telehealth, then MSK, then
-              behavioral health, then weight management. Each is priced per member per
-              month, each looks trivial in isolation, and each came with a study
-              showing it pays for itself.
+              behavioral health, then weight management. Each looks trivial on
+              the day it&rsquo;s approved, and each came with a study showing it
+              pays for itself. The costs accumulate cleanly. The savings do not:
+              an avoided surgery can only be avoided once, and when two vendors
+              both count it, the arithmetic across your portfolio quietly
+              exceeds what was ever there to claim.
             </p>
           </div>
         </Reveal>
 
         <Reveal delay={0.1}>
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-5">
+            What you pay
+          </div>
           <PmpmStack />
         </Reveal>
+
+        <Reveal delay={0.1}>
+          <p className="mt-14 mb-12 max-w-measure text-[16px] leading-[1.7] text-gray-warm">
+            Costs only ever add. Claimed savings don&rsquo;t — and nobody is
+            double-charging you for that. The same result is simply being
+            counted more than once, and no single program is positioned to see
+            it happen.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-5">
+            What you&rsquo;re actually getting
+          </div>
+          <DoubleCountedValue />
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <p className="mt-12 max-w-measure text-[16px] leading-[1.7] text-gray-warm">
+            And value was never only claims cost. Every one of these programs
+            also claims time back in the seat, fewer absence days, better
+            productivity — against the same people, in the same year. Those
+            claims are harder to check than a medical trend line, which is
+            exactly why nobody checks them. Sorting out what is genuinely
+            additive is the difference between a number you can take into a
+            renewal and a number you can only repeat.
+          </p>
+        </Reveal>
       </Section>
-
-      {/* ─────────────── DOUBLE-COUNTED VALUE ───────────────
-          The cost side accumulates; the savings side doesn't. This is
-          REVIEW_GAPS #2 ("nobody is asked whether the fourth one is claiming
-          the same result as the first three") turned into arithmetic. Placed immediately after
-          the stack because it's the same population seen from the other
-          direction — what you're paying, then what you're actually getting.
-
-          Written so a vendor could read it without being insulted: every
-          program here is reporting its own results correctly. The duplication
-          is a property of owning all five, which is not a fact any one of
-          them is in a position to know. */}
-      <div className="bg-base-2">
-        <Section className="py-16 sm:py-24">
-          <Reveal>
-            <div className="max-w-2xl mb-12">
-              <Eyebrow>The value counted more than once</Eyebrow>
-              <h2 className="font-serif font-light text-3xl md:text-5xl leading-tight">
-                Five programs. Five sets of savings.{" "}
-                <em className="italic">One workforce.</em>
-              </h2>
-              <p className="mt-6 text-[16px] leading-[1.7] text-gray-warm">
-                An avoided surgery can only be avoided once. When the MSK vendor
-                and the navigation vendor both count it, the arithmetic across
-                your portfolio quietly exceeds what was ever there to claim —
-                and because each program was approved in its own meeting,
-                against its own study, nobody is in a position to notice.
-              </p>
-              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
-                None of this requires a vendor to overstate anything. Each is
-                reporting what its own program did, correctly, in isolation.
-                Nobody is double-charging you — the same result is being counted
-                more than once, and no single program is positioned to see it
-                happen.
-              </p>
-              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
-                And value was never only claims cost. Every one of these programs
-                also claims time back in the seat, fewer absence days, better
-                productivity — against the same people, in the same year. Those
-                claims are harder to check than a medical trend line, which is
-                exactly why nobody checks them. Sorting out what is genuinely
-                additive is the difference between a number you can take into a
-                renewal and a number you can only repeat.
-              </p>
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.1}>
-            <DoubleCountedValue />
-          </Reveal>
-        </Section>
-      </div>
 
       {/* ─────────────── LIVE PRODUCT: RADAR ─────────────── */}
       <div className="bg-base-2">
