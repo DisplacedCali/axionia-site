@@ -24,7 +24,7 @@ export const metadata = {
 
 
 /**
- * The five ways a well-attended review still fails. Written as method
+ * The three ways a well-attended review still fails. Written as method
  * failures rather than accusations — none of these require anyone in the
  * chain to be lazy or dishonest, which is both more accurate and the only
  * version an HR leader can forward to their own committee.
@@ -37,14 +37,6 @@ const REVIEW_GAPS = [
   {
     k: "Judged in isolation",
     v: "Each program is approved on its own merits, in its own meeting. Nobody is asked whether the fourth one overlaps the first three — so savings get counted twice and nobody owns the arithmetic.",
-  },
-  {
-    k: "Averaged, not specific",
-    v: "Results get quoted against a broad national base rather than your covered population. Your actual age mix, injury patterns, geography and care-seeking behaviour are what determine whether any of it transfers.",
-  },
-  {
-    k: "Disconnected from strategy",
-    v: "A recommendation can be defensible in benefits terms and still pull against the talent strategy it's meant to support. The two conversations usually happen in different rooms.",
   },
   {
     k: "Not disinterested",
@@ -119,9 +111,6 @@ export default function Home() {
           </div>
           <div className="mt-16">
             <GradientRule />
-            <p className="mt-4 font-serif italic text-xl text-gray-warm max-w-lg">
-              &ldquo;We tell you what we think — but we expose the entire model.&rdquo;
-            </p>
           </div>
         </Section>
       </div>
@@ -374,9 +363,8 @@ export default function Home() {
                 Then we design against it
               </div>
               <p className="text-[14px] leading-[1.7] text-gray-warm">
-                The same scale ranks things you don&rsquo;t currently run — including
-                options nobody sells you, because they carry no commission and
-                appear in no catalogue. Some of the strongest cost nothing at all.
+                The same scale ranks things you don&rsquo;t currently run. Some of
+                the strongest cost nothing at all.
               </p>
             </StaggerItem>
             <StaggerItem className="bg-base p-7 md:p-8">
@@ -429,52 +417,6 @@ export default function Home() {
               </p>
             </StaggerItem>
           ))}
-        </Stagger>
-      </Section>
-
-      {/* ─────────────── TWO-UP: ENTERPRISE / FOUNDING ─────────────── */}
-      <Section className="border-t border-border py-16 sm:py-24">
-        <Stagger className="grid md:grid-cols-2 gap-10">
-          <StaggerItem className="group border border-border bg-base p-9 transition-colors duration-300 hover:border-navy">
-            <Eyebrow>Enterprise &amp; On-Prem</Eyebrow>
-            <h2 className="font-serif font-light text-3xl md:text-4xl leading-tight">
-              For organizations that need it run{" "}
-              <em className="italic">inside their walls.</em>
-            </h2>
-            <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm">
-              A custom, on-premises implementation of Axionia&rsquo;s HR AI agents for
-              organizations with strict data-residency or security requirements — layered
-              on top of the standard service. Common at large employers, where the
-              analysis is identical and only the deployment differs.
-            </p>
-            <div className="mt-7">
-              <GhostButton href="/pricing">View pricing options</GhostButton>
-            </div>
-          </StaggerItem>
-
-          {/*
-            Replaced the founding-member card. That offer is now discussed
-            directly rather than advertised — a public page for it made the
-            company read as raising rather than operating, which is the opposite
-            of what a buyer evaluating a five-year vendor wants to see.
-            Research engagements are real revenue and had no homepage presence.
-          */}
-          <StaggerItem className="group relative border border-border bg-base p-9 transition-colors duration-300 hover:border-navy overflow-hidden">
-            <div className="absolute top-0 left-0 h-full w-[3px] bg-axionia-gradient" />
-            <Eyebrow>Research Engagements</Eyebrow>
-            <h2 className="font-serif font-light text-3xl md:text-4xl leading-tight">
-              Not an employer? <em className="italic">We look from the outside.</em>
-            </h2>
-            <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm">
-              Commissioned analysis for private equity, investors in benefits
-              vendors, consultants and competitive research — the same attribution
-              framework, pointed at someone else&rsquo;s portfolio or claim, with a
-              hard wall between it and client work.
-            </p>
-            <div className="mt-7">
-              <GhostButton href="/research">See research engagements</GhostButton>
-            </div>
-          </StaggerItem>
         </Stagger>
       </Section>
 
