@@ -94,10 +94,9 @@ export default function Home() {
                 </p>
                 <p className="mt-5 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
                   Then we do the part that&rsquo;s worth more: we tell you what
-                  else the same money could buy. We didn&rsquo;t choose any of
-                  your current programs, so we have no reason to leave one in
-                  place — including options nobody sells you, because they
-                  carry no commission and appear in no catalogue.
+                  else the same money could buy — including options nobody sells
+                  you, because they carry no commission and appear in no
+                  catalogue.
                 </p>
               </div>
             </div>
