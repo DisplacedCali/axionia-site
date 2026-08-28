@@ -12,10 +12,41 @@ import { GradientButton, GhostButton } from "./ui";
    on the site ($54 PMPM expected against a $180 PMPM claim).
    ─────────────────────────────────────────────────────────── */
 
-const VENDOR_CLAIM = 180; // $ PMPM, as published by the vendor
-const OVERLAP = 0.2; // share duplicated by programs already in place
+/* The category baseline is what a program in this category plausibly returns
+   for this population, modeled independently of anything a vendor says. It is
+   deliberately NOT the vendor's claim.
+
+   Until 2026-08-27 the expected case was the vendor's claim times a constant,
+   which meant this demo derived its "independent" answer from the number it
+   exists to check. Worse, the percentile readout was arithmetically invariant
+   to the claim: the claim term cancels between the expected case and the
+   standard deviation, so a visitor could type any figure and the percentile
+   would not move. Splitting the constant is what makes a claim input mean
+   anything.
+
+   One illustrative figure rather than four. Per-category baselines are real
+   numbers we do not have yet, and CLAUDE.md is explicit that a plausible
+   fabricated row is worse than a missing one. 180 reproduces the $54 expected
+   case the rest of the site quotes, so the default view is unchanged. */
+const CATEGORY_BASELINE = 180; // $ PMPM — illustrative, one category
+const DEFAULT_CLAIM = 180; // $ PMPM, what the vendor says
+
 const SELECTION_BIAS = 0.35; // haircut for study-population selection effects
 const BASELINE_ENGAGEMENT = 15; // engagement rate in the vendor's own study
+
+/* Value double-counted across a stack, from the same union as
+   DoubleCountedValue: n programs each claiming share s of one pool collide in
+   their attribution, so the sum overstates the union. dup = 1 - union/sum.
+
+   At four programs this returns 20.3%, which is what the fixed 20% constant it
+   replaces assumed — so the default output does not move, and the visitor now
+   owns the number instead of it being applied invisibly. */
+const PROGRAM_SHARE = 0.15;
+function duplicationShare(n: number) {
+  if (n <= 1) return 0;
+  const union = 1 - Math.pow(1 - PROGRAM_SHARE, n);
+  return 1 - union / (n * PROGRAM_SHARE);
+}
 
 const INDUSTRIES = [
   { id: "manufacturing", label: "Light Manufacturing", transfer: 0.58 },
@@ -133,6 +164,9 @@ export default function ReportDemo() {
   const [employees, setEmployees] = useState(820);
   const [industry, setIndustry] = useState<IndustryId>("manufacturing");
   const [engagement, setEngagement] = useState(15);
+  const [claim, setClaim] = useState(DEFAULT_CLAIM);
+  // Four is the count the previous fixed 20% duplication haircut implied.
+  const [programs, setPrograms] = useState(4);
   const [tab, setTab] = useState<Tab>("Benchmark");
   // Index into QUARTERS. Defaults to the baseline so the first render is the
   // portfolio as first scored — the movement is something you go and find.
@@ -141,12 +175,16 @@ export default function ReportDemo() {
   const industryDef =
     INDUSTRIES.find((i) => i.id === industry) ?? INDUSTRIES[0];
 
+  const duplication = duplicationShare(programs);
+
   const model = useMemo(() => {
     const transfer = industryDef.transfer;
+    const dup = duplicationShare(programs);
+    // Nothing on this line refers to the claim. That is the point.
     const expected =
-      VENDOR_CLAIM *
+      CATEGORY_BASELINE *
       transfer *
-      (1 - OVERLAP) *
+      (1 - dup) *
       (1 - SELECTION_BIAS) *
       (engagement / BASELINE_ENGAGEMENT);
     const low = expected * 0.55;
@@ -154,7 +192,7 @@ export default function ReportDemo() {
 
     // treat low..high as roughly a 90% interval to place the vendor's claim
     const sd = (high - low) / 3.29 || 1;
-    const pct = normalCdf((VENDOR_CLAIM - expected) / sd) * 100;
+    const pct = normalCdf((claim - expected) / sd) * 100;
 
     return {
       transfer,
@@ -166,7 +204,7 @@ export default function ReportDemo() {
       annualExpected: expected * employees * 12,
       annualHigh: high * employees * 12,
     };
-  }, [industryDef, engagement, employees]);
+  }, [industryDef, engagement, employees, claim, programs]);
 
   const buildAxes = useCallback(
     (q: number): RadarAxis[] => {
@@ -221,12 +259,12 @@ export default function ReportDemo() {
       : Math.round(model.percentile).toString();
 
   const claimVerdict =
-    VENDOR_CLAIM > model.high
+    claim > model.high
       ? {
           text: "Their claim sits above the modeled range. Reaching it would require engagement and population conditions your workforce doesn't currently support.",
           tone: "text-caution",
         }
-      : VENDOR_CLAIM > model.expected
+      : claim > model.expected
       ? {
           text: "Their claim is inside the modeled range, but above the expected case — plausible only if engagement holds at this level.",
           tone: "text-caution",
@@ -292,11 +330,37 @@ export default function ReportDemo() {
     { lo: 0, hi: 0 }
   );
 
+  /*
+    The demo's own CTA carries the visitor's configuration into the intake.
+    Somebody who has set five controls has already answered most of the form
+    and, until now, arrived at it blank.
+
+    Industry is deliberately absent: the four workforce profiles here are a
+    different taxonomy from the intake's industry list and are scheduled for
+    deletion under Track F, so mapping between them would be a bridge to
+    something already marked for demolition.
+  */
+  const requestHref =
+    "/request-report?" +
+    new URLSearchParams({
+      from: "demo",
+      employees: String(employees),
+      programs: String(programs),
+      claim: String(claim),
+      engagement: String(engagement),
+    }).toString();
+
   const assumptions = [
     {
       k: "Vendor claimed savings",
-      v: `$${VENDOR_CLAIM} PMPM`,
-      src: "Vendor outcomes study, as published",
+      v: `$${claim} PMPM`,
+      src: "Your input",
+      you: true,
+    },
+    {
+      k: "Category baseline",
+      v: `$${CATEGORY_BASELINE} PMPM`,
+      src: "Axionia category model — independent of the claim",
       you: false,
     },
     {
@@ -306,10 +370,16 @@ export default function ReportDemo() {
       you: false,
     },
     {
-      k: "Overlap with existing programs",
-      v: `${Math.round(OVERLAP * 100)}%`,
-      src: "Client program inventory",
+      k: "Double-counted across programs",
+      v: `${Math.round(duplication * 100)}%`,
+      src: "Axionia attribution model, from your program count",
       you: false,
+    },
+    {
+      k: "Point solutions in place",
+      v: programs.toString(),
+      src: "Your input",
+      you: true,
     },
     {
       k: "Selection-bias haircut",
@@ -417,6 +487,43 @@ export default function ReportDemo() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/*
+            The one control nothing else in the category offers. Every other
+            tool on the market evaluates one program at a time, so none of them
+            can tell you what owning eight does to the arithmetic. The maths is
+            the union from DoubleCountedValue.
+          */}
+          <div>
+            <div className="flex items-baseline justify-between mb-2">
+              <label className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm">
+                Point solutions in place
+              </label>
+              <span className="font-mono text-[13px] text-navy tabular-nums">
+                {programs}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setPrograms(n)}
+                  aria-pressed={programs === n}
+                  aria-label={`${n} point solution${n === 1 ? "" : "s"} in place`}
+                  className={`flex-1 py-2 font-mono text-[11px] tabular-nums border transition-colors ${
+                    programs === n
+                      ? "border-navy bg-navy text-base"
+                      : "border-border text-gray-warm hover:border-navy"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool">
+              {Math.round(duplication * 100)}% of claimed value double-counted
+            </p>
           </div>
         </div>
       </div>
@@ -563,6 +670,38 @@ export default function ReportDemo() {
                 <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm mb-4">
                   Turn the dial
                 </div>
+
+                {/*
+                  The visitor's own number, not ours. Everything else on this
+                  page changes Axionia's answer; this is the only control that
+                  puts their vendor's claim on the table and leaves the model
+                  where it is.
+                */}
+                <label
+                  htmlFor="vendor-claim"
+                  className="block font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm mb-2"
+                >
+                  What is your vendor telling you it saves?
+                </label>
+                <div className="flex items-center border border-border focus-within:border-navy transition-colors mb-7">
+                  <span className="pl-3 font-mono text-[13px] text-gray-cool">$</span>
+                  <input
+                    id="vendor-claim"
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={5}
+                    value={claim}
+                    onChange={(e) =>
+                      setClaim(clamp(Number(e.target.value) || 0, 0, 500))
+                    }
+                    className="w-full px-2 py-2.5 bg-transparent font-mono text-[15px] text-navy tabular-nums outline-none"
+                  />
+                  <span className="pr-3 font-mono text-[9px] uppercase tracking-[0.12em] text-gray-cool whitespace-nowrap">
+                    PMPM
+                  </span>
+                </div>
+
                 <div className="flex items-baseline justify-between mb-2">
                   <label className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm">
                     Assumed engagement rate
@@ -634,7 +773,7 @@ export default function ReportDemo() {
                   {/* vendor claim marker */}
                   <div
                     className="absolute -top-4 h-9 border-l-[1.5px] border-dashed border-caution"
-                    style={{ left: pos(VENDOR_CLAIM) }}
+                    style={{ left: pos(claim) }}
                   />
                 </div>
 
@@ -670,9 +809,9 @@ export default function ReportDemo() {
                   </motion.div>
                   <div
                     className="absolute font-mono text-[9px] uppercase tracking-[0.1em] text-caution text-right"
-                    style={{ left: pos(VENDOR_CLAIM), transform: "translateX(-50%)" }}
+                    style={{ left: pos(claim), transform: "translateX(-50%)" }}
                   >
-                    ${VENDOR_CLAIM}
+                    ${claim}
                     <div>claim</div>
                   </div>
                 </div>
@@ -682,7 +821,7 @@ export default function ReportDemo() {
                     { v: `$${model.low.toFixed(0)}`, l: "low", c: "text-gray-warm" },
                     { v: `$${model.expected.toFixed(0)}`, l: "expected", c: "text-blue" },
                     { v: `$${model.high.toFixed(0)}`, l: "high", c: "text-gray-warm" },
-                    { v: `$${VENDOR_CLAIM}`, l: "claim", c: "text-caution" },
+                    { v: `$${claim}`, l: "claim", c: "text-caution" },
                   ].map((m) => (
                     <div key={m.l} className="border-t border-border pt-2">
                       <div className={`font-mono text-[14px] tabular-nums ${m.c}`}>
@@ -700,7 +839,7 @@ export default function ReportDemo() {
                     Vendor claim — unadjusted
                   </div>
                   <p className="text-[13px] leading-[1.65] text-navy">
-                    The ${VENDOR_CLAIM} PMPM claim sits at roughly the{" "}
+                    The ${claim} PMPM claim sits at roughly the{" "}
                     <strong>{pctLabel}th percentile</strong> of modeled outcomes at a{" "}
                     {engagement}% engagement rate.
                   </p>
@@ -894,10 +1033,25 @@ export default function ReportDemo() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3 shrink-0">
-            <GradientButton href="/request-report">Get your free report</GradientButton>
+            <GradientButton href={requestHref}>Get your free report</GradientButton>
             <GhostButton href="/contact">Book a call</GhostButton>
           </div>
         </div>
+      </div>
+
+      {/*
+        One line, in the manner of DeckFlow. A badge on every panel would make
+        the demo read as a roadmap, and a roadmap does not sell anything — but
+        nobody should be able to say later that this page presented an
+        illustrative model as a measured result.
+      */}
+      <div className="px-4 sm:px-6 md:px-8 py-4 border-t border-border">
+        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool leading-[1.7]">
+          Everything above responds to your inputs, and the arithmetic is the
+          arithmetic we use. The category baseline, peer set and program
+          benchmarks behind it are illustrative — your report is modeled on your
+          own programs and workforce.
+        </p>
       </div>
     </div>
   );

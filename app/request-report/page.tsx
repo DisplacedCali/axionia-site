@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, FormEvent } from "react";
+import { useState, useRef, Suspense, FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Turnstile, { turnstileEnabled } from "@/components/Turnstile";
 import { readableAuthError } from "@/lib/authError";
@@ -9,6 +10,49 @@ import { Reveal } from "@/components/Reveal";
 import { submitReportRequest } from "./actions";
 
 type Stage = "details" | "code" | "done";
+
+/** Minimal shape of what useSearchParams returns — avoids importing the type. */
+type Params = { get(key: string): string | null };
+
+/**
+ * Carry the interactive report's configuration into this form.
+ *
+ * A visitor who has set headcount, workforce profile, engagement, a program
+ * count and their vendor's claim on /platform has already told us most of what
+ * this form asks, and then hit a dead end. Three of those five have no field
+ * here at all — the vendor's own claim, how many point solutions are in place,
+ * and the engagement rate they thought reasonable — and all three are lead
+ * intelligence we do not otherwise collect.
+ *
+ * They arrive as a sentence the requester can read and edit rather than as a
+ * query string pasted into a box. Anything they disagree with, they change.
+ *
+ * Industry is deliberately NOT carried. The demo's four workforce profiles are
+ * a different taxonomy from this form's industry list and are scheduled for
+ * deletion under Track F; mapping between them would be building a bridge to
+ * something already marked for demolition. See docs/EXPOSURE_MODEL.md.
+ */
+function digits(v: string | null, max: number): string {
+  if (!v) return "";
+  const n = parseInt(v.replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(n) && n > 0 && n <= max ? String(n) : "";
+}
+
+function demoContext(p: Params): string {
+  if (p.get("from") !== "demo") return "";
+  const programs = digits(p.get("programs"), 8);
+  const claim = digits(p.get("claim"), 500);
+  const engagement = digits(p.get("engagement"), 100);
+
+  const bits: string[] = [];
+  if (programs)
+    bits.push(`${programs} point solution${programs === "1" ? "" : "s"} in place`);
+  if (claim) bits.push(`a vendor claiming $${claim} PMPM in savings`);
+  if (engagement) bits.push(`modelled at ${engagement}% engagement`);
+  if (!bits.length) return "";
+
+  return `From the interactive report: ${bits.join(", ")}.`;
+}
 
 /**
  * Grouped to stay scannable past eight options, and worded to match the
@@ -115,7 +159,10 @@ const inputCls =
 const labelCls =
   "font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm";
 
-export default function RequestReportPage() {
+function RequestReportForm() {
+  const params = useSearchParams();
+  const fromDemo = params.get("from") === "demo";
+
   const [stage, setStage] = useState<Stage>("details");
 
   const [fullName, setFullName] = useState("");
@@ -123,7 +170,7 @@ export default function RequestReportPage() {
   /** Whose benefit stack this is. See the control in the details form. */
   const [subject, setSubject] = useState<"own" | "portfolio">("own");
   const [email, setEmail] = useState("");
-  const [employees, setEmployees] = useState("");
+  const [employees, setEmployees] = useState(() => digits(params.get("employees"), 5_000_000));
   const [industry, setIndustry] = useState(DEFAULT_INDUSTRY);
   /*
     Role groups, not a workforce taxonomy. `matchSegmentToLibrary` already maps
@@ -144,7 +191,7 @@ export default function RequestReportPage() {
   const [carriers, setCarriers] = useState("");
 
   const [programs, setPrograms] = useState("");
-  const [context, setContext] = useState("");
+  const [context, setContext] = useState(() => demoContext(params));
 
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -440,10 +487,22 @@ export default function RequestReportPage() {
 
       {stage === "details" && (
         <>
-          <p className="text-[16px] leading-[1.7] text-gray-warm max-w-measure mb-10">
+          <p className="text-[16px] leading-[1.7] text-gray-warm max-w-measure mb-6">
             A few details is all we need. No call, no commitment — the report comes back
             by email within 24 hours, reviewed by a person before it&rsquo;s sent.
           </p>
+
+          {fromDemo && (
+            <div className="mb-10 border-l-2 border-blue pl-5 py-1">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-1.5">
+                Carried over from the interactive report
+              </div>
+              <p className="text-[14px] leading-[1.7] text-gray-warm max-w-measure">
+                What you set on the platform page is filled in below. Change
+                anything that isn&rsquo;t right — none of it is locked.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={requestCode} className="grid gap-5">
             {/* ── who the report is about ──
@@ -801,5 +860,19 @@ export default function RequestReportPage() {
         </form>
       )}
     </Section>
+  );
+}
+
+/**
+ * useSearchParams needs a Suspense boundary or the static render fails at
+ * build. The fallback is deliberately empty rather than a spinner: this
+ * resolves immediately on the client, and a flash of loading chrome on a form
+ * that is about to appear reads worse than nothing at all.
+ */
+export default function RequestReportPage() {
+  return (
+    <Suspense fallback={null}>
+      <RequestReportForm />
+    </Suspense>
   );
 }
