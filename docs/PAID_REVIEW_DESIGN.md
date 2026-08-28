@@ -64,7 +64,7 @@ owners, because they fail in different ways and are done by different people.
 |---|---|
 | Who reviews | Tom, plus a **subject-matter reviewer per engagement** (actuarial, clinical, legal), **contracted by Axionia** — not an external third party. Expected to convert to employment over time. Reviews attach to **sections**, not whole reports. |
 | Client visibility | **Summarised, not a diff.** The client sees that judgment was applied and the headline reasoning. Polished but visibly customised. |
-| What's different about paid | Client-supplied documents · the four adjustments as live parameters · scenario modelling · a live working session · for founding members, a seat on the panel |
+| What's different about paid | Client-supplied documents · the six adjustments as live parameters · scenario modelling · a live working session · for founding members, a seat on the panel |
 
 The visibility decision is the subtle one. A raw override diff reads as
 *machine corrected*. A summary reads as *expert reviewed*. Same underlying
@@ -121,10 +121,13 @@ de-identified is what keeps a contracted reviewer outside HIPAA scope along
 with everyone else. That must not quietly loosen to accommodate a reviewer who
 asks for member-level detail — the right answer to that request is no.
 
-### 2. The four adjustments become live parameters
+### 2. The six adjustments become live parameters
 
-The highest-value piece. `/methodology` publishes four adjustments — selection
-bias, program overlap, evidence transfer, engagement realism. Today they are
+The highest-value piece. `/methodology` publishes six adjustments — selection
+bias, double-counted value, evidence transfer, engagement realism, secular
+trend and verifiability. The first four are dials the interactive report can
+move; the last two come out of reading the vendor's study and only ever surface
+in an engagement. Today they are
 prose. In a paid engagement they become **model-proposed, human-ratified
 values with the delta recorded**.
 
@@ -132,7 +135,7 @@ values with the delta recorded**.
 report_adjustments(
   id, report_id,
   claim_ref     text,      -- which vendor claim this adjusts
-  factor        text,      -- selection_bias | program_overlap
+  factor        text,      -- selection_bias | double_counted
                            -- | evidence_transfer | engagement_realism
   model_value   numeric not null,
   human_value   numeric,   -- NULL = reviewer accepted the model
@@ -236,7 +239,7 @@ easier to form before a client is waiting — writing down why you moved a score
 is a discipline, and adopting it under delivery pressure is how it gets
 skipped.
 
-**v2 — the four adjustments. WAIT FOR ENGAGEMENT ONE.** `report_adjustments`,
+**v2 — the six adjustments. WAIT FOR ENGAGEMENT ONE.** `report_adjustments`,
 an admin UI to ratify or move each factor, and the client-facing "Judgment
 applied" summary. This is the piece that makes the paid tier feel different.
 

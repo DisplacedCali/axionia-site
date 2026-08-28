@@ -4,6 +4,21 @@ Draft, 27 August 2026. Nothing here is built. Written before code because the
 alternative is four plausible constants in a React component that nobody can
 defend in a room.
 
+> ## → NEXT ACTION: run Stage 0
+>
+> The cheapest disqualifying test available, and it needs no clients, no code
+> and no client data. Pull MEPS-IC average premium by industry, compute the
+> model's `cost_index` ordering across the same industries, and check that the
+> two orderings correlate.
+>
+> Passing proves little — premium reflects plan design and firm size as much as
+> population. **Failing is disqualifying.** A model that cannot order industries
+> the way observed premiums order them has no business being shown to a client,
+> and finding that out costs an afternoon rather than two years.
+>
+> Do this before any of the implementation below. See *Calibration and
+> falsification*.
+
 ---
 
 ## Why this exists

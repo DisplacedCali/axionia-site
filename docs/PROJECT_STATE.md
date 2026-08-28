@@ -35,6 +35,7 @@ truth for everything except brand tokens.
 | `axionia_supabase_schema.md` | `supabase/schema.sql` + migrations 002–014 |
 | `axionia_optimizer_spec.html` | No fixed monthly tiers. Custom quote + performance pricing |
 | Library "5 segments" | 9 segments, 13 state mandates |
+| `axionia_illustrative_report.html` | `public/example-report.html` — corrected 2026-08-27: sections renumbered, vocabulary aligned, a high-cost-claimant section added. The project copy is the stale one |
 
 **The one exception: `axionia_brand_tokens.md` is still canonical** and exists
 only in project knowledge. `tailwind.config.ts` and
@@ -51,10 +52,22 @@ months and the operational record has never held them. The methodology-versus-mo
 contradiction below survived a full port from HTML into React purely because it
 was settled in conversation and written down nowhere a reader would look.
 
-**Numbers live in the model, not here.** `axionia_3statement_model.xlsx` is the
-single source; anything stated in a deck should trace to a tab in it. On
-2026-08-14 the deck and the model disagreed in four places, twice in the same
-content after a port, which is a structural problem rather than bad luck.
+**Numbers live in the model, not here — and the model is now readable from this
+repo.** `docs/model/axionia_3statement_model.xlsx` is the single source, and
+`docs/FINANCIAL_MODEL.md` is a headline extract of it: the gate, Years 1–3, Year 7
+by scenario, and the round terms. **Read the extract first.** It is text, so it
+diffs in review and a session can use it without opening a spreadsheet; open the
+workbook when you need the revenue build, the staffing plan or the exit returns.
+
+If the two disagree, the workbook wins and the extract is stale — regenerate it
+rather than editing the workbook to match. The distribution copy still lives in the
+admin at `/admin/decks`, one timestamped upload per revision, which is what answers
+"which version did that investor see"; the repo copy is for reading, not sending.
+
+Anything stated in a deck, a page or a document should trace to one of those two. On
+2026-08-14 the investor deck disagreed with the model in four places, twice in the
+same content after a port from HTML to React, which is a structural problem rather
+than bad luck — nothing tied them together and no reviewer could see the numbers.
 
 Each entry says what would change our mind. A decision with no falsifier reads
 as dogma to the next reader, including you.
@@ -139,6 +152,56 @@ tour twice, at slide 6 of fifteen. The proof-of-product claim lives on the
 valuation slide instead, where it prices the round. If this deck ever needs a
 walkthrough again, import `DeckFlow` — do not write a second cut. That mistake
 has already been made once.
+
+### Three scoring sets, one name — settled 2026-08-27
+
+Three sets of eight existed and the one in production appeared nowhere in the
+marketing. **A** (Evidence, Population fit, Cost efficiency, Utilization, Vendor
+stability, Engagement, Contract terms, Transparency) lives as illustrative
+constants in `RadarPreview` and `ReportDemo` and grades *programs*. **B**
+(spendEfficiency, decisionMaturity, workforceAlignment, vendorIndependence,
+analyticsReadiness, cfoEngagement, regulatoryReadiness, appreciationValue) is in
+`prompts.ts` and `research_schema.sql` and is what a real run computes. **C**
+(Value verification, Economic alignment, Attribution discipline, Access equity,
+Contract leverage, Plan design fit, Workforce alignment, Data readiness) is the
+illustrative report's.
+
+Two tests decided it. Set A scores 1 of 8 from what the free form collects — the
+home page promises a portfolio scored on eight dimensions the free report is
+structurally incapable of delivering seven of. And Set B contains
+`cfoEngagement`, inferred from LinkedIn signals: `axionia_research_agent.jsx`
+heritage, built to score companies we were *prospecting*. It is a sales
+qualification rubric wearing a client-deliverable costume.
+
+**Three layers, three names.** B stays where it is as an internal prospect-fit
+score and stops being called the client score. C becomes the client-facing
+portfolio score — free scorer, home radar, report. A's axes survive as the
+per-program scorecard in the paid detail and are never again called "the eight
+dimensions". The error was never the axes; it was calling a program scorecard a
+portfolio score.
+
+*What would change our mind:* if the free form cannot answer Set C without
+becoming long enough to depress completion. Fallback is a score on fewer than
+eight axes that names the ones it could not assess.
+
+Not built. Sequence and scope in `docs/REVIEW_2026-08-27.md` under E1.
+
+### Population exposure model — spec complete, nothing built
+
+`docs/EXPOSURE_MODEL.md`. The segment library carries labour-market dimensions
+and no epidemiological ones, so every population-fit claim currently rests on
+one opaque per-industry transfer rate in `ReportDemo` with no source.
+
+The spec does **not** touch `segments.ts` — exposure keys on SOC major group and
+NAICS sector via a second matcher parallel to `matchSegmentToLibrary`, because
+the library and the exposure model are right about different questions and
+neither should be bent to the other.
+
+*What would change our mind, and it is available before the first client:*
+Stage 0 back-tests the model's cost-index ordering across industries against
+MEPS-IC published premiums. Failing is disqualifying. If segment-adjusted
+predictions later fail to beat a flat all-industry baseline out of sample at
+25 engagements, the model is deleted rather than tuned.
 
 ### Open — flagged rather than resolved
 
@@ -621,7 +684,7 @@ costs one wave and the job survives a closed tab.
   automatable: the template requires a personal note and a named next step, and
   a follow-up that could have been sent to anyone gets read that way.
 - **Paid-engagement human review, v2 and v3.** See
-  `docs/PAID_REVIEW_DESIGN.md`. v1 is built (below). v2 — the four adjustments
+  `docs/PAID_REVIEW_DESIGN.md`. v1 is built (below). v2 — the six adjustments
   as ratifiable parameters — **waits for engagement one**: the framework is
   right but the granularity (per claim? per vendor? per program?) is decided by
   what a real renewal packet contains. Keep a running note during that

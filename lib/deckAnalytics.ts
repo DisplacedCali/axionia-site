@@ -127,8 +127,12 @@ export interface DeckAnalytics {
   orgs: DeckOrg[];
   staffOpens: number;
   totalOpens: number;
+  /** The 036 columns exist. Not "some row used them" — see analyzeDeckEvents. */
   hasDepth: boolean;
+  /** The 037 columns exist. Not "some row is attributed" — see attributedOpens. */
   hasAttribution: boolean;
+  /** External opens actually tied to an employer or firm. Zero is normal on day one. */
+  attributedOpens: number;
   /** External people with no employer resolved at all. */
   unattributed: number;
 }
@@ -222,16 +226,36 @@ function absorb(into: Identity, r: DeckEventRow) {
   if (!into.orgName && r.org_name) into.orgName = r.org_name;
 }
 
+/**
+ * Which columns the caller managed to read.
+ *
+ * The fetch in /admin/decks already walks FULL → DEPTH → BASE on error, so it
+ * knows exactly which migrations are present. Until 2026-08-27 it threw that
+ * away and this function guessed instead, by asking whether any row carried a
+ * value — which answers a different question and gets it wrong in the ordinary
+ * case. A migration that has just been run leaves every existing row null, so
+ * the page told Tom to run a migration he had already run, and would have gone
+ * on saying it until somebody opened a deck through an attributable path.
+ */
+export type DeckSchema = "full" | "depth" | "base";
+
 export function analyzeDeckEvents(
   rows: DeckEventRow[],
-  opts: { days?: number } = {}
+  opts: { days?: number; schema?: DeckSchema } = {}
 ): DeckAnalytics {
   const buckets = opts.days ?? 30;
 
   // Oldest first, so "first seen" and the absorb order are honest.
   const all = [...rows].sort((a, b) => a.created_at.localeCompare(b.created_at));
 
-  const hasDepth = all.some((r) => r.session_id != null);
+  /*
+    Fall back to the old inference only when the caller didn't say. A row
+    carrying a value proves the column exists; the absence of one proves
+    nothing either way.
+  */
+  const schema = opts.schema;
+  const hasDepth =
+    schema != null ? schema !== "base" : all.some((r) => r.session_id != null);
 
   /*
     Pass 1 — what each session eventually turned out to be.
@@ -521,7 +545,10 @@ export function analyzeDeckEvents(
     staffOpens: all.filter((r) => r.event === "view" && r.user_id).length,
     totalOpens: all.filter((r) => r.event === "view").length,
     hasDepth,
-    hasAttribution: all.some((r) => r.attribution != null),
+    hasAttribution:
+      schema != null ? schema === "full" : all.some((r) => r.attribution != null),
+    attributedOpens: external.filter((p) => p.companyId || p.firmId || p.orgName)
+      .length,
     unattributed: external.filter((p) => !p.companyId && !p.firmId && !p.orgName).length,
   };
 }

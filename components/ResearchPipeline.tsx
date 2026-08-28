@@ -179,7 +179,7 @@ export default function ResearchPipeline() {
             { k: "INTAKE", v: "Your programs, workforce and the vendor's claim", tone: "text-teal", dot: "#4AC9DC" },
             { k: "WAVE 1 — 4 IN PARALLEL", v: WAVE_ONE.join(" · "), tone: "text-base", dot: "#2463EB" },
             { k: "WAVE 2", v: WAVE_TWO.join(" · "), tone: "text-base", dot: "#4AC9DC" },
-            { k: "ATTRIBUTION MODEL", v: "Selection bias, program overlap, evidence transfer", tone: "text-base", dot: "#2463EB" },
+            { k: "ATTRIBUTION MODEL", v: "Selection bias, double-counted value, evidence transfer", tone: "text-base", dot: "#2463EB" },
             { k: "HUMAN REVIEW", v: "Read and edited by a person before release — every time", tone: "text-caution", dot: "#9C6B1A" },
             { k: "YOUR REPORT", v: "Ranges, not point figures, with every assumption shown", tone: "text-pos", dot: "#3CBF6C" },
           ].map((s, i, arr) => (

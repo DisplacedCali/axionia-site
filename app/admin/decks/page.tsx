@@ -6,7 +6,11 @@ import { Section } from "@/components/ui";
 import ShareLinkForm from "@/components/admin/ShareLinkForm";
 import FinancialModel from "@/components/admin/FinancialModel";
 import DeckAnalytics from "@/components/admin/DeckAnalytics";
-import { analyzeDeckEvents, type DeckEventRow } from "@/lib/deckAnalytics";
+import {
+  analyzeDeckEvents,
+  type DeckEventRow,
+  type DeckSchema,
+} from "@/lib/deckAnalytics";
 import { listModelVersions, type ModelVersion } from "./model-actions";
 
 export const dynamic = "force-dynamic";
@@ -60,12 +64,21 @@ export default async function AdminDecks() {
     independently — 036 added depth, 037 added attribution — so this walks down
     rather than branching on a version number nothing records.
   */
+  let schema: DeckSchema = "full";
   let events = await read(FULL_COLS);
-  if (events.error) events = await read(DEPTH_COLS);
-  if (events.error) events = await read(BASE_COLS);
+  if (events.error) {
+    schema = "depth";
+    events = await read(DEPTH_COLS);
+  }
+  if (events.error) {
+    schema = "base";
+    events = await read(BASE_COLS);
+  }
 
   const all = (events.data ?? []) as unknown as DeckEventRow[];
-  const analytics = analyzeDeckEvents(all, { days: WINDOW_DAYS });
+  // Which columns we actually read is the ground truth for the two banners
+  // below. Inferring it from the data was wrong — see analyzeDeckEvents.
+  const analytics = analyzeDeckEvents(all, { days: WINDOW_DAYS, schema });
 
   /*
     Names for the rollup, resolved here rather than denormalised onto the

@@ -41,7 +41,7 @@ const MOMENTS = [
     trigger: "A point solution is under evaluation",
     who: "Benefits leader · CFO",
     ask: "Their study says 3:1. Does that transfer to us?",
-    body: "MSK, GLP-1, fertility, diabetes, behavioural health — the categories with the loudest evidence are the ones where selection bias and program overlap do the most work. The study is usually real. The question is whether the population that produced it looks anything like yours, and who else you’re already paying to touch the same member.",
+    body: "MSK, GLP-1, fertility, diabetes, behavioural health — the categories with the loudest evidence are the ones where selection bias and double-counted value do the most work. The study is usually real. The question is whether the population that produced it looks anything like yours, and who else you’re already paying to touch the same member.",
     back: "The vendor’s claim adjusted for selection, overlap and evidence transfer — as a range, with their unadjusted figure shown alongside.",
   },
   {

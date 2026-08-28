@@ -15,6 +15,62 @@ type Stage = "details" | "code" | "done";
 type Params = { get(key: string): string | null };
 
 /**
+ * Three questions added 2026-08-27. Each is an input the client-facing
+ * portfolio score needs and could not previously answer — contract leverage,
+ * access equity, value verification — and each is independently one of the
+ * best sales qualifiers on the form. A company with two renewals inside twelve
+ * months and nothing independently verified is the ideal prospect, and until
+ * now there was no way to see one.
+ *
+ * Buttons rather than text, because three more typed fields on a form someone
+ * is filling in to get something free is how completion dies. One tap each.
+ *
+ * "Not sure" is a real option and not a cop-out. A benefits leader who does not
+ * know their own renewal calendar is telling us something true, and forcing a
+ * guess would put a fabricated answer into a record we later model from.
+ */
+const QUICK: {
+  key: "renewals" | "shifts" | "verified";
+  label: string;
+  help: string;
+  options: { v: string; l: string }[];
+}[] = [
+  {
+    key: "renewals",
+    label: "Contracts up for renewal in the next 12 months",
+    help: "Renewal timing is leverage. It decides what can be acted on now rather than next year.",
+    options: [
+      { v: "none", l: "None" },
+      { v: "one", l: "One" },
+      { v: "two_plus", l: "Two or more" },
+      { v: "unsure", l: "Not sure" },
+    ],
+  },
+  {
+    key: "shifts",
+    label: "Does your workforce run shifts?",
+    help: "A program the second shift can't reach is worth a fraction of what it costs, and nothing in a benchmark shows that.",
+    options: [
+      { v: "day_only", l: "Day shift only" },
+      { v: "multiple", l: "Multiple shifts" },
+      { v: "varies", l: "Mixed / varies by site" },
+      { v: "unsure", l: "Not sure" },
+    ],
+  },
+  {
+    key: "verified",
+    label: "Has any of it been independently checked?",
+    help: "Not by the vendor, and not by whoever recommended it. Most answers here are \u201cnone\u201d, which is the point.",
+    options: [
+      { v: "none", l: "None of it" },
+      { v: "some", l: "Some" },
+      { v: "all", l: "All of it" },
+      { v: "unsure", l: "Not sure" },
+    ],
+  },
+];
+
+/**
  * Carry the interactive report's configuration into this form.
  *
  * A visitor who has set headcount, workforce profile, engagement, a program
@@ -181,6 +237,9 @@ function RequestReportForm() {
   */
   const [roleGroups, setRoleGroups] = useState("");
 
+  /* See QUICK. Empty string means unanswered, which is distinct from "unsure". */
+  const [quick, setQuick] = useState<Record<string, string>>({});
+
   /* Optional detail — see PROGRAM_CATEGORIES. None of this gates submission. */
   const [detailOpen, setDetailOpen] = useState(false);
   const [funding, setFunding] = useState("");
@@ -280,6 +339,7 @@ function RequestReportForm() {
       employees,
       industry,
       roleGroups,
+      quick: Object.keys(quick).length ? quick : undefined,
       programs,
       context,
       portfolio: {
@@ -639,6 +699,41 @@ function RequestReportForm() {
                 workforce rather than your industry&rsquo;s average.
               </p>
             </div>
+
+            {/* ── three taps, see QUICK ── */}
+            {QUICK.map((q) => (
+              <div key={q.key} className="flex flex-col gap-2">
+                <span className={labelCls}>
+                  {q.label} <span className="text-gray-cool">(optional)</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {q.options.map((o) => {
+                    const on = quick[q.key] === o.v;
+                    return (
+                      <button
+                        key={o.v}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() =>
+                          setQuick((s) => ({
+                            ...s,
+                            [q.key]: on ? "" : o.v,
+                          }))
+                        }
+                        className={`px-3 py-2 font-mono text-[10px] uppercase tracking-[0.1em] border transition-colors ${
+                          on
+                            ? "border-navy bg-navy text-base"
+                            : "border-border text-gray-warm hover:border-navy"
+                        }`}
+                      >
+                        {o.l}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[12px] leading-[1.6] text-gray-warm">{q.help}</p>
+              </div>
+            ))}
 
             {/* ── Optional detail ─────────────────────────────────── */}
             <div className="border border-border bg-white/40">

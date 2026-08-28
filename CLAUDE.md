@@ -4,6 +4,27 @@ Read **`docs/PROJECT_STATE.md`** before doing anything. It carries where the
 project stands, what's open, and the invariants. This file is loaded
 automatically at the start of every session; that one has the substance.
 
+## What each document is for
+
+Added 2026-08-27, because stale documents kept being discovered mid-task rather
+than at the start. **If work makes one of these wrong, fix it in the same
+commit** — a doc that reads as current and isn't costs more than no doc at all.
+
+| File | Holds | Wins over |
+|---|---|---|
+| `docs/PROJECT_STATE.md` | Where things stand, what's open, standing decisions and their falsifiers | Anything except the model and brand tokens |
+| `docs/FINANCIAL_MODEL.md` | Headline extract of the operating model | Nothing — the workbook wins |
+| `docs/MARKET_STATS.md` | Every external statistic on a public surface, with source and retrieval date | Any number quoted from memory |
+| `docs/EXPOSURE_MODEL.md` | Spec for the population exposure model. Nothing built yet | — |
+| `docs/PAID_REVIEW_DESIGN.md` | The paid engagement's human-review design | — |
+| `docs/REVIEW_2026-08-27.md` | The live work queue for the public site | — |
+| `docs/REVIEW_2026-08-09.md` | Prior full review. Historical | — |
+| `axionia_brand_tokens.md` (project knowledge) | Fonts, colour, semantic scale, logo | Everything, including this repo |
+
+**No number reaches a public surface without a row in `MARKET_STATS.md`.** That
+file also carries a *Checked and rejected* section — read it before quoting a
+figure someone remembers.
+
 ## Two repos
 
 - `~/Desktop/axionia-site` — **this one.** The live product on Vercel.

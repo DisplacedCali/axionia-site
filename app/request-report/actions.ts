@@ -49,6 +49,14 @@ export async function submitReportRequest(formData: {
   industry?: string;
   /** Free text, e.g. "hygienists, dental assistants, front office". */
   roleGroups?: string;
+  /**
+   * Renewal timing, shift structure and whether anything has been
+   * independently checked. See QUICK in the page. Stored in the JSONB payload
+   * rather than as columns — these are inputs to a score whose axis set is
+   * still being settled, and a column per answer would have to be migrated
+   * again when it is.
+   */
+  quick?: Record<string, string>;
   programs?: string;
   context?: string;
   /**
@@ -171,6 +179,9 @@ export async function submitReportRequest(formData: {
         employees: formData.employees ?? null,
         industry: formData.industry ?? null,
         role_groups: formData.roleGroups?.trim() || null,
+        quick: formData.quick && Object.values(formData.quick).some(Boolean)
+          ? formData.quick
+          : null,
         portfolio: (() => {
           const p = formData.portfolio;
           if (!p) return null;

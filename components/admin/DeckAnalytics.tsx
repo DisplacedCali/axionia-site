@@ -446,7 +446,13 @@ export default function DeckAnalytics({
         <Orgs orgs={data.orgs} names={orgNames} unattributed={data.unattributed} />
       </div>
 
-      {!data.hasAttribution && (
+      {/*
+        Two different states, and conflating them told Tom to run a migration
+        he had already run. The column being absent is a fault. The column
+        being present with nothing attributed yet is Tuesday — it clears itself
+        the first time somebody opens a deck through a path we can attribute.
+      */}
+      {!data.hasAttribution ? (
         <div className="mb-4 border-l-2 border-caution bg-amber-light px-5 py-4 max-w-measure">
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-caution">
             Attribution not recording
@@ -457,7 +463,19 @@ export default function DeckAnalytics({
             Until it exists, opens are logged but not tied to an employer.
           </p>
         </div>
-      )}
+      ) : data.attributedOpens === 0 ? (
+        <div className="mb-4 border-l-2 border-border bg-base-2 px-5 py-4 max-w-measure">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm">
+            No attributed opens yet
+          </p>
+          <p className="mt-1.5 text-[14px] leading-[1.7] text-gray-warm">
+            The columns exist and the write path is live — nothing is wrong.
+            Attribution is recorded going forward only, so opens from before the
+            migration stay blank. The next open through a share link, a signed-in
+            session, a matching email or a recognised network will fill this in.
+          </p>
+        </div>
+      ) : null}
 
       <h2 className="mt-14 mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-gray-warm">
         Who has been reading
