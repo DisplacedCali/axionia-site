@@ -42,6 +42,11 @@ const groups: NavGroup[] = [
         note: "Turn the dials on a live report",
       },
       {
+        href: "/example-report.html",
+        label: "A full worked report",
+        note: "Thirty pages, assumption ledger and all",
+      },
+      {
         href: "/platform/outputs",
         label: "What you receive",
         note: "Every deliverable, and when it lands",

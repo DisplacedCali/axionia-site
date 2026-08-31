@@ -173,7 +173,31 @@ footer p{font-size:13px; max-width:720px}
   th,td{padding:9px 6px}
   .scoreband .num{font-size:52px}
 }
+/* ---------- site bar ----------
+   The report is a static file, so it inherits no Nav and no Footer. Without
+   this, arriving here is a one-way trip: the reader reads thirty pages and
+   then has no route back into the site. Deliberately slim — a full nav on a
+   document would compete with it — and hidden in print, because per CLAUDE.md
+   this page IS the artifact a client receives and site chrome has no business
+   in the PDF. */
+.sitebar{
+  background:var(--base-2); border-bottom:1px solid var(--border);
+  padding:11px 40px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.sitebar a{text-decoration:none}
+.sitebar .home{display:flex; align-items:center; gap:9px}
+.sitebar .wm{font-family:var(--mono); font-weight:500; font-size:12px; letter-spacing:0.2em; color:var(--navy)}
+.sitebar .links{margin-left:auto; display:flex; gap:20px; flex-wrap:wrap}
+.sitebar .links a{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:0.14em;
+  text-transform:uppercase; color:var(--gray-warm);
+}
+.sitebar .links a:hover{color:var(--navy)}
+.sitebar .links a.cta{color:var(--blue)}
+@media (max-width:760px){ .sitebar{padding:10px 22px; gap:12px} .sitebar .links{gap:14px} }
+
 @media print{
+  .sitebar{display:none}
   body{background:#fff}
   section{break-inside:avoid-page}
   figure{break-inside:avoid}
@@ -181,6 +205,26 @@ footer p{font-size:13px; max-width:720px}
 </style>
 </head>
 <body>
+
+<div class="sitebar">
+  <a class="home" href="/" aria-label="Axionia home">
+    <svg width="20" height="20" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="sb_g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4AC9DC"/><stop offset="100%" stop-color="#2463EB"/></linearGradient>
+        <linearGradient id="sb_g2" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#3CBF6C"/><stop offset="60%" stop-color="#2463EB"/></linearGradient>
+      </defs>
+      <polygon points="20,2 36,36 26,36 20,18 14,36 4,36" fill="url(#sb_g1)"/>
+      <polygon points="20,18 30,36 20,30 10,36" fill="url(#sb_g2)" opacity="0.9"/>
+    </svg>
+    <span class="wm">AXIONIA</span>
+  </a>
+  <div class="links">
+    <a href="/where-we-fit">Where we fit</a>
+    <a href="/methodology">Methodology</a>
+    <a href="/check-a-claim">Check a claim</a>
+    <a class="cta" href="/request-report">Get your free report &rarr;</a>
+  </div>
+</div>
 
 <div class="illus">
   <span class="tag">Illustrative — not a client</span>
