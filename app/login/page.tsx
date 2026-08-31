@@ -104,7 +104,7 @@ function LoginForm() {
       {stage === "code" && (
         <form onSubmit={verifyCode} className="flex flex-col gap-4">
           <p className="text-[14px] text-gray-warm">
-            We sent a 6-digit code to <strong>{email}</strong>. It expires shortly, so
+            We sent a code to <strong>{email}</strong>. It expires shortly, so
             enter it as soon as it arrives.
           </p>
           <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-gray-warm">
@@ -115,9 +115,9 @@ function LoginForm() {
             inputMode="numeric"
             required
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             className="border border-border bg-white/40 px-4 py-3 font-mono tracking-[0.3em] text-lg"
-            placeholder="000000"
+            placeholder="Paste or type the code"
           />
           {error && <p className="text-risk text-sm">{error}</p>}
           <button

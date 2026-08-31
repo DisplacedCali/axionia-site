@@ -14,6 +14,16 @@ type Stage = "details" | "code" | "done";
 /** Minimal shape of what useSearchParams returns — avoids importing the type. */
 type Params = { get(key: string): string | null };
 
+/*
+  Do not state the code's length in copy or in a placeholder.
+  It said "6-digit" on three pages while Supabase was sending eight, so a
+  requester counted the digits at the last step before conversion and paused.
+  The length is a Supabase dashboard setting, not something this build can
+  read, so any number written here is a guess that drifts silently the moment
+  someone changes it. The input strips non-digits instead, which is what a code
+  pasted out of an email actually needs.
+*/
+
 /**
  * Three questions added 2026-08-27. Each is an input the client-facing
  * portfolio score needs and could not previously answer — contract leverage,
@@ -920,7 +930,7 @@ function RequestReportForm() {
       {stage === "code" && (
         <form onSubmit={verifyAndSubmit} className="grid gap-5 max-w-sm">
           <p className="text-[15px] leading-[1.7] text-gray-warm">
-            We sent a 6-digit code to <strong className="text-navy">{email}</strong>.
+            We sent a code to <strong className="text-navy">{email}</strong>.
             Enter it to confirm your request.
           </p>
           <div className="flex flex-col gap-2">
@@ -929,8 +939,8 @@ function RequestReportForm() {
               inputMode="numeric"
               required
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="000000"
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="Paste or type the code"
               className="border border-border bg-white/50 px-4 py-3 font-mono tracking-[0.3em] text-lg focus:outline-none focus:border-navy transition-colors"
             />
           </div>
