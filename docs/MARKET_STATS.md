@@ -80,6 +80,33 @@ The third row is the single most useful sentence in this file. It is
 third-party evidence that the numbers employers are handed do not hold, it is
 not ours, and it cannot be dismissed as marketing.
 
+## Premium by industry — used in Stage 0 only
+
+MEPS-IC 2020, Table I.C.1, average total single premium per enrolled employee
+at private-sector establishments that offer health insurance. Retrieved
+2026-08-31.
+
+| Industry group | Premium |
+|---|---:|
+| Professional services | $7,661 |
+| Utilities and transp. | $7,181 |
+| Fin. svs. and real estate | $7,112 |
+| Wholesale trade | $7,110 |
+| Mining and manufacturing | $7,026 |
+| Other services | $6,916 |
+| Construction | $6,656 |
+| Retail trade | $6,629 |
+| Agric., fish., forest. | $5,716 |
+
+Same table, same year, for comparison: low-wage 50%+ $6,661 against <50%
+$7,207; firm size $6,849 to $7,273 and non-monotonic; union $7,489 against
+non-union $7,084.
+
+**Do not quote these as population health cost.** They measure what employers
+bought, not what their people cost — see `EXPOSURE_MODEL.md`, Stage 0. The
+figure is fit for testing whether an index has become a compensation proxy and
+for almost nothing else.
+
 ---
 
 ## Checked and rejected

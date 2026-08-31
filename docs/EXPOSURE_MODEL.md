@@ -4,20 +4,23 @@ Draft, 27 August 2026. Nothing here is built. Written before code because the
 alternative is four plausible constants in a React component that nobody can
 defend in a room.
 
-> ## → NEXT ACTION: run Stage 0
+> ## → Stage 0 was run on 2026-08-31. It does not work as specified.
 >
-> The cheapest disqualifying test available, and it needs no clients, no code
-> and no client data. Pull MEPS-IC average premium by industry, compute the
-> model's `cost_index` ordering across the same industries, and check that the
-> two orderings correlate.
+> The test was to check that the model's `cost_index` ordering across
+> industries correlates with MEPS-IC published premiums, with **failing
+> treated as disqualifying**. Run against MEPS-IC 2020 Table I.C.1, the
+> correlation is **Spearman rho = −0.70** — significant at n=9, and pointing
+> the wrong way.
 >
-> Passing proves little — premium reflects plan design and firm size as much as
-> population. **Failing is disqualifying.** A model that cannot order industries
-> the way observed premiums order them has no business being shown to a client,
-> and finding that out costs an afternoon rather than two years.
+> The model is not what failed. **Premium measures what an employer chose to
+> buy, not what its population costs.** Professional services carries the
+> highest premium in the table and among the lowest physical exposure;
+> agriculture carries the lowest premium and the highest. Any exposure-based
+> index will anti-correlate with premium, because plan generosity tracks
+> compensation and compensation is inversely related to physical work.
 >
-> Do this before any of the implementation below. See *Calibration and
-> falsification*.
+> Stage 0 as written would have deleted a working model. It is now a **confound
+> check** rather than a validation — see *Calibration and falsification*.
 
 ---
 
@@ -233,19 +236,62 @@ unmeasurable with the data available, counted in neither direction.
 
 Three stages, and **the first needs no clients at all.**
 
-### Stage 0 — back-test against public data, before the first engagement
+### Stage 0 — a confound check, not a validation. Run 2026-08-31.
 
-**MEPS-IC publishes average premiums by industry.** If the model's `cost_index`
-ordering across industries does not correlate with observed MEPS-IC premium
-ordering, the model is wrong on day zero and we find out for free.
+**What was specified:** correlate the model's `cost_index` ordering across
+industries with MEPS-IC published premiums; failing is disqualifying.
 
-It is a weak test — premium reflects plan design and firm size as much as
-population, and it is a level rather than a category-specific figure — so
-passing it proves little. But *failing* it is disqualifying, and it costs an
-afternoon. Any model that cannot order industries the way observed premiums
-order them has no business being shown to a client.
+**What happened.** MEPS-IC 2020, Table I.C.1, average total single premium per
+enrolled employee, nine industry groups:
 
-Run this before anything ships.
+| Industry group | Premium | Premium rank | Exposure rank |
+|---|---:|---:|---:|
+| Professional services | $7,661 | 1 | 9 |
+| Utilities and transp. | $7,181 | 2 | 4 |
+| Fin. svs. and real estate | $7,112 | 3 | 8 |
+| Wholesale trade | $7,110 | 4 | 7 |
+| Mining and manufacturing | $7,026 | 5 | 3 |
+| Other services | $6,916 | 6 | 6 |
+| Construction | $6,656 | 7 | 2 |
+| Retail trade | $6,629 | 8 | 5 |
+| Agric., fish., forest. | $5,716 | 9 | 1 |
+
+Exposure rank is a stand-in — the model does not exist yet — but its direction
+is not controversial: farm and construction work is harder on a body than
+professional services. **Spearman rho = −0.70**, against a critical value of
+about 0.683 for n=9 at p<0.05. Significant, and negative.
+
+**Why, and why it is not the model's fault.** Premium is what the employer
+chose to buy. Plan generosity tracks compensation, and compensation runs
+opposite to physical exposure: the industries whose workers' bodies take the
+most punishment buy the thinnest plans. Agriculture is not at $5,716 because
+farm workers are healthy.
+
+The same table rules out the obvious alternative explanations. Industry spread
+is $1,945 (34%). The low-wage split is $546 (8%), firm size $424 (6%) and
+non-monotonic, union presence $405 (6%). Industry carries real signal — it is
+simply signal about purchasing, not about population.
+
+**What Stage 0 is now.** A check that the index has *not* accidentally become a
+compensation proxy, with the prediction registered before it is run:
+
+- `cost_index` against MEPS-IC premium should show **|rho| below about 0.4**.
+  A strong *positive* correlation means the index has picked up wage level and
+  needs rebuilding. That is a real failure mode and this is a real test of it.
+- A face-validity screen: an index that does not place construction and
+  agriculture above professional services on musculoskeletal loading is broken
+  in a way no statistic is needed to see.
+
+Neither is validation. **Stage 0 cannot validate this model, and no public
+dataset can**, because every public outcome at industry level is either
+confounded by plan design or is one of the model's own inputs. The burden of
+proof moves entirely to Stages 1 and 2, and the *what would change our mind*
+below is the whole of it.
+
+*The wider lesson, worth keeping:* the spec's own first test was invalid, and
+finding that cost an afternoon with a public table rather than a build cycle
+and a year of quietly wrong numbers. Specifying a falsification test before
+building is what made the flaw findable at all.
 
 ### Stage 1 — sign test at eight engagements
 
