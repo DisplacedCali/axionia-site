@@ -57,6 +57,11 @@ const groups: NavGroup[] = [
         note: "What this replaces, and what it doesn't",
       },
       {
+        href: "/check-a-claim",
+        label: "Check a vendor's claim",
+        note: "The ninety-second test, on your own numbers",
+      },
+      {
         href: "/research",
         label: "Research engagements",
         note: "Commissioned independent research",

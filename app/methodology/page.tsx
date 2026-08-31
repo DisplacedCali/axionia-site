@@ -171,6 +171,15 @@ export default function Methodology() {
                 for the difference before the number reaches your desk.
               </p>
               <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
+                One test comes before all six, costs ninety seconds, and settles
+                a surprising number of claims on its own:{" "}
+                <a href="/check-a-claim" className="text-blue underline">
+                  check whether the vendor&rsquo;s own number is arithmetically
+                  possible
+                </a>{" "}
+                before opening the study behind it.
+              </p>
+              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
                 Every one of them is written out, applied and totalled in a{" "}
                 <a href="/example-report.html" className="text-blue underline">
                   full worked report

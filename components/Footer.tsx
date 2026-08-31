@@ -32,6 +32,7 @@ export default function Footer() {
             <Link href="/platform/outputs" className="hover:text-navy">What You Receive</Link>
             <Link href="/methodology" className="hover:text-navy">Methodology</Link>
             <Link href="/where-we-fit" className="hover:text-navy">Where We Fit</Link>
+            <Link href="/check-a-claim" className="hover:text-navy">Check A Claim</Link>
             <Link href="/research" className="hover:text-navy">Research</Link>
             <Link href="/pricing" className="hover:text-navy">Pricing</Link>
             <Link href="/login" className="hover:text-navy">Client Login</Link>
