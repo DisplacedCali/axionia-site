@@ -3,17 +3,48 @@
 import { motion } from "framer-motion";
 import CountUp from "./CountUp";
 import RadarChart, { type RadarAxis } from "./RadarChart";
+import { AXES as PIPELINE_AXES } from "@/lib/modules/research/data/axes";
+import { CATEGORICAL } from "@/lib/modules/research/data/tokens";
 
-const AXES: RadarAxis[] = [
-  { label: "EVIDENCE", value: 74, peer: 61, hue: "#2463EB" },
-  { label: "POPULATION FIT", value: 58, peer: 55, hue: "#4AC9DC" },
-  { label: "COST EFFICIENCY", value: 66, peer: 58, hue: "#3CBF6C" },
-  { label: "UTILIZATION", value: 41, peer: 49, hue: "#3D4E8F" },
-  { label: "VENDOR STABILITY", value: 79, peer: 64, hue: "#2E8C9E" },
-  { label: "ENGAGEMENT", value: 52, peer: 50, hue: "#5B7095" },
-  { label: "CONTRACT TERMS", value: 47, peer: 54, hue: "#7FA86B" },
-  { label: "TRANSPARENCY", value: 63, peer: 44, hue: "#9C6B1A" },
-];
+/**
+ * The home page radar now shows the axes the product actually produces.
+ *
+ * Until 2026-08-31 this component carried its own eight — Evidence, Population
+ * Fit, Cost Efficiency, Utilization, Vendor Stability, Engagement, Contract
+ * Terms, Transparency — which appear nowhere in the pipeline. Somebody who saw
+ * this chart and requested the free report received a different chart with
+ * eight different labels. The headline above it promises "your portfolio,
+ * scored on eight dimensions", and seven of those eight did not exist.
+ *
+ * Derived from `data/axes.ts` rather than transcribed, so it cannot drift
+ * again. That file is the single source for keys, labels, weights and colour,
+ * and it already documents why the eighth slot is Sky rather than amber: the
+ * report surface uses amber semantically for vendor watch-outs, and a
+ * categorical amber axis beside a semantic amber warning reads as meaning
+ * something it doesn't. The hardcoded list this replaces used #9C6B1A for its
+ * eighth axis — the reserved caution colour — so aligning the labels fixes a
+ * brand violation that had been sitting under them.
+ *
+ * The VALUES stay illustrative and the copy says so. What was wrong was the
+ * axis set, not the fact that a marketing page shows an example shape.
+ */
+const SCORES: Record<string, { value: number; peer: number }> = {
+  spendEfficiency: { value: 66, peer: 58 },
+  vendorIndependence: { value: 41, peer: 49 },
+  analyticsReadiness: { value: 63, peer: 44 },
+  cfoEngagement: { value: 47, peer: 54 },
+  workforceAlignment: { value: 58, peer: 55 },
+  decisionMaturity: { value: 52, peer: 50 },
+  regulatoryReadiness: { value: 74, peer: 61 },
+  appreciationValue: { value: 79, peer: 64 },
+};
+
+const AXES: RadarAxis[] = PIPELINE_AXES.map((a) => ({
+  label: a.shortLabel.toUpperCase(),
+  value: SCORES[a.key].value,
+  peer: SCORES[a.key].peer,
+  hue: CATEGORICAL[a.colorToken as keyof typeof CATEGORICAL] ?? CATEGORICAL.blue,
+}));
 
 export default function RadarPreview() {
   const composite = Math.round(
@@ -58,9 +89,9 @@ export default function RadarPreview() {
 
         <p className="mt-7 text-[15px] leading-[1.7] text-gray-warm max-w-measure">
           Eight dimensions, scored independently and plotted against the peer median
-          (dashed). The two lowest axes — utilization breadth and contract terms — are
-          where the portfolio trails comparable employers, and where the recoverable
-          dollars usually sit.
+          (dashed). The two lowest axes — vendor independence and CFO engagement —
+          are where this portfolio trails comparable employers, and they are the two
+          that most often move together.
         </p>
 
         <div className="mt-6 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">

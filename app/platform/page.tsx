@@ -128,6 +128,32 @@ export default function Platform() {
           <Reveal delay={0.1}>
             <ReportDemo />
           </Reveal>
+
+          {/*
+            The demo lets you turn the dials; this is the finished thing on a
+            worked example, assumption ledger and all. Deliberately not gated —
+            this page promises nothing is hidden behind a login two screens up,
+            and putting the proof of that behind an email capture would break
+            the promise on the page that makes it.
+          */}
+          <Reveal delay={0.15}>
+            <div className="mt-12 border-l-2 border-blue pl-6 max-w-2xl">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-blue mb-2">
+                The finished article
+              </div>
+              <p className="text-[16px] leading-[1.75] text-gray-warm">
+                The dials above are the model. A real report is thirty pages of
+                it — seven programs taken apart, $5.02M of claimed savings walked
+                down to $2.16M, and every assumption behind the walk written out
+                where you can argue with it.
+              </p>
+              <div className="mt-5">
+                <GhostButton href="/example-report.html">
+                  Read a full worked report
+                </GhostButton>
+              </div>
+            </div>
+          </Reveal>
         </Section>
       </div>
 

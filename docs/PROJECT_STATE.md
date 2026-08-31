@@ -203,6 +203,33 @@ MEPS-IC published premiums. Failing is disqualifying. If segment-adjusted
 predictions later fail to beat a flat all-industry baseline out of sample at
 25 engagements, the model is deleted rather than tuned.
 
+### The site may be describing a different company than the work does
+
+Flagged 2026-08-31, unresolved, and it outranks everything else open.
+
+Two documents pinned in project knowledge — `axioniabenefitdecisions.pdf` and
+`axioniabenefitsassessment.pdf`, both Axionia assessing itself at 114 people —
+sell a different product than axionia.com does. The site sells vendor auditing.
+The documents sell benefit *economics*: the largest finding is $492,000 a year
+from the tax shape of the dollar, the vendor teardown is finding 08 of 9, and
+the framing is *a compensation argument, not a benefits argument, and the
+version a CFO can approve.*
+
+They also use a different and better methodology than any of the three axis
+sets E1 argued about: four tests in order — Tax, Reach, Evidence, Trade — with
+an override for anything protecting against what a person cannot self-insure.
+And they work best at 114 people, where the site says the buyer is too small.
+
+*What would change our mind:* if the tax-and-design findings turn out not to
+generalise past a professional-services firm of this size — the credibility and
+discrimination-testing arguments are sharpest for small employers, and the
+$492,000 depends on a workforce that can absorb a 12% pay-to-benefit shift.
+Testing that on the first mid-market engagement settles it.
+
+Full analysis and the implied site changes are in
+`docs/REVIEW_2026-08-27.md` under Track G. **Nothing downstream should be built
+until the positioning question is decided**, because all of it is downstream.
+
 ### Open — flagged rather than resolved
 
 - **Revenue per head has no source.** The defensibility slide says 46 analysts

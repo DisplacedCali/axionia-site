@@ -171,6 +171,14 @@ export default function Methodology() {
                 for the difference before the number reaches your desk.
               </p>
               <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
+                Every one of them is written out, applied and totalled in a{" "}
+                <a href="/example-report.html" className="text-blue underline">
+                  full worked report
+                </a>{" "}
+                — including the section that lists every assumption behind every
+                number, which is the only part of this that proves the rest.
+              </p>
+              <p className="mt-4 text-[16px] leading-[1.7] text-gray-warm">
                 Four of the six are dials — you can move them yourself on the{" "}
                 <a href="/platform#report" className="text-blue underline">
                   interactive report

@@ -342,7 +342,7 @@ export default function Home() {
           <Reveal delay={0.15}>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <GradientButton href="/request-report">Get your free report</GradientButton>
-              <GhostButton href="/platform">See the full platform</GhostButton>
+              <GhostButton href="/example-report.html">Read a full worked report</GhostButton>
             </div>
             <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool">
               Illustrative composite profile — no cost, no commitment
