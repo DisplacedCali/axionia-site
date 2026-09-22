@@ -22,4 +22,12 @@ ssh-agent*
 eval*
 
 # research pipeline dry-run artifacts
-.dryrun-build/
+#
+# Glob, not just the exact directory. The script rmSync's .dryrun-build at
+# startup, which fails inside the agent sandbox (it cannot unlink under the
+# mounted repo), so sessions have worked around it by renaming the old build
+# aside — .dryrun-build-old-<ts>, -old2-, -old3-. Five of those accumulated
+# untracked before anyone noticed. Same reason dryrun_out*.txt appear: piped
+# run output nobody cleaned up.
+.dryrun-build*
+dryrun_out*.txt

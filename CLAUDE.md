@@ -17,6 +17,7 @@ commit** — a doc that reads as current and isn't costs more than no doc at all
 | `docs/MARKET_STATS.md` | Every external statistic on a public surface, with source and retrieval date | Any number quoted from memory |
 | `docs/EXPOSURE_MODEL.md` | Spec for the population exposure model. Nothing built yet | — |
 | `docs/PAID_REVIEW_DESIGN.md` | The paid engagement's human-review design | — |
+| `docs/REVIEW_2026-09-21.md` | Research pipeline and admin review — open findings |
 | `docs/REVIEW_2026-08-27.md` | The live work queue for the public site | — |
 | `docs/REVIEW_2026-08-09.md` | Prior full review. Historical | — |
 | `axionia_brand_tokens.md` (project knowledge) | Fonts, colour, semantic scale, logo | Everything, including this repo |
@@ -54,9 +55,19 @@ npx tsc --noEmit            # always — the only type gate; no ESLint configure
 - **`git status` counts as a write.** It refreshes the index, which takes
   `index.lock` — so a bare `git status` leaves a lock behind exactly like
   `git add` does. This file used to list it as safe and that was wrong; it cost
-  Tom a manual `rm` mid-session. Use **`git status --porcelain --no-optional-locks`**,
-  or better, `git diff --stat` and `git log`, which never touch the index.
-  `git diff`, `log` and `show` are genuinely read-only.
+  Tom a manual `rm` mid-session. Use **`git --no-optional-locks status --porcelain`** (the flag is a
+  pre-command option and must come BEFORE `status` — written the other way
+  round it errors out with `unknown option` and exit 129, which is easy to
+  mistake for a clean tree if stderr is being swallowed),
+  and prefix **every** read with the same flag: `git --no-optional-locks diff`,
+  `... diff --stat`, and so on.
+- **`git diff` takes the lock too.** This file used to say `git diff`, `log`
+  and `show` were "genuinely read-only". `log` and `show` are. `diff` is not:
+  it refreshes the index's stat cache, which takes `index.lock` exactly like
+  `status` does, and in the sandbox the lock is then left behind. That wrong
+  line cost a session on 2026-09-21 — six `git add`/`git commit` calls failed
+  in a row against a stale lock left by a read. Only `git --no-optional-locks
+  diff` is safe to run here.
 - **Never print secrets.** Describe a key by shape or decoded role, not value.
 
 ## Why git writes are banned
