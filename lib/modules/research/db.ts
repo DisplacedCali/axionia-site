@@ -491,3 +491,88 @@ export async function promoteRunToReport(args: {
   );
   return rows[0].report_id;
 }
+
+/**
+ * Turn a completed run into this request's report, exactly once.
+ *
+ * Replaces the two-step promote-then-repoint that lived in
+ * attachResearchToReport, for two reasons.
+ *
+ * ONCE. promote_research_to_report() inserts unconditionally, and the only
+ * caller was a browser that re-fires on any response carrying done + runId —
+ * including the "couldn't claim, already finished" branch. So every Resume
+ * click on a completed job minted another copy of the same research. The
+ * guard is keyed on (research_run_id, request_id) rather than run alone,
+ * because attaching a CACHED run to a different request is a legitimate
+ * second report and must still be allowed.
+ *
+ * SERVER-SIDE. This is now called from the runner as the last act of a run,
+ * not only from the panel. The pipeline was durable right up until the final
+ * step, which needed a live tab to fire — so a page that froze or was
+ * refreshed at the wrong second left a finished, saved run that nothing
+ * would ever promote. Four such runs against two reports is what sent us
+ * looking.
+ *
+ * clientView is deliberately left alone when not supplied: migration 028
+ * made 'internal' the default because a run is a research file until someone
+ * decides it is a client document, and a server-side promotion is nobody
+ * deciding.
+ */
+export async function promoteRunForRequest(args: {
+  runId: string;
+  requestId: string | null;
+  clientView?: string | null;
+}): Promise<{ reportId: string; created: boolean }> {
+  const pool = getPool();
+
+  const existing = await pool.query(
+    `select id from public.reports
+      where research_run_id = $1
+        and request_id is not distinct from $2
+      limit 1`,
+    [args.runId, args.requestId],
+  );
+  if (existing.rows[0]) {
+    return { reportId: existing.rows[0].id as string, created: false };
+  }
+
+  const { rows } = await pool.query(
+    "select research.promote_research_to_report($1, null, null) as report_id",
+    [args.runId],
+  );
+  const reportId = rows[0].report_id as string;
+
+  await pool.query(
+    `update public.reports
+        set request_id      = coalesce($2, request_id),
+            research_run_id = $3,
+            client_view     = coalesce($4, client_view)
+      where id = $1`,
+    [reportId, args.requestId, args.runId, args.clientView ?? null],
+  );
+
+  /*
+    promote_research_to_report() also inserts its own report_requests row, so
+    the run appears in the queue — correct when this pipeline was driven from
+    outside the site, wrong now that an analyst starts it from a request that
+    already exists. The line above repoints the report at the real request,
+    which would leave that row sitting in the queue forever as an empty shell.
+    Archive rather than delete: it costs nothing, it stays out of the open
+    counts, and deleting a row this function created a second ago destroys the
+    only evidence if this turns out to be wrong.
+  */
+  if (args.requestId) {
+    await pool.query(
+      `update public.report_requests
+          set status = 'archived'
+        where payload->>'research_run_id' = $1
+          and id <> $2
+          and not exists (
+            select 1 from public.reports r where r.request_id = report_requests.id
+          )`,
+      [args.runId, args.requestId],
+    );
+  }
+
+  return { reportId, created: true };
+}

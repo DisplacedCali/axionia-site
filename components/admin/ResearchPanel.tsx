@@ -32,6 +32,8 @@ type StepRow = {
   status: string;
   degraded: boolean;
   ms: number | null;
+  /** Populated only on a failed or degraded step. Rendered beneath it. */
+  error?: string | null;
 };
 
 export type AxisRow = {
@@ -253,6 +255,19 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
 
   /** Advance one wave at a time until done. Abandonable — the job persists. */
   async function drive(id: string) {
+    /*
+      A response carrying `wave: null` means advanceJob could not claim the
+      job — another caller holds it, or it is in a state claimJob will not
+      take ('failed', or 'running' until ten minutes stale). Nothing advances
+      on a retry, but the loop used to keep going for the full 25 iterations
+      at 3s apiece: 75 seconds of server actions that could never accomplish
+      anything, ending in "stopped after 25 waves", which was not what
+      happened — no wave ran at all. Next serialises server actions, so that
+      stretch also holds the router, which is part of why the page stops
+      responding to nav. Three strikes and stop.
+    */
+    let idle = 0;
+
     for (let i = 0; i < 25; i++) {
       const r = await advanceResearch(id);
       if (!r.ok) {
@@ -292,10 +307,32 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
         return;
       }
       if (r.status === "failed") {
-        setErr("A required step failed. Fix the cause and run again — completed waves are kept.");
+        // r.error carries the step's own message ("Workforce segmentation
+        // returned no usable segments after retry"). It was being thrown away
+        // for a sentence that names neither the step nor the cause, which cost
+        // a session recovering from SQL what the response already said.
+        setErr(
+          r.error
+            ? `A required step failed: ${r.error} Completed waves are kept.`
+            : "A required step failed. Fix the cause and run again — completed waves are kept.",
+        );
         setRunning(false);
         return;
       }
+
+      if (r.wave === null) {
+        idle += 1;
+        if (idle >= 3) {
+          setRunning(false);
+          setErr(
+            "This job is held by another run, or was left in a state that can't be picked up yet. Nothing was lost — reload to see where it stands.",
+          );
+          return;
+        }
+      } else {
+        idle = 0;
+      }
+
       await new Promise((res) => setTimeout(res, r.retryAfterMs ?? 300));
     }
     setRunning(false);
@@ -497,15 +534,26 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
 
           <ul className="space-y-1.5">
             {steps.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 font-mono text-[11px]">
-                <span className={`w-3 ${STATUS_COLOR[s.status] ?? "text-gray-cool"}`}>
-                  {STATUS_MARK[s.status] ?? "·"}
-                </span>
-                <span className={s.status === "pending" ? "text-gray-cool" : "text-navy"}>
-                  {s.label}
-                </span>
-                {s.degraded && <span className="text-caution">degraded</span>}
-                {s.ms !== null && <span className="text-gray-cool">{(s.ms / 1000).toFixed(1)}s</span>}
+              <li key={s.id} className="font-mono text-[11px]">
+                <div className="flex items-center gap-3">
+                  <span className={`w-3 ${STATUS_COLOR[s.status] ?? "text-gray-cool"}`}>
+                    {STATUS_MARK[s.status] ?? "·"}
+                  </span>
+                  <span className={s.status === "pending" ? "text-gray-cool" : "text-navy"}>
+                    {s.label}
+                  </span>
+                  {s.degraded && <span className="text-caution">degraded</span>}
+                  {s.ms !== null && <span className="text-gray-cool">{(s.ms / 1000).toFixed(1)}s</span>}
+                </div>
+                {s.error && (s.status === "failed" || s.degraded) && (
+                  <p
+                    className={`ml-6 mt-1 font-sans text-[12px] leading-[1.5] ${
+                      s.status === "failed" ? "text-risk" : "text-caution"
+                    }`}
+                  >
+                    {s.error}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

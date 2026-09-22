@@ -18,6 +18,7 @@ import {
   attachRunId,
   claimJob,
   getJob,
+  promoteRunForRequest,
   saveResearchRun,
   saveWaveResult,
 } from "../db";
@@ -390,6 +391,33 @@ async function finish(
       outputTokens: 0,
       status: "complete",
     });
+
+    /*
+      Promote here, not in the browser.
+
+      Everything above this line survives a closed tab by design — that is the
+      whole reason the runner advances one wave at a time. The last step did
+      not: turning a saved run into a report happened only if ResearchPanel
+      was still mounted to fire a second action, and the page is at its least
+      responsive at exactly that moment. A refresh one second early left a
+      finished run that nothing would ever promote, which is how four
+      completed runs produced two reports.
+
+      Its own try/catch, and deliberately NOT allowed to fail the job: by now
+      the research is saved and the run id is attached, so a promotion failure
+      costs a retry, not the work. Marking the job failed here would claim the
+      run was lost when it is sitting in research_runs intact.
+    */
+    if (job.requestId) {
+      try {
+        await promoteRunForRequest({ runId, requestId: job.requestId });
+      } catch (e) {
+        console.error(
+          `[research] run ${runId} saved but promotion failed:`,
+          (e as Error).message,
+        );
+      }
+    }
 
     return {
       job: { ...saved, runId },

@@ -10,7 +10,7 @@ import {
   getActiveJobForRequest,
   getCachedRun,
   getJob,
-  promoteRunToReport,
+  promoteRunForRequest,
 } from "@/lib/modules/research/db";
 import { createAnthropicClient } from "@/lib/modules/research/pipeline/llm";
 import { advanceJob } from "@/lib/modules/research/pipeline/runner";
@@ -129,9 +129,19 @@ export async function advanceResearch(jobId: string): Promise<
     done: boolean;
     percent: number;
     runId: string | null;
-    steps: Array<{ id: string; label: string; status: string; degraded: boolean; ms: number | null }>;
+    steps: Array<{
+      id: string;
+      label: string;
+      status: string;
+      degraded: boolean;
+      ms: number | null;
+      /** The step's own failure message. See the note in the mapping below. */
+      error: string | null;
+    }>;
     tokens: { input: number; output: number };
     retryAfterMs: number | null;
+    /** The wave-level failure message, when a required step failed. */
+    error: string | null;
   }>
 > {
   await requireAdmin();
@@ -152,15 +162,24 @@ export async function advanceResearch(jobId: string): Promise<
       done: r.done,
       percent: r.progress.percent,
       runId: r.runId ?? r.job.runId ?? null,
+      /*
+        `error` per step, and once more at the wave level below. The runner
+        has always recorded both — steps[id].error and the hardError it
+        returns — and this mapping dropped them, so the only copy a person
+        could reach was in Postgres. A red cross that cannot say why is a
+        support ticket; the cause is two fields away.
+      */
       steps: STEPS.map((s) => ({
         id: s.id,
         label: s.label,
         status: r.job.steps[s.id]?.status ?? "pending",
         degraded: r.job.steps[s.id]?.degraded ?? false,
         ms: r.job.steps[s.id]?.ms ?? null,
+        error: r.job.steps[s.id]?.error ?? null,
       })),
       tokens: { input: r.job.inputTokens, output: r.job.outputTokens },
       retryAfterMs: r.done ? null : r.wave === null ? 3000 : 250,
+      error: r.error ?? r.job.lastError ?? null,
     };
   } catch (e) {
     // Reaching here means advanceJob itself threw rather than returning a
@@ -269,6 +288,7 @@ export async function activeResearchJob(requestId: string) {
         status: job.steps[s.id]?.status ?? "pending",
         degraded: job.steps[s.id]?.degraded ?? false,
         ms: job.steps[s.id]?.ms ?? null,
+        error: job.steps[s.id]?.error ?? null,
       })),
     };
   } catch {
@@ -310,30 +330,30 @@ export async function attachResearchToReport(args: {
   clientView?: ReportView;
 }): Promise<Result<{ reportId: string }>> {
   await requireAdmin();
-  const admin = createAdminClient();
 
-  // promote_research_to_report handles company anchoring, the version chain and
-  // the report_requests row. Reusing it keeps one code path for that logic.
-  let reportId: string;
+  /*
+    Both this and the runner now go through promoteRunForRequest, which is
+    idempotent on (run, request). That matters most here: this action fires
+    from the panel on any response carrying done + runId, and advanceJob
+    returns exactly that for a job that finished earlier — so before the
+    guard, every Resume click on a completed job minted another report.
+
+    The runner promotes on its own now, so in the ordinary case this call
+    finds the report already there and returns it. It stays because the
+    cached-run path ("use existing research, no cost") still needs it, and
+    because a run that predates this change has no other way in.
+  */
   try {
-    reportId = await promoteRunToReport({ runId: args.runId });
+    const { reportId } = await promoteRunForRequest({
+      runId: args.runId,
+      requestId: args.requestId,
+      clientView: args.clientView ?? null,
+    });
+    revalidatePath(`/admin/requests/${args.requestId}`);
+    return { ok: true, reportId };
   } catch (e) {
     return { ok: false, error: `Promote failed: ${(e as Error).message}` };
   }
-
-  const { error } = await admin
-    .from("reports")
-    .update({
-      request_id: args.requestId,
-      research_run_id: args.runId,
-      client_view: args.clientView ?? "summary",
-    })
-    .eq("id", reportId);
-
-  if (error) return { ok: false, error: error.message };
-
-  revalidatePath(`/admin/requests/${args.requestId}`);
-  return { ok: true, reportId };
 }
 
 /**

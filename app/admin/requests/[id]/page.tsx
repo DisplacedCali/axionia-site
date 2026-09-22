@@ -329,11 +329,20 @@ export default async function RequestDetail({
               </p>
             ) : (
               <ul className="space-y-2.5">
+                {/*
+                  Linked, because this panel is the only place a prior report
+                  is named and it used to be dead text — the report page exists
+                  and renders fine, but nothing on this screen pointed at it,
+                  so a report that HAD been produced still read as missing.
+                */}
                 {(priorReports ?? []).map((r) => (
                   <li key={r.id} className="flex items-baseline justify-between gap-3">
-                    <span className="text-[14px] text-navy">
+                    <Link
+                      href={`/admin/reports/${r.id}`}
+                      className="text-[14px] text-navy hover:text-blue underline decoration-border underline-offset-4 hover:decoration-blue transition-colors"
+                    >
                       v{r.version} · {r.title || "Untitled"}
-                    </span>
+                    </Link>
                     <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-gray-cool shrink-0">
                       {r.status}
                     </span>

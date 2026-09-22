@@ -294,6 +294,17 @@ costs one wave and the job survives a closed tab.
   Health) need one Postgres update to `status = 'failed'` to pick up the fix
   retroactively — it only changes behavior for runs that fail *after* this
   deploys.
+- **A finished run becomes a report without the browser** (2026-09-22).
+  `attachResearchToReport` had one caller — `ResearchPanel` — so promotion was
+  the one step of an otherwise tab-survivable pipeline that needed a live tab.
+  One request had five jobs, four `complete` with run ids, four rows in
+  `research_runs`, and two reports: every run saved, half never promoted, and
+  nothing that could ever promote them. `finish()` now calls
+  `promoteRunForRequest()` itself, idempotent on (run, request) so a repeated
+  Resume stops minting copies, in its own try/catch so a promotion failure
+  costs a retry rather than claiming the run was lost. The panel calls the same
+  helper and now usually finds the report already made. Full write-up as
+  finding 10 in `docs/REVIEW_2026-09-21.md`.
 - **Benefit library** — 30 benefits, 9 segments keyed on dimensions, 17 vendors,
   13 state mandates. Every benefit reachable from some segment.
 - **Report** — `reports.content` holds immutable research; `reports.edits` is an
