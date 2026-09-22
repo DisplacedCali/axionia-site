@@ -31,12 +31,29 @@ export default async function RequestDetail({
 
   if (!request) notFound();
 
-  // draft attached to this request (if any)
-  const { data: draft } = await admin
+  /*
+    Draft attached to this request, if any.
+
+    NOT maybeSingle(). request_id is not unique on reports and never was:
+    app/admin/actions.ts creates a titled shell with no content, and
+    promote_research_to_report creates the real one with the payload, and both
+    end up pointing at the same request. maybeSingle() throws on more than one
+    row and yields null — so the page answered "no report at all" for a request
+    that had two, offered to run research again, and each run made it worse.
+    That is what five jobs against one request looks like from the inside.
+
+    Ordered newest-first and preferring a row that actually carries research:
+    an empty shell must never mask a real report, which is exactly the way
+    round it was failing.
+  */
+  const { data: drafts } = await admin
     .from("reports")
     .select("id, title, summary, status, version, supersedes_id, created_at, content, edits, client_view, reviewed_at, research_run_id")
     .eq("request_id", request.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
+
+  const draft =
+    (drafts ?? []).find((d) => d.content !== null) ?? (drafts ?? [])[0] ?? null;
 
   // everything already generated for this company
   const { data: priorReports } = request.company_id

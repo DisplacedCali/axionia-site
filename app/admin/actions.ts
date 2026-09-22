@@ -297,11 +297,23 @@ export async function upsertDraftReport(args: {
   }
 
   // existing draft for this request?
-  const { data: existing } = await admin
+  /*
+    Same fault as the request page: request_id is not unique on reports, so
+    maybeSingle() throws on two rows and returns null — which read as "no
+    report exists yet" and inserted another shell, one per save, feeding the
+    duplication it was meant to prevent. Newest first, and a row carrying
+    research wins, so an empty shell is never treated as the report of record.
+  */
+  const { data: existingRows } = await admin
     .from("reports")
-    .select("id")
+    .select("id, content, created_at")
     .eq("request_id", args.requestId)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
+
+  const existing =
+    (existingRows ?? []).find((r) => r.content !== null) ??
+    (existingRows ?? [])[0] ??
+    null;
 
   if (existing) {
     const { error } = await admin
