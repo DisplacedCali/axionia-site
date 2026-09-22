@@ -163,6 +163,12 @@ export async function advanceResearch(jobId: string): Promise<
       retryAfterMs: r.done ? null : r.wave === null ? 3000 : 250,
     };
   } catch (e) {
+    // Reaching here means advanceJob itself threw rather than returning a
+    // handled failure (finish() now catches its own save error — see
+    // runner.ts). Genuinely unexpected, so it belongs in the server log, not
+    // just the one-time response — that gap is exactly how the Vida Health
+    // job went unexplained for a session.
+    console.error(`advanceResearch(${jobId}) threw:`, e);
     return { ok: false, error: (e as Error).message };
   }
 }
@@ -254,6 +260,9 @@ export async function activeResearchJob(requestId: string) {
       id: job.id,
       status: job.status,
       runId: job.runId,
+      // Only meaningful when status is 'failed' — the panel uses its
+      // presence to tell a dead run from one still in progress.
+      lastError: job.lastError,
       steps: STEPS.map((s) => ({
         id: s.id,
         label: s.label,

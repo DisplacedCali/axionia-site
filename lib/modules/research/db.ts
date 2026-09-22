@@ -280,10 +280,17 @@ export async function cancelJob(jobId: string): Promise<void> {
  * the browser, only the view was lost.
  */
 export async function getActiveJobForRequest(requestId: string): Promise<PipelineJob | null> {
+  // 'failed' is included alongside the three in-flight statuses so a run that
+  // died in finish() (see the try/catch there) still surfaces on reload,
+  // carrying its lastError, instead of the page falling back to a bare "Run
+  // research" button that silently repeats the same failure. It is NOT in
+  // pipeline_jobs_one_active_per_company (008), so a failed job never blocks
+  // starting a fresh one — this only affects what the page shows, not what a
+  // new run is allowed to do.
   const { rows } = await getPool().query(
     `select * from research.pipeline_jobs
       where request_id = $1
-        and status in ('queued','running','paused')
+        and status in ('queued','running','paused','failed')
       order by created_at desc
       limit 1`,
     [requestId],

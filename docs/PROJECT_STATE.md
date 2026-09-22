@@ -266,6 +266,34 @@ costs one wave and the job survives a closed tab.
 
 - **Pipeline** ported from axionia-app into `lib/modules/research/`. Pure step
   functions, DAG with a self-check, resumable wave runner.
+  **Fixed 2026-09-21: a finished run could vanish.** `finish()` in
+  `runner.ts` — called after all ten steps are already 'done' — writes the
+  assembled result with `saveResearchRun()` and had nothing catching a
+  failure there. A rejected insert (Vida Health's case; company and
+  workforce data are the likeliest source of a value a column rejects)
+  threw uncaught, past the one wave-result save that runs before `finish()`
+  and marks steps 100% — so the job was left at `status = 'running'`
+  forever, indistinguishable from one actually in progress, with the real
+  error shown once, in a browser tab, and never persisted anywhere.
+  Compounded by two more things that only bite in this exact state:
+  `claimJob` won't reclaim a `'running'` job for ten minutes, so an
+  immediate Resume just polled 25 times and gave up with "stopped after 25
+  waves" — not wrong, but useless; and `pipeline_jobs_one_active_per_company`
+  (008) treats `'running'` as active, so starting a fresh run for the same
+  company was refused too. `finish()` now mirrors the `blockedBy` failure
+  path already beside it: catch, persist `status = 'failed'` with the real
+  message via the same `saveWaveResult`, return a normal handled failure.
+  `'failed'` sits outside the one-active-per-company index, so a retry is
+  never blocked by a run that already died. `getActiveJobForRequest` (db.ts)
+  now includes `'failed'` alongside the three in-flight statuses so a dead
+  run still surfaces on reload with its error, instead of the page reverting
+  to a bare Run button that would repeat the same failure blind.
+  `ResearchPanel` shows a dead job as a red notice with the message, next to
+  the ordinary Run button, rather than a Resume button that would spin
+  against a status `claimJob` can never reclaim. Existing stuck jobs (Vida
+  Health) need one Postgres update to `status = 'failed'` to pick up the fix
+  retroactively — it only changes behavior for runs that fail *after* this
+  deploys.
 - **Benefit library** — 30 benefits, 9 segments keyed on dimensions, 17 vendors,
   13 state mandates. Every benefit reachable from some segment.
 - **Report** — `reports.content` holds immutable research; `reports.edits` is an
@@ -695,6 +723,36 @@ costs one wave and the job survives a closed tab.
   the deck. Axionia scores the evidence, never the objective; weights reorder
   recommendations and must never be allowed to put a dollar figure on a soft
   outcome, which `/methodology` publicly commits to not doing.
+- **Founding cohort terms** — migration 039, `lib/foundingCohort.ts`,
+  `TermsPanel` on the company hub. The first 5–10 clients run free, then
+  convert to a fee priced against **verified savings**, same basis as
+  `/pricing` — explicitly **not** a percentage of spend, which was floated
+  2026-09-21 and rejected in the same conversation because it directly
+  contradicts that page's alignment argument ("our incentive shouldn't rise
+  when your costs do").
+  `founding_cohort` and `fee_rate` are per-company columns because they
+  vary per company; the conversion **date** doesn't, so it's one constant
+  in `lib/foundingCohort.ts`, not a column repeated on every row. That
+  constant (`2027-01-01`) is a placeholder — Tom said "free through 2025,
+  paid model into 2026" on 2026-09-21, which is one calendar year adrift of
+  the actual date; read as "this year, then next year" and needs an
+  explicit confirm, not a silent correction.
+  `updateTerms` is gated by `requireRelease`, not `requireStaff` — a fee
+  rate reaching an invoice is the same boundary as `sendReportTo` putting a
+  report in front of a client, not an editing action. The DB enforces
+  `fee_rate is null or founding_cohort` as a constraint, not just a form
+  check, so a rate can't exist on a company that was never offered the
+  terms even via a direct SQL edit.
+  `seedIntakeChecklist` reuses `company_steps` (025) rather than a new
+  table — the six-item paid-intake checklist (two required spreadsheets,
+  one optional-but-high-value, outcome weighting, kickoff call, readout
+  call) is exactly what that table already models, and it seeds with no
+  due dates because those depend on a signing date the seeding action
+  doesn't know.
+  **Not built**: the cohort seat count and conversion date aren't surfaced
+  anywhere outside the one company's hub page — no cohort-wide view exists
+  yet on `/admin/companies`. Fine at 5–10 companies checked by hand; worth
+  a real view before the list gets long.
 
 ### Not built
 
@@ -918,7 +976,7 @@ database, so a branch could otherwise write test runs into the benchmark.
 
 ### Migrations applied
 
-`schema.sql`, then `002`–`033`, plus `supabase/research_schema.sql` for the
+`schema.sql`, then `002`–`039`, plus `supabase/research_schema.sql` for the
 research schema. `010` added the report body, edit overlay and `client_view`;
 `011` added staff roles and queue assignment. The health endpoint reports which
 are missing.

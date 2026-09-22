@@ -69,8 +69,14 @@ type Props = {
     withheldSections: string[];
     blockers: string[];
   } | null;
-  /** A job already in flight for this request, if any. */
-  activeJob: { id: string; status: string; steps: StepRow[]; runId: string | null } | null;
+  /** A job already in flight for this request, if any — or its most recent failure. */
+  activeJob: {
+    id: string;
+    status: string;
+    steps: StepRow[];
+    runId: string | null;
+    lastError?: string | null;
+  } | null;
 };
 
 const label = "font-mono text-[10px] uppercase tracking-[0.14em] text-gray-warm";
@@ -116,6 +122,13 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
   const [percent, setPercent] = useState(0);
   const [tokens, setTokens] = useState<{ input: number; output: number } | null>(null);
   const [cachedRun, setCachedRun] = useState<{ runId: string; ageDays?: number } | null>(null);
+  // A job whose finalize step failed (see runner.ts finish()) rather than one
+  // still in progress. Distinct from `err`, which is transient and clears on
+  // its own — this reflects what the server told us on load and survives
+  // until the person actually starts a new run.
+  const [deadJob, setDeadJob] = useState<{ id: string; error: string | null } | null>(
+    activeJob?.status === "failed" ? { id: activeJob.id, error: activeJob.lastError ?? null } : null,
+  );
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -223,6 +236,7 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
   async function run(force = false) {
     setErr(null);
     setCachedRun(null);
+    setDeadJob(null);
     const res = await startResearchForRequest({ requestId, analystContext, force });
     if (!res.ok) return setErr(res.error);
 
@@ -501,7 +515,21 @@ export default function ResearchPanel({ requestId, ask, report, activeJob }: Pro
               {tokens.input.toLocaleString()} in · {tokens.output.toLocaleString()} out
             </p>
           )}
-          {jobId && !running && (
+          {deadJob && (
+            <div className="mt-4 border border-risk/40 bg-red-light/60 p-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-risk mb-1.5">
+                This run did not save
+              </p>
+              <p className="text-[13px] leading-[1.6] text-navy">
+                {deadJob.error ?? "The finalize step failed after every wave completed — no error message was recorded."}
+              </p>
+              <p className="mt-2 text-[12px] text-gray-cool">
+                All ten steps ran and nothing was wasted, but the result never saved, so there is
+                nothing to resume — Run research again starts a clean job.
+              </p>
+            </div>
+          )}
+          {jobId && !running && !deadJob && (
             <button onClick={() => startTransition(() => drive(jobId))} className={`${btnQuiet} mt-4`}>
               Resume
             </button>

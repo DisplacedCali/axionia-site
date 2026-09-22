@@ -362,26 +362,63 @@ async function finish(
     pipelineVersion: PIPELINE_VERSION,
   };
 
-  const { runId } = await saveResearchRun(result);
-  await attachRunId(job.id, runId);
+  /*
+    Every step is done at this point — steps stays 100% either way, which is
+    exactly the trap. Before this try/catch, a failure here (a bad value in
+    `result` that `saveResearchRun`'s insert rejects, most likely from
+    workforceData or scores) threw uncaught, all the way past this function's
+    caller, leaving the job at whatever saveWaveResult last wrote: status
+    'running', steps all 'done'. That status is one of the three
+    getActiveJobForRequest treats as still in flight, and claimJob refuses to
+    reclaim a 'running' job for 10 minutes on top of that — so the job sat
+    looking exactly like healthy progress, Resume silently polled and gave up,
+    and the actual error existed for one request/response and nowhere else.
+    Mirror the hardError branch above: persist 'failed' with the real message,
+    so a stuck run is visibly and permanently distinguishable from one still
+    working, and a retry within 10 minutes doesn't just poll a job nobody is
+    advancing.
+  */
+  try {
+    const { runId } = await saveResearchRun(result);
+    await attachRunId(job.id, runId);
 
-  const saved = await saveWaveResult({
-    jobId: job.id,
-    steps,
-    nextWave: WAVES.length,
-    inputTokens: 0,
-    outputTokens: 0,
-    status: "complete",
-  });
+    const saved = await saveWaveResult({
+      jobId: job.id,
+      steps,
+      nextWave: WAVES.length,
+      inputTokens: 0,
+      outputTokens: 0,
+      status: "complete",
+    });
 
-  return {
-    job: { ...saved, runId },
-    wave: WAVES.length - 1,
-    ranSteps,
-    done: true,
-    progress: progressOf(steps),
-    runId,
-  };
+    return {
+      job: { ...saved, runId },
+      wave: WAVES.length - 1,
+      ranSteps,
+      done: true,
+      progress: progressOf(steps),
+      runId,
+    };
+  } catch (e) {
+    const message = (e as Error).message ?? "Failed to save the completed research run.";
+    const saved = await saveWaveResult({
+      jobId: job.id,
+      steps,
+      nextWave: job.nextWave,
+      inputTokens: 0,
+      outputTokens: 0,
+      status: "failed",
+      lastError: message,
+    });
+    return {
+      job: saved,
+      wave: null,
+      ranSteps,
+      done: false,
+      progress: progressOf(steps),
+      error: message,
+    };
+  }
 }
 
 /**
