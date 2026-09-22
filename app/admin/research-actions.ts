@@ -794,3 +794,47 @@ export async function lookupCompany(args: {
     };
   }
 }
+
+/* ─────────────── archiving ─────────────── */
+
+/**
+ * Take a report out of the admin lists, or put it back.
+ *
+ * requireAdmin (staff), not requireRelease, and the migration is why: this
+ * writes `archived_at`, never `status`, so a released report stays released
+ * and a client reading it is unaffected. Nothing here reaches outside the
+ * building, and everything here is reversible in one click — which is the
+ * line lib/auth.ts draws for staff-level actions.
+ *
+ * Archiving is deliberately allowed on any report, including a released one.
+ * A released report that has been superseded is exactly the kind of clutter
+ * this exists for, and hiding it from the queue does not take it away from
+ * the person it was sent to.
+ */
+export async function setReportArchived(args: {
+  reportId: string;
+  archived: boolean;
+  /** Paths to revalidate — the report lives on several screens. */
+  requestId?: string | null;
+  companyId?: string | null;
+}): Promise<Result<object>> {
+  const { user } = await requireAdmin();
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("reports")
+    .update(
+      args.archived
+        ? { archived_at: new Date().toISOString(), archived_by: user.id }
+        : { archived_at: null, archived_by: null },
+    )
+    .eq("id", args.reportId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/reports/${args.reportId}`);
+  if (args.requestId) revalidatePath(`/admin/requests/${args.requestId}`);
+  if (args.companyId) revalidatePath(`/admin/companies/${args.companyId}`);
+  revalidatePath("/admin");
+  return { ok: true };
+}

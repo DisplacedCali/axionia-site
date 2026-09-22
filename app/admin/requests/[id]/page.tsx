@@ -48,12 +48,23 @@ export default async function RequestDetail({
   */
   const { data: drafts } = await admin
     .from("reports")
-    .select("id, title, summary, status, version, supersedes_id, created_at, content, edits, client_view, reviewed_at, research_run_id")
+    .select("id, title, summary, status, version, supersedes_id, created_at, content, edits, client_view, reviewed_at, archived_at, research_run_id")
     .eq("request_id", request.id)
     .order("created_at", { ascending: false });
 
+  /*
+    Preference order, strongest first: a live report carrying research, then
+    any report carrying research, then whatever is newest. Archiving a
+    duplicate therefore promotes the next real one into view rather than
+    emptying the page — and an archived report still shows here if it is the
+    only research there is, because "you archived it" is a better answer than
+    "there is nothing".
+  */
   const draft =
-    (drafts ?? []).find((d) => d.content !== null) ?? (drafts ?? [])[0] ?? null;
+    (drafts ?? []).find((d) => d.content !== null && !d.archived_at) ??
+    (drafts ?? []).find((d) => d.content !== null) ??
+    (drafts ?? [])[0] ??
+    null;
 
   // everything already generated for this company
   const { data: priorReports } = request.company_id
@@ -61,6 +72,7 @@ export default async function RequestDetail({
         .from("reports")
         .select("id, title, status, version, created_at, released_at")
         .eq("company_id", request.company_id)
+        .is("archived_at", null)
         .order("version", { ascending: false })
     : { data: [] };
 

@@ -305,6 +305,14 @@ costs one wave and the job survives a closed tab.
   costs a retry rather than claiming the run was lost. The panel calls the same
   helper and now usually finds the report already made. Full write-up as
   finding 10 in `docs/REVIEW_2026-09-21.md`.
+- **Reports can be archived** (042). `archived_at` / `archived_by`, a control
+  on the report page, and an active-only filter on the company hub and the
+  request page's prior-reports list. Deliberately NOT a fourth value on
+  `report_status`: archiving is orthogonal to where a document is in its life,
+  and `status = 'ready'` is what `reports_select_company_ready` keys on, so
+  archiving through status would quietly revoke a client's access. Reversible,
+  and an archived report stays readable at its own URL. Finding 14 in
+  `docs/REVIEW_2026-09-21.md`.
 - **Benefit library** — 30 benefits, 9 segments keyed on dimensions, 17 vendors,
   13 state mandates. Every benefit reachable from some segment.
 - **Report** — `reports.content` holds immutable research; `reports.edits` is an

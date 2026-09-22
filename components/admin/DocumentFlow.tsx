@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { markReportReviewed } from "@/app/admin/research-actions";
+import { markReportReviewed, setReportArchived } from "@/app/admin/research-actions";
 import { releaseReport } from "@/app/admin/actions";
 import SendReport from "./SendReport";
 
@@ -31,6 +31,7 @@ export default function DocumentFlow({
   companyName,
   reviewedAt,
   released,
+  archivedAt,
   blockers,
   canRelease,
   linksEnabled,
@@ -41,6 +42,8 @@ export default function DocumentFlow({
   companyName: string | null;
   reviewedAt: string | null;
   released: boolean;
+  /** 042. Set means it is out of the admin lists; it stays readable here. */
+  archivedAt: string | null;
   /** From releaseBlockers(). Soft ones warn; the action refuses on hard ones. */
   blockers: string[];
   canRelease: boolean;
@@ -71,6 +74,20 @@ export default function DocumentFlow({
     router.refresh();
   }
 
+  function archive(next: boolean) {
+    setErr(null);
+    startTransition(async () => {
+      const res = await setReportArchived({
+        reportId,
+        archived: next,
+        requestId,
+        companyId,
+      });
+      if (!res.ok) setErr(res.error);
+      else router.refresh();
+    });
+  }
+
   function release() {
     if (!requestId) return setErr("This report has no request to release against.");
     setErr(null);
@@ -83,6 +100,31 @@ export default function DocumentFlow({
 
   return (
     <div className="border border-border bg-base-2 p-5 print:hidden">
+      {/*
+        Archived is stated, not implied by absence. This report is off every
+        list; the only way anyone reaches this page now is a direct link or a
+        bookmark, and a document that quietly stopped appearing elsewhere
+        should say so on itself rather than leave someone wondering why they
+        can't find it again.
+      */}
+      {archivedAt && (
+        <div className="mb-5 border-l-2 border-gray-cool pl-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-warm mb-1">
+            Archived
+          </p>
+          <p className="text-[13px] leading-[1.6] text-gray-warm">
+            Hidden from the queue and the company page since{" "}
+            {new Date(archivedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+            . Still readable here, and still visible to anyone it was released
+            to — archiving tidies your lists, it does not withdraw a document.
+          </p>
+        </div>
+      )}
+
       {/* Rail */}
       <div className="flex items-center gap-2 mb-5">
         {steps.map((s, i) => {
@@ -217,6 +259,16 @@ export default function DocumentFlow({
           </div>
         </>
       )}
+
+      <div className="mt-5 pt-4 border-t border-border">
+        <button
+          onClick={() => archive(!archivedAt)}
+          disabled={pending}
+          className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-cool hover:text-navy transition-colors disabled:opacity-40"
+        >
+          {archivedAt ? "Restore to the lists" : "Archive this report"}
+        </button>
+      </div>
 
       {err && <p className="mt-3 text-risk text-[13px]">{err}</p>}
     </div>

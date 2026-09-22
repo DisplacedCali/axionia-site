@@ -32,7 +32,7 @@ export default async function ReportPreview({ params }: { params: { id: string }
   const { data: report } = await admin
     .from("reports")
     .select(
-      "id, title, summary, status, version, content, edits, client_view, reviewed_at, request_id, company_id, research_run_id, created_at, companies(name)",
+      "id, title, summary, status, version, content, edits, client_view, reviewed_at, archived_at, request_id, company_id, research_run_id, created_at, companies(name)",
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -116,6 +116,7 @@ export default async function ReportPreview({ params }: { params: { id: string }
               companyId={report.company_id ?? null}
               companyName={companyName}
               reviewedAt={report.reviewed_at ?? null}
+              archivedAt={report.archived_at ?? null}
               released={report.status === "ready"}
               blockers={releaseBlockers({
                 content,
