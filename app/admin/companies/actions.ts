@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff } from "@/lib/auth";
+import { requireStaff, requireRelease } from "@/lib/auth";
 
 const STAGES = [
   "lead",
@@ -288,5 +288,103 @@ export async function setCompanyFirm(
 
   revalidatePath(`/admin/companies/${companyId}`);
   revalidatePath("/admin/firms");
+  return { ok: true };
+}
+
+/* ─────────────── founding cohort terms ─────────────── */
+
+/**
+ * Sets founding-cohort status and the locked-in fee rate.
+ *
+ * Gated by requireRelease, not requireStaff — this is a commercial term
+ * reaching a client's invoice, the same boundary sendReportTo uses for
+ * putting a report in front of an outsider. An analyst can see it; only
+ * release-tier staff can set it.
+ *
+ * feeRate arrives as a fraction (0.0075), not a percent (0.75) — the caller
+ * (TermsPanel) does that conversion so this function never has to guess
+ * which one a bare number means.
+ */
+export async function updateTerms(
+  companyId: string,
+  patch: { foundingCohort?: boolean; feeRate?: number | null },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireRelease();
+
+  const update: Record<string, unknown> = {};
+  if (patch.foundingCohort !== undefined) {
+    update.founding_cohort = patch.foundingCohort;
+    // Turning founding_cohort off clears the rate with it — the DB
+    // constraint would reject the alternative (rate with no cohort flag)
+    // anyway, but failing here reads as "saved" instead of an opaque
+    // constraint-violation error on the next unrelated save.
+    if (!patch.foundingCohort) update.fee_rate = null;
+  }
+  if (patch.feeRate !== undefined) {
+    if (patch.feeRate !== null && (patch.feeRate < 0 || patch.feeRate > 0.05)) {
+      return { ok: false, error: "That doesn't look like a fraction of savings — check the number." };
+    }
+    update.fee_rate = patch.feeRate;
+  }
+
+  if (Object.keys(update).length === 0) return { ok: true };
+
+  const { error } = await createAdminClient()
+    .from("companies")
+    .update(update)
+    .eq("id", companyId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/companies");
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { ok: true };
+}
+
+/**
+ * Seeds the standard paid-intake checklist as open steps.
+ *
+ * These are the six things a client has to do between a signed proposal and
+ * a delivered report (docs/PROJECT_STATE.md / the client intake process):
+ * two required spreadsheets, one optional-but-high-value one, the outcome
+ * weighting, and the two calls. One insert, not six calls to addStep, so it
+ * either lands as a set or not at all rather than partially seeding a
+ * checklist if the connection drops on step four.
+ *
+ * No due dates — those depend on when THIS company actually signs, which
+ * this function doesn't know. Staff sets them from the steps panel once a
+ * kickoff date exists.
+ *
+ * Additive and unguarded against re-running: calling it twice duplicates
+ * the six rows rather than erroring. Cheap to delete a duplicate, expensive
+ * to silently no-op when someone actually meant to re-seed after a mistake.
+ */
+const INTAKE_CHECKLIST = [
+  "Return Spreadsheet 1 — benefit programs & cost structure (required)",
+  "Return Spreadsheet 2 — workforce & population profile (required)",
+  "Return Spreadsheet 3 — utilization & claims, if available (optional, high value)",
+  "Complete the outcome priority weighting (100 pts across 8 dimensions)",
+  "Schedule the 60-minute kickoff call",
+  "Schedule the 90-minute readout call — CFO attendance recommended",
+];
+
+export async function seedIntakeChecklist(
+  companyId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { profile: staff } = await requireStaff();
+
+  const { error } = await createAdminClient()
+    .from("company_steps")
+    .insert(
+      INTAKE_CHECKLIST.map((step) => ({
+        company_id: companyId,
+        step,
+        created_by: staff?.id ?? null,
+      })),
+    );
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/companies/${companyId}`);
   return { ok: true };
 }
