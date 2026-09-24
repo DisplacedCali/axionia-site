@@ -13,7 +13,21 @@ import ContactsPanel, {
 import DeckVersionsPanel, {
   type DeckVersion,
 } from "@/components/admin/DeckVersionsPanel";
+import ProposalVersionsPanel, {
+  type ProposalVersion,
+} from "@/components/admin/ProposalVersionsPanel";
 import FirmPanel from "@/components/admin/FirmPanel";
+import ShareLinksPanel, {
+  type ShareLinkRow,
+  type LinkStatus,
+} from "@/components/admin/ShareLinksPanel";
+import { verifyDeckLink, type LinkedDeck } from "@/lib/deckLinks";
+import TermsPanel from "@/components/admin/TermsPanel";
+import {
+  FOUNDING_COHORT_CAP,
+  FOUNDING_COHORT_CONVERSION_DATE,
+  foundingCohortSeatsTaken,
+} from "@/lib/foundingCohort";
 
 export const dynamic = "force-dynamic";
 
@@ -89,12 +103,17 @@ export default async function CompanyHub({
   const { data: company } = await admin
     .from("companies")
     .select(
-      "id, domain, name, notes, created_at, stage, owner_id, next_action, next_action_at, firm_id, firms(name, kind)"
+      "id, domain, name, notes, created_at, stage, owner_id, next_action, next_action_at, firm_id, firms(name, kind), founding_cohort, fee_rate"
     )
     .eq("id", params.id)
     .single();
 
   if (!company) notFound();
+
+  const seatsTaken = await foundingCohortSeatsTaken();
+  const conversionLabel = new Date(
+    `${FOUNDING_COHORT_CONVERSION_DATE}T00:00:00`,
+  ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const [
     { data: contacts },
@@ -104,6 +123,7 @@ export default async function CompanyHub({
     { data: people },
     { data: steps },
     { data: deckVersions },
+    { data: linkData, error: linkError },
   ] = await Promise.all([
       admin
         .from("profiles")
@@ -121,6 +141,9 @@ export default async function CompanyHub({
         .from("reports")
         .select("id, title, status, version, created_at, request_id")
         .eq("company_id", params.id)
+        // 042. Archived reports are off every list by definition; this is the
+        // list the archive control exists for.
+        .is("archived_at", null)
         .order("version", { ascending: false }),
       admin
         .from("report_files")
@@ -147,7 +170,15 @@ export default async function CompanyHub({
       admin
         .from("deck_versions")
         .select(
-          "id, label, audience, status, generated, edits, source_report_id, created_at, deck_version_recipients(id, name, presented_at)"
+          "id, deck, label, audience, status, generated, edits, source_report_id, created_at, deck_version_recipients(id, name, presented_at)"
+        )
+        .eq("company_id", params.id)
+        .order("created_at", { ascending: false }),
+      // 043. Every link minted against this company, so one can be re-sent.
+      admin
+        .from("deck_links")
+        .select(
+          "id, deck, label, url, created_at, expires_at, version_id, deck_versions(label, status), profiles(full_name, email)"
         )
         .eq("company_id", params.id)
         .order("created_at", { ascending: false }),
@@ -158,17 +189,93 @@ export default async function CompanyHub({
   const stepRows = (steps ?? []) as Step[];
   const openSteps = stepRows.filter((s) => !s.done_at);
 
-  const versionRows: DeckVersion[] = (deckVersions ?? []).map((v) => ({
-    id: v.id,
-    label: v.label,
-    audience: v.audience,
-    status: v.status,
-    generated: v.generated,
-    edits: v.edits,
-    source_report_id: v.source_report_id,
-    created_at: v.created_at,
-    recipients: (v.deck_version_recipients ?? []) as DeckVersion["recipients"],
-  }));
+  // Both panels below read this one query, split by `deck`. See
+  // ProposalVersionsPanel's header for why proposal isn't a mode of
+  // DeckVersionsPanel rather than a second query.
+  const versionRows: DeckVersion[] = (deckVersions ?? [])
+    .filter((v) => v.deck === "buyer")
+    .map((v) => ({
+      id: v.id,
+      label: v.label,
+      audience: v.audience,
+      status: v.status,
+      generated: v.generated,
+      edits: v.edits,
+      source_report_id: v.source_report_id,
+      created_at: v.created_at,
+      recipients: (v.deck_version_recipients ?? []) as DeckVersion["recipients"],
+    }));
+  const proposalVersionRows: ProposalVersion[] = (deckVersions ?? [])
+    .filter((v) => v.deck === "proposal")
+    .map((v) => ({
+      id: v.id,
+      label: v.label,
+      status: v.status,
+      generated: v.generated,
+      edits: v.edits,
+      source_report_id: v.source_report_id,
+      created_at: v.created_at,
+      recipients: (v.deck_version_recipients ?? []) as ProposalVersion["recipients"],
+    }));
+  /*
+    Status is derived, never stored. Each token is re-verified against the
+    CURRENT secret, because rotating a secret is how links get revoked and it
+    doesn't touch deck_links. Then, for proposals, the version has to still be
+    approved, because /deck/proposal 404s otherwise. The panel only offers Copy on
+    links that pass both, so nobody re-sends a dead one.
+  */
+  type LinkQueryRow = {
+    id: string;
+    deck: string;
+    label: string;
+    url: string;
+    created_at: string;
+    expires_at: string;
+    version_id: string | null;
+    deck_versions: { label: string; status: string } | null;
+    profiles: { full_name: string | null; email: string } | null;
+  };
+  const linkRows: ShareLinkRow[] = ((linkData ?? []) as unknown as LinkQueryRow[]).map(
+    (l) => {
+      let token: string | undefined;
+      try {
+        token = new URL(l.url).searchParams.get("k") ?? undefined;
+      } catch {
+        token = undefined;
+      }
+      const check = verifyDeckLink(token, l.deck as LinkedDeck);
+
+      let status: LinkStatus;
+      if (check.ok) {
+        if (l.deck !== "proposal") status = "active";
+        else if (!l.deck_versions) status = "version-deleted";
+        else status = l.deck_versions.status === "approved" ? "active" : "version-off";
+      } else if (check.reason === "expired") status = "expired";
+      else if (check.reason === "bad-signature") status = "revoked";
+      else if (check.reason === "disabled") status = "disabled";
+      else status = "unreadable";
+
+      return {
+        id: l.id,
+        deck: l.deck,
+        label: l.label,
+        url: l.url,
+        createdAt: l.created_at,
+        expiresAt: l.expires_at,
+        createdBy: l.profiles ? l.profiles.full_name || l.profiles.email : null,
+        versionLabel: l.deck_versions?.label ?? null,
+        status,
+      };
+    },
+  );
+  // 42P01 / PGRST205: the table isn't there yet. Say which migration, per the
+  // invariant that a discarded query error must not render as an empty state.
+  const linkLoadError = linkError
+    ? linkError.code === "42P01" || linkError.code === "PGRST205"
+      ? "Share links aren't being recorded yet. Run migration 043 in Supabase."
+      : `Couldn't load share links: ${linkError.message}`
+    : null;
+
   const requestRows = requests ?? [];
   const reportRows = reports ?? [];
   const fileRows = files ?? [];
@@ -254,6 +361,17 @@ export default async function CompanyHub({
       </div>
 
       <div className="mt-6">
+        <TermsPanel
+          companyId={company.id}
+          foundingCohort={company.founding_cohort ?? false}
+          feeRate={company.fee_rate ?? null}
+          seatsTaken={seatsTaken}
+          seatsCap={FOUNDING_COHORT_CAP}
+          conversionLabel={conversionLabel}
+        />
+      </div>
+
+      <div className="mt-6">
         <ContactsPanel
           companyId={company.id}
           contacts={peopleRows}
@@ -273,6 +391,30 @@ export default async function CompanyHub({
           contacts={peopleRows.map((c) => ({ id: c.id, name: c.name }))}
           siteUrl={process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com"}
         />
+      </div>
+
+      <div className="mt-6">
+        <ProposalVersionsPanel
+          companyId={company.id}
+          versions={proposalVersionRows}
+          reports={released.map((r) => ({
+            id: r.id,
+            title: r.title,
+            version: r.version,
+          }))}
+          contacts={peopleRows.map((c) => ({ id: c.id, name: c.name }))}
+          terms={{
+            foundingCohort: company.founding_cohort ?? false,
+            feeRate: company.fee_rate ?? null,
+            seatsTaken,
+            seatsCap: FOUNDING_COHORT_CAP,
+            conversionLabel,
+          }}
+        />
+      </div>
+
+      <div className="mt-6">
+        <ShareLinksPanel links={linkRows} loadError={linkLoadError} />
       </div>
 
       {/* Stage and owner. Kept as their own panel rather than folded into the

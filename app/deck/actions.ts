@@ -27,7 +27,7 @@ import { resolveAttribution } from "@/lib/deckAttribution";
  */
 
 type Contact = { name?: string; email?: string; org?: string };
-export type DeckSlug = "buyer" | "founders" | "investor";
+export type DeckSlug = "buyer" | "founders" | "investor" | "proposal";
 
 /**
  * Where each deck lives. A map rather than a ternary chain: the ternary was
@@ -39,6 +39,7 @@ const DECK_PATH: Record<DeckSlug, string> = {
   buyer: "/deck",
   founders: "/deck/founders",
   investor: "/deck/investor",
+  proposal: "/deck/proposal",
 };
 
 const clean = (s: string | undefined, max: number) => {

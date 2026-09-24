@@ -55,7 +55,7 @@ const SEP = ".";
  * one thing not to get backwards. A buyer link that fails to verify must fall
  * through to the ordinary public deck; a founders link that fails must 404.
  */
-export type LinkedDeck = "buyer" | "founders" | "investor";
+export type LinkedDeck = "buyer" | "founders" | "investor" | "proposal";
 
 function baseSecret(): string | null {
   const s = process.env.DECK_LINK_SECRET;
@@ -78,6 +78,19 @@ function secret(deck: LinkedDeck = "founders"): string | null {
     if (own && own.length >= 24) return own;
     if (!base) return null;
     return createHmac("sha256", base).update("deck:investor").digest("hex");
+  }
+
+  // Proposal gets the same treatment as investor: a real fee rate and a
+  // client name sit behind it, so PROPOSAL_LINK_SECRET can revoke every
+  // outstanding proposal link without touching founders or investor. Without
+  // an override it derives from the base secret like buyer does — a
+  // proposal link that verified on /deck (or vice versa) would let a
+  // forwarded sales link open the wrong company's terms.
+  if (deck === "proposal") {
+    const own = process.env.PROPOSAL_LINK_SECRET;
+    if (own && own.length >= 24) return own;
+    if (!base) return null;
+    return createHmac("sha256", base).update("deck:proposal").digest("hex");
   }
 
   // Buyer gets its own derived key for the same reason investor does, even

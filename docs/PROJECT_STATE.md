@@ -404,6 +404,19 @@ costs one wave and the job survives a closed tab.
   view with a confidence and a basis per match, and the apply statements sit
   in a comment. A fuzzy match written into an attribution column is invisible
   the moment it lands.
+- **Share links are logged** (migration 043, `deck_links`). Tokens are still
+  stateless and access is still the HMAC: `/deck/*` never reads this table and
+  deleting a row revokes nothing. What changed is that `createShareLink`, the
+  one function every mint path goes through, now writes the full URL, deck,
+  label, entity, proposal version, expiry and minter, so a link can be copied
+  again from the **Share links** panel on the company hub instead of minted a
+  second time. The panel derives status by re-verifying each stored token
+  against the current secret (rotation revokes without touching the table) and,
+  for proposals, by checking the version is still approved; Copy is offered only
+  on links that would open. The log write is best-effort: if it fails the link
+  is still returned, with a warning in the mint form. Proposal links now carry
+  `&v=` from inside `createShareLink`, which also checks the version belongs to
+  the signed company. Links minted before 043 were never recorded.
 - **The inbox filters automated submissions** (`lib/leadAuthenticity.ts`, no
   migration). Ranking was the wrong instrument: how promising a real inquiry
   is and whether anybody is there are different questions, and one score

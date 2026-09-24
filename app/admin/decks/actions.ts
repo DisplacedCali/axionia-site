@@ -14,15 +14,17 @@ const PATH: Record<LinkedDeck, string> = {
   buyer: "/deck",
   founders: "/deck/founders",
   investor: "/deck/investor",
+  proposal: "/deck/proposal",
 };
 
 const ENV_HINT: Record<LinkedDeck, string> = {
   buyer: "DECK_LINK_SECRET",
   founders: "DECK_LINK_SECRET",
   investor: "DECK_LINK_SECRET (INVESTOR_LINK_SECRET overrides it)",
+  proposal: "DECK_LINK_SECRET (PROPOSAL_LINK_SECRET overrides it)",
 };
 
-const VALID: LinkedDeck[] = ["buyer", "founders", "investor"];
+const VALID: LinkedDeck[] = ["buyer", "founders", "investor", "proposal"];
 
 /**
  * Search companies and firms together, for the mint form.
@@ -200,14 +202,32 @@ export async function createEntity(args: {
  * from the form. A signed id pointing at nothing would attribute every open to
  * a company that doesn't exist, and it would be signed, so nothing downstream
  * would ever question it.
+ *
+ * ── WHY EVERY LINK IS WRITTEN DOWN (043) ──
+ *
+ * Tokens are stateless, so before 043 a link existed only in whatever email it
+ * was pasted into. Every mint path in the admin ends here, which makes this
+ * the one place a log write can't be forgotten by a fourth path added later.
+ *
+ * The log write is best-effort on purpose. The link is valid the moment it's
+ * signed, whether or not the row lands, and refusing to hand it over because
+ * 043 hasn't been run would stop you mid-conversation over bookkeeping. So a
+ * failed write comes back as `warning`, which both mint forms show, rather
+ * than as a failure or a console line nobody reads.
+ *
+ * `versionId` is proposal-only. It's checked here rather than trusted from
+ * mintProposalLink because this is a server action a client can call
+ * directly: an unchecked id would put a URL in the log for a version that
+ * belongs to a different company than the one signed into the token.
  */
 export async function createShareLink(
   label: string,
   days: number,
   deck: LinkedDeck = "founders",
-  entity?: { kind: "company" | "firm"; id: string } | null
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  await requireStaff();
+  entity?: { kind: "company" | "firm"; id: string } | null,
+  versionId?: string | null
+): Promise<{ ok: true; url: string; warning?: string } | { ok: false; error: string }> {
+  const { user } = await requireStaff();
 
   if (!VALID.includes(deck)) {
     return { ok: false, error: "Unknown deck." };
@@ -234,6 +254,30 @@ export async function createShareLink(
     }
   }
 
+  // A proposal link without a version 404s for the recipient (see
+  // /deck/proposal), and a version on any other deck means nothing. Both are
+  // caller mistakes worth refusing before anything is signed.
+  if (deck === "proposal" && !versionId) {
+    return { ok: false, error: "A proposal link needs a version." };
+  }
+  if (deck !== "proposal" && versionId) {
+    return { ok: false, error: "Only proposal links carry a version." };
+  }
+  if (versionId) {
+    if (!UUID_RE.test(versionId)) return { ok: false, error: "That version id isn't valid." };
+    if (ref?.kind !== "company") {
+      return { ok: false, error: "A proposal link has to be minted against its company." };
+    }
+    const { data: v } = await createAdminClient()
+      .from("deck_versions")
+      .select("id")
+      .eq("id", versionId)
+      .eq("deck", "proposal")
+      .eq("company_id", ref.id)
+      .maybeSingle();
+    if (!v) return { ok: false, error: "That version isn't on this company." };
+  }
+
   const token = mintDeckLink(label, days, deck, ref);
   if (!token) {
     return {
@@ -243,8 +287,43 @@ export async function createShareLink(
   }
 
   const site = process.env.NEXT_PUBLIC_SITE_URL || "https://axionia.com";
-  return {
-    ok: true,
-    url: `${site}${PATH[deck]}?k=${encodeURIComponent(token)}`,
-  };
+  const url =
+    `${site}${PATH[deck]}?k=${encodeURIComponent(token)}` +
+    (versionId ? `&v=${versionId}` : "");
+
+  // Recomputed from `days` rather than decoded from the token: mintDeckLink
+  // stamps `now + days` in the same tick, so the two agree to the second.
+  const expiresAt = new Date(Date.now() + days * 86400 * 1000).toISOString();
+
+  const { error: logError } = await createAdminClient()
+    .from("deck_links")
+    .insert({
+      deck,
+      // Same sanitiser mintDeckLink applied, so the logged label is the one
+      // deck_events.link_label will record on every open of this link.
+      label: label.trim().slice(0, 60).replace(/[^\w\s.@&'-]/g, ""),
+      company_id: ref?.kind === "company" ? ref.id : null,
+      firm_id: ref?.kind === "firm" ? ref.id : null,
+      version_id: versionId ?? null,
+      url,
+      expires_at: expiresAt,
+      created_by: user.id,
+    });
+
+  if (logError) {
+    return {
+      ok: true,
+      url,
+      warning:
+        // 42P01 from Postgres, PGRST205 from PostgREST's schema cache — which
+        // one arrives depends on whether the cache has been reloaded since.
+        logError.code === "42P01" || logError.code === "PGRST205"
+          ? "Link works, but it wasn't saved to the company page. Run migration 043 in Supabase."
+          : `Link works, but it wasn't saved to the company page: ${logError.message}`,
+    };
+  }
+
+  return { ok: true, url };
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

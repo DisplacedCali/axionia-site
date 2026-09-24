@@ -50,6 +50,7 @@ export default function ShareLinkForm({
   const [newKind, setNewKind] = useState<"company" | "firm">("firm");
   const [url, setUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pending, start] = useTransition();
 
@@ -95,6 +96,7 @@ export default function ShareLinkForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
+    setWarning(null);
     setUrl(null);
     setCopied(false);
     start(async () => {
@@ -105,7 +107,10 @@ export default function ShareLinkForm({
         picked ? { kind: picked.kind, id: picked.id } : null
       );
       if (!res.ok) setErr(res.error);
-      else setUrl(res.url);
+      else {
+        setUrl(res.url);
+        setWarning(res.warning ?? null);
+      }
     });
   }
 
@@ -308,6 +313,7 @@ export default function ShareLinkForm({
       </form>
 
       {err && <p className="mt-3 text-[13px] text-risk">{err}</p>}
+      {warning && <p className="mt-3 text-[13px] text-caution">{warning}</p>}
 
       {url && (
         <div className="mt-4 border border-border bg-base-2 p-4">
@@ -340,6 +346,8 @@ export default function ShareLinkForm({
         {" "}Attaching a company or firm signs its id into the link, so every
         open attributes to that row even if the deck is forwarded on. Without
         one the open still logs, just under the recipient name you typed.
+        {" "}Links attached to a company are also saved on that company&rsquo;s
+        page, so they can be copied again later.
       </p>
     </div>
   );
